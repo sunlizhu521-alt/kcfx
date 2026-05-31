@@ -9,7 +9,7 @@ const DIMENSION_SLOTS = [
     title: "商品分类维表",
     expectedName: "Dim-YL医疗器械商品分类-2026年整理版",
     sheetHint: "Dim-YL医疗器械商品分类",
-    description: "按物料编码匹配 SKU、金蝶名称、销售产品线、销售系列、采购分组、结算价。"
+    description: "按物料编码匹配 SKU、金蝶名称、销售产品线、销售系列、采购分组、结算价（含税）。"
   },
   {
     id: "dim-warehouse",
