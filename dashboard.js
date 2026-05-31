@@ -155,6 +155,7 @@ function renderDashboard() {
   }).map((row) => applyPriceBasis(row, priceBasis));
 
   renderChartTitles(priceBasis);
+  renderPriceBasisStatus(priceBasis, filteredRows);
   renderMetrics(filteredRows);
   renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "wan");
   renderBars("productLineChart", groupSum(filteredRows, "productLine", "inventoryValue"), "wan");
@@ -169,6 +170,22 @@ function renderChartTitles(priceBasis) {
   $("#productLineChartTitle").textContent = settlementMode ? "销售产品线库存资金（万元）" : "销售产品线库存资产排行（万元）";
   $("#warehouseTypeChartTitle").textContent = settlementMode ? "仓库类型资金" : "仓库类型资金占用（万元）";
   $("#seriesChartTitle").textContent = settlementMode ? "产品系列 资金Top 10（万元）" : "产品系列 Top 10（万元）";
+}
+
+function renderPriceBasisStatus(priceBasis, rows) {
+  if (priceBasis !== "settlement") {
+    $("#sharedStatus").textContent = `财务维度：${formatNumber(rows.length, 0)} 行，按真实成本单价计算。`;
+    return;
+  }
+  const pricedRows = rows.filter((row) => row.settlementPrice > 0 && row.endingQty !== 0);
+  const amount = sum(rows, "inventoryValue");
+  $("#sharedStatus").textContent = `结算价维度：${formatNumber(rows.length, 0)} 行，结算价有效 ${formatNumber(pricedRows.length, 0)} 行，金额 ${formatMoney(amount)}。`;
+}
+
+function renderNoSettlementDataHint(rows) {
+  return rows.length
+    ? `<div class="empty">当前筛选下结算价金额为 0，请检查商品分类维表“结算价”列是否有值并已应用刷新。</div>`
+    : `<div class="empty">暂无数据</div>`;
 }
 
 function applyPriceBasis(row, priceBasis) {
@@ -224,6 +241,11 @@ function renderBars(id, rows, mode) {
   const container = $(`#${id}`);
   if (!rows.length) {
     container.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  const total = rows.reduce((value, row) => value + (Number(row.value) || 0), 0);
+  if (mode === "wan" && total === 0 && ($("#priceBasisFilter").value || "financial") === "settlement") {
+    container.innerHTML = renderNoSettlementDataHint(filteredRows);
     return;
   }
   const max = Math.max(...rows.map((row) => row.value), 1);
