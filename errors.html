@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>kcfx 报错信息提示</title>
+  <link rel="stylesheet" href="styles.css?v=20260531d">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>kcfx</strong>
+        <span>关账后库存决策看板</span>
+      </div>
+      <nav class="nav">
+        <a href="index.html">库存决策看板</a>
+        <a href="fact-library.html">备货事实表库</a>
+        <a href="file-library.html">维度表文件库</a>
+        <a class="active" href="errors.html">报错信息提示</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1>报错信息提示</h1>
+          <p>用于快速定位文件上传、应用刷新、共享数据和看板生成中的常见问题。</p>
+        </div>
+      </header>
+
+      <section class="error-grid">
+        <article class="error-card">
+          <h2>缺少文件</h2>
+          <p>库存决策看板提示缺少事实表或维度表时，请先到对应文件库上传文件，并点击应用刷新。</p>
+        </article>
+        <article class="error-card">
+          <h2>文件待应用</h2>
+          <p>上传文件后状态为待应用，说明文件已保存但尚未生效。请点击卡片内的应用刷新，或点击一键全部应用刷新。</p>
+        </article>
+        <article class="error-card">
+          <h2>替换文件失败</h2>
+          <p>替换已上传文件前，需要先输入验证秘钥并启用替换权限。当前验证秘钥为 3.1415926。</p>
+        </article>
+        <article class="error-card">
+          <h2>解析不到有效行</h2>
+          <p>通常是上传了错误文件、工作表不匹配、表头行不对，或 Excel 内容为空。请确认文件属于对应槽位。</p>
+        </article>
+        <article class="error-card">
+          <h2>事业部没有匹配</h2>
+          <p>请检查仓库物料事业部对照表中的库存组织、仓库名称、物料编码是否能与事实表组成一致的三元联合键。</p>
+        </article>
+        <article class="error-card">
+          <h2>产品线或 SKU 为空</h2>
+          <p>请检查商品分类维表是否使用物料编码作为主键，并确认 SKU、金蝶名称、销售产品线、销售系列、采购分组、结算价字段存在。</p>
+        </article>
+        <article class="error-card">
+          <h2>共享数据没有更新</h2>
+          <p>导出新的 shared-library.json 后，需要替换 data/shared-library.json 并推送到 GitHub。GitHub Pages 可能存在短暂缓存。</p>
+        </article>
+        <article class="error-card">
+          <h2>页面仍显示旧数据</h2>
+          <p>浏览器 IndexedDB 可能保留旧文件。可以重新应用刷新，或清理浏览器站点数据后重新打开页面。</p>
+        </article>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
