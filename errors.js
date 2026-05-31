@@ -2,6 +2,7 @@ const $ = (selector) => document.querySelector(selector);
 let currentProductMissing = [];
 let currentDivisionMissing = [];
 let currentWarehouseMissing = [];
+let currentSettlementMissing = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", runErrorChecks);
@@ -18,13 +19,15 @@ async function runErrorChecks() {
 
   if (!fact || !product || !division) {
     $("#checkStatus").textContent = "缺少关账后库存事实表、商品分类维表或仓库物料事业部对照表，请先上传并应用刷新。";
-    renderMetrics([], [], [], []);
+    renderMetrics([], [], [], [], []);
     renderRows("#productMissingRows", []);
     renderRows("#divisionMissingRows", []);
     renderWarehouseRows("#warehouseMissingRows", []);
     currentProductMissing = [];
     currentDivisionMissing = [];
     currentWarehouseMissing = [];
+    currentSettlementMissing = [];
+    renderSettlementRows("#settlementMissingRows", []);
     return;
   }
 
@@ -37,17 +40,24 @@ async function runErrorChecks() {
   const productMissing = stockMaterials.filter((item) => !productMap.has(item.materialCode));
   const divisionMissing = stockMaterials.filter((item) => !divisionCodes.has(item.materialCode));
   const warehouseMissing = stockWarehouses.filter((item) => !divisionWarehouses.has(item.warehouse));
+  const settlementMissing = stockMaterials.filter((item) => {
+    const productItem = productMap.get(item.materialCode);
+    return !productItem || productItem.settlementPrice <= 0;
+  });
 
   const enrichedProductMissing = productMissing.map((item) => enrichMissingRow(item, productMap));
   const enrichedDivisionMissing = divisionMissing.map((item) => enrichMissingRow(item, productMap));
+  const enrichedSettlementMissing = settlementMissing.map((item) => enrichMissingRow(item, productMap));
   currentProductMissing = enrichedProductMissing;
   currentDivisionMissing = enrichedDivisionMissing;
   currentWarehouseMissing = warehouseMissing;
+  currentSettlementMissing = enrichedSettlementMissing;
 
-  renderMetrics(stockMaterials, enrichedProductMissing, enrichedDivisionMissing, warehouseMissing);
+  renderMetrics(stockMaterials, enrichedProductMissing, enrichedDivisionMissing, warehouseMissing, enrichedSettlementMissing);
   renderRows("#productMissingRows", enrichedProductMissing);
   renderRows("#divisionMissingRows", enrichedDivisionMissing);
   renderWarehouseRows("#warehouseMissingRows", warehouseMissing);
+  renderSettlementRows("#settlementMissingRows", enrichedSettlementMissing);
   $("#checkStatus").textContent = `检查完成：${new Date().toLocaleString("zh-CN")}`;
 }
 
@@ -108,7 +118,8 @@ function mapProduct(rows) {
     if (!materialCode || map.has(materialCode)) continue;
     map.set(materialCode, {
       sku: normalizeText(firstValue(row, ["SKU"])),
-      materialName: normalizeText(firstValue(row, ["金蝶名称", "物料名称", "货品名称"]))
+      materialName: normalizeText(firstValue(row, ["金蝶名称", "物料名称", "货品名称"])),
+      settlementPrice: toNumber(firstValue(row, ["结算价（含税）", "结算价", "内部结算价", "26年内部结算价", "2026年内部结算价"]))
     });
   }
   return map;
@@ -142,11 +153,12 @@ function enrichMissingRow(item, productMap) {
   };
 }
 
-function renderMetrics(stockMaterials, productMissing, divisionMissing, warehouseMissing) {
+function renderMetrics(stockMaterials, productMissing, divisionMissing, warehouseMissing, settlementMissing) {
   $("#stockMaterialCount").textContent = formatNumber(stockMaterials.length);
   $("#productMissingCount").textContent = formatNumber(productMissing.length);
   $("#divisionMissingCount").textContent = formatNumber(divisionMissing.length);
   $("#warehouseMissingCount").textContent = formatNumber(warehouseMissing.length);
+  $("#settlementMissingCount").textContent = formatNumber(settlementMissing.length);
 }
 
 function renderRows(selector, rows) {
@@ -171,6 +183,17 @@ function renderWarehouseRows(selector, rows) {
   `).join("") : `<tr><td colspan="2" class="empty">暂无缺失数据</td></tr>`;
 }
 
+function renderSettlementRows(selector, rows) {
+  const tbody = $(selector);
+  tbody.innerHTML = rows.length ? rows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.materialCode)}</td>
+      <td>${escapeHtml(row.materialName)}</td>
+      <td class="num">${formatNumber(row.qty)}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="3" class="empty">暂无缺失数据</td></tr>`;
+}
+
 function downloadAllErrorTables() {
   if (typeof XLSX === "undefined") {
     window.alert("下载组件未加载，请刷新页面后重试。");
@@ -191,6 +214,11 @@ function downloadAllErrorTables() {
   ]);
   downloadRowsAsWorkbook("仓库名称", stamp, currentWarehouseMissing, [
     ["warehouse", "仓库"],
+    ["qty", "数量"]
+  ]);
+  downloadRowsAsWorkbook("结算价缺失表", stamp, currentSettlementMissing, [
+    ["materialCode", "物料编码"],
+    ["materialName", "物料名称"],
     ["qty", "数量"]
   ]);
 }
