@@ -1,47 +1,143 @@
 const $ = (selector) => document.querySelector(selector);
+let replacementEnabled = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadSharedLibrary({ statusEl: $("#sharedStatus") });
-  renderLibrary();
-  $("#refreshBtn").addEventListener("click", async () => {
-    await loadSharedLibrary({ statusEl: $("#sharedStatus") });
-    renderLibrary();
-  });
-  $("#downloadSharedBtn").addEventListener("click", downloadSharedLibrary);
+  bindToolbar();
+  await renderLibrary();
 });
 
+function bindToolbar() {
+  $("#refreshBtn").addEventListener("click", refreshAll);
+  $("#applyAllBtn").addEventListener("click", refreshAll);
+  $("#downloadSharedBtn").addEventListener("click", downloadSharedLibrary);
+  $("#enableReplaceBtn").addEventListener("click", () => {
+    const key = $("#unlockInput").value.trim();
+    replacementEnabled = key.length > 0;
+    $("#permissionStatus").textContent = replacementEnabled ? "已启用秘钥替换权限" : "请输入验证秘钥";
+    renderLibrary();
+  });
+}
+
+async function refreshAll() {
+  await loadSharedLibrary({ statusEl: $("#sharedStatus") });
+  await renderLibrary();
+}
+
+function pageType() {
+  return document.body.dataset.libraryType;
+}
+
 function pageSlots() {
-  const type = document.body.dataset.libraryType;
-  return ALL_SLOTS.filter((slot) => slot.type === type);
+  return ALL_SLOTS.filter((slot) => slot.type === pageType());
+}
+
+function pageLabels() {
+  const isDimension = pageType() === "dimension";
+  return {
+    eyebrow: isDimension ? "DIMENSION FILES" : "FACT FILES",
+    summaryTitle: isDimension ? "月度维度表文件库" : "月度备货事实表库",
+    slotLabel: isDimension ? "DIMENSION SLOT" : "FACT SLOT",
+    emptyAction: isDimension ? "上传维度文件" : "上传事实表文件",
+    savedLabel: isDimension ? "维度文件已保存" : "事实表已保存"
+  };
 }
 
 async function renderLibrary() {
+  const slots = pageSlots();
   const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
-  $("#libraryGrid").innerHTML = pageSlots().map((slot) => renderCard(slot, records[slot.id])).join("");
+  const used = slots.filter((slot) => records[slot.id]).length;
+  const applied = slots.filter((slot) => records[slot.id]?.appliedAt || records[slot.id]).length;
+  const latest = latestSavedAt(slots, records);
+  const labels = pageLabels();
+
+  $("#libraryEyebrow").textContent = labels.eyebrow;
+  $("#libraryTitle").textContent = labels.summaryTitle;
+  $("#savedBadge").textContent = labels.savedLabel;
+  $("#slotLimit").textContent = slots.length;
+  $("#uploadedCount").textContent = used;
+  $("#appliedCount").textContent = applied;
+  $("#latestUpdate").textContent = latest ? new Date(latest).toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).replace(/\//g, "/") : "-";
+
+  $("#libraryGrid").innerHTML = slots.map((slot) => renderCard(slot, records[slot.id], labels)).join("");
   bindCardEvents();
 }
 
-function renderCard(slot, record) {
-  const status = record
-    ? `
-      <div class="file-meta">
-        <span>当前文件：${escapeHtml(record.fileName)}</span>
-        <span>工作表：${escapeHtml(record.sheetName || "-")}</span>
-        <span>行数：${formatNumber((record.rows || []).length)}</span>
-        <span>更新时间：${new Date(record.savedAt).toLocaleString("zh-CN")}</span>
-      </div>
-    `
-    : `<div class="file-meta"><span>尚未上传</span><span>期望文件：${escapeHtml(slot.expectedName)}</span></div>`;
+function latestSavedAt(slots, records) {
+  const times = slots
+    .map((slot) => records[slot.id]?.savedAt)
+    .filter(Boolean)
+    .map((item) => Date.parse(item))
+    .filter((item) => Number.isFinite(item));
+  return times.length ? Math.max(...times) : null;
+}
+
+function renderCard(slot, record, labels) {
+  const stateClass = record ? "applied" : "empty";
+  const stateText = record ? "已应用" : "空";
+  const fileName = record?.fileName || slot.expectedName;
+  const month = record?.savedAt ? `${new Date(record.savedAt).getFullYear()}年${new Date(record.savedAt).getMonth() + 1}月` : "";
+  const updateDate = record?.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }) : "";
+
+  if (!record) {
+    return `
+      <article class="library-card file-slot empty-card" data-slot-id="${slot.id}">
+        <div class="slot-head">
+          <span class="slot-kicker">${labels.slotLabel}</span>
+          <span class="slot-state ${stateClass}">${stateText}</span>
+        </div>
+        <h2>${escapeHtml(slot.title)}</h2>
+        <label class="drop-zone">
+          <input type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}">
+          <strong>${labels.emptyAction}</strong>
+          <span>刷新月份和更新日期会自动记录</span>
+        </label>
+        <div class="card-actions">
+          <button type="button" data-save="${slot.id}">替换文件</button>
+          <button class="secondary" type="button" data-apply="${slot.id}" disabled>应用刷新</button>
+          <button class="danger" type="button" data-delete="${slot.id}" disabled>删除</button>
+        </div>
+        <p class="muted" id="status-${slot.id}"></p>
+      </article>
+    `;
+  }
 
   return `
-    <article class="library-card" data-slot-id="${slot.id}">
+    <article class="library-card file-slot" data-slot-id="${slot.id}">
+      <div class="slot-head">
+        <span class="slot-kicker">${labels.slotLabel}</span>
+        <span class="slot-state ${stateClass}">${stateText}</span>
+      </div>
       <h2>${escapeHtml(slot.title)}</h2>
-      <p>${escapeHtml(slot.description)}</p>
-      ${status}
-      <input type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}">
+      <h3>${escapeHtml(fileName)}</h3>
+      <p class="file-kind">Excel 工作簿 · ${formatFileSize(record.size || 0)}</p>
+      <div class="slot-info">
+        <span>刷新月份</span>
+        <strong>${escapeHtml(month)}</strong>
+      </div>
+      <div class="slot-info">
+        <span>更新日期</span>
+        <strong>${escapeHtml(updateDate)}</strong>
+      </div>
+      <input type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}" ${replacementEnabled ? "" : "disabled"}>
       <div class="card-actions">
-        <button type="button" data-save="${slot.id}">替换文件</button>
-        <button class="danger" type="button" data-delete="${slot.id}" ${record ? "" : "disabled"}>清空</button>
+        <button type="button" data-save="${slot.id}" ${replacementEnabled ? "" : "disabled"}>替换文件</button>
+        <button class="secondary" type="button" data-apply="${slot.id}">应用刷新</button>
+        <button class="danger" type="button" data-delete="${slot.id}" ${replacementEnabled ? "" : "disabled"}>删除</button>
       </div>
       <p class="muted" id="status-${slot.id}"></p>
     </article>
@@ -54,6 +150,9 @@ function bindCardEvents() {
   });
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => clearSlot(button.dataset.delete));
+  });
+  document.querySelectorAll("[data-apply]").forEach((button) => {
+    button.addEventListener("click", () => applySlot(button.dataset.apply));
   });
 }
 
@@ -71,17 +170,30 @@ async function saveSlot(slotId) {
     status.textContent = "正在解析文件...";
     const record = await readExcelFile(file, slot);
     if (!record.rows.length) throw new Error("文件未解析到有效行。");
-    await saveRecord(record);
+    await saveRecord({ ...record, appliedAt: new Date().toISOString() });
     status.textContent = "已保存到浏览器文件库。";
-    renderLibrary();
+    await renderLibrary();
   } catch (error) {
     status.textContent = `解析失败：${error.message}`;
   }
 }
 
+async function applySlot(slotId) {
+  const record = await getRecord(slotId);
+  if (!record) return;
+  await saveRecord({ ...record, appliedAt: new Date().toISOString() });
+  await renderLibrary();
+}
+
 async function clearSlot(slotId) {
   await deleteRecord(slotId);
-  renderLibrary();
+  await renderLibrary();
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return "0 B";
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
 function escapeHtml(value) {
@@ -93,4 +205,3 @@ function escapeHtml(value) {
     "'": "&#039;"
   }[char]));
 }
-

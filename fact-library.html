@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>kcfx 备货事实表库</title>
-  <link rel="stylesheet" href="styles.css?v=20260531a">
+  <link rel="stylesheet" href="styles.css?v=20260531b">
 </head>
 <body data-library-type="fact">
   <div class="app-shell">
@@ -26,12 +26,39 @@
           <h1>备货事实表库</h1>
           <p>上传关账后的物料收发汇总事实表。看板会读取第 4 行作为表头。</p>
         </div>
-        <div class="status-pill" id="sharedStatus">正在同步共享文件库...</div>
+        <button id="applyAllBtn" class="secondary" type="button">一键全部应用刷新</button>
       </header>
 
-      <section class="toolbar">
-        <button id="refreshBtn" type="button">应用刷新</button>
-        <button id="downloadSharedBtn" class="secondary" type="button">导出共享数据包</button>
+      <section class="library-summary">
+        <div class="summary-head">
+          <div>
+            <span id="libraryEyebrow" class="summary-eyebrow">FACT FILES</span>
+            <h2 id="libraryTitle">月度备货事实表库</h2>
+          </div>
+          <span id="savedBadge" class="saved-badge">事实表已保存</span>
+        </div>
+        <div class="summary-metrics">
+          <div><span>事实表上限</span><strong id="slotLimit">0</strong></div>
+          <div><span>已上传事实表</span><strong id="uploadedCount">0</strong></div>
+          <div><span>已应用事实表</span><strong id="appliedCount">0</strong></div>
+          <div><span>最近更新</span><strong id="latestUpdate">-</strong></div>
+        </div>
+        <div class="permission-row">
+          <div class="permission-status">
+            <span>替换权限</span>
+            <strong id="permissionStatus">请输入验证秘钥后可替换已上传文件</strong>
+          </div>
+          <label>
+            <span>验证秘钥</span>
+            <input id="unlockInput" placeholder="请输入验证秘钥">
+          </label>
+          <button id="enableReplaceBtn" type="button">启用替换</button>
+        </div>
+        <div class="toolbar">
+          <button id="refreshBtn" type="button">应用刷新</button>
+          <button id="downloadSharedBtn" class="secondary" type="button">导出共享数据包</button>
+          <span class="muted" id="sharedStatus">正在同步共享文件库...</span>
+        </div>
       </section>
 
       <section id="libraryGrid" class="library-grid"></section>
@@ -39,9 +66,8 @@
   </div>
 
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-  <script src="storage.js?v=20260531a"></script>
-  <script src="shared-library.js?v=20260531a"></script>
-  <script src="library-page.js?v=20260531a"></script>
+  <script src="storage.js?v=20260531b"></script>
+  <script src="shared-library.js?v=20260531b"></script>
+  <script src="library-page.js?v=20260531b"></script>
 </body>
 </html>
-

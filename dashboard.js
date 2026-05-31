@@ -1,6 +1,7 @@
 const COLORS = ["#0f7b79", "#405c9a", "#2f8f5b", "#b87618", "#6c5ce7", "#d35400", "#2980b9", "#7f8c8d"];
 let wideRows = [];
 let filteredRows = [];
+const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse", "dim-warehouse-material"];
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -15,7 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function refreshDashboard() {
   const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
-  const missing = ALL_SLOTS.filter((slot) => !records[slot.id]);
+  const missing = DASHBOARD_REQUIRED_SLOTS.map((id) => SLOT_BY_ID[id]).filter((slot) => !records[slot.id]);
   if (missing.length) {
     $("#detailRows").innerHTML = `<tr><td colspan="11" class="empty">缺少文件：${missing.map((slot) => slot.title).join("、")}。请到文件库上传，或更新 data/shared-library.json。</td></tr>`;
     clearDashboard();
@@ -257,4 +258,3 @@ function escapeHtml(value) {
     "'": "&#039;"
   }[char]));
 }
-

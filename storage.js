@@ -14,7 +14,7 @@ const DIMENSION_SLOTS = [
   {
     id: "dim-warehouse",
     type: "dimension",
-    title: "仓库分类维表",
+    title: "仓库、金蝶、旺店通、领星",
     expectedName: "Dim-仓库_金蝶、旺店通、领星-2026年整理版",
     sheetHint: "Dim-仓库汇总整理",
     description: "按仓库金蝶名称匹配一级仓库分类和二级仓库分类，区分仓库属性和仓库位置。"
@@ -26,6 +26,46 @@ const DIMENSION_SLOTS = [
     expectedName: "Dim-仓库与物料对照表-2026年整理版",
     sheetHint: "",
     description: "使用库存组织、仓库名称、物料编码三元联合键匹配事业部。"
+  },
+  {
+    id: "dim-store-name",
+    type: "dimension",
+    title: "店铺名称汇总",
+    expectedName: "Dim-店铺名称汇总",
+    sheetHint: "",
+    description: "汇总金蝶、领星与简称口径的店铺名称映射。"
+  },
+  {
+    id: "dim-customer-material",
+    type: "dimension",
+    title: "客户物料对照表",
+    expectedName: "Dim-客户与物料对照表",
+    sheetHint: "",
+    description: "按客户和物料编码维护客户侧销售或渠道映射关系。"
+  },
+  {
+    id: "dim-purchase-division",
+    type: "dimension",
+    title: "采购分工明细",
+    expectedName: "采购部分工明细",
+    sheetHint: "",
+    description: "按采购分组维护采购对接人、供应商、起订量和生产周期。"
+  },
+  {
+    id: "dim-7",
+    type: "dimension",
+    title: "维度 7",
+    expectedName: "维度 7",
+    sheetHint: "",
+    description: "预留维度槽位。"
+  },
+  {
+    id: "dim-8",
+    type: "dimension",
+    title: "维度 8",
+    expectedName: "维度 8",
+    sheetHint: "",
+    description: "预留维度槽位。"
   }
 ];
 
@@ -38,6 +78,30 @@ const FACT_SLOTS = [
     sheetHint: "",
     skipRows: 3,
     description: "金蝶关账后物料收发汇总表，第 4 行为真实表头。财务提供的表只取数量和真实成本单价。"
+  },
+  {
+    id: "fact-2",
+    type: "fact",
+    title: "事实表 2",
+    expectedName: "事实表 2",
+    sheetHint: "",
+    description: "预留事实表槽位。"
+  },
+  {
+    id: "fact-3",
+    type: "fact",
+    title: "事实表 3",
+    expectedName: "事实表 3",
+    sheetHint: "",
+    description: "预留事实表槽位。"
+  },
+  {
+    id: "fact-4",
+    type: "fact",
+    title: "事实表 4",
+    expectedName: "事实表 4",
+    sheetHint: "",
+    description: "预留事实表槽位。"
   }
 ];
 
