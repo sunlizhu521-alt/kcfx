@@ -77,7 +77,7 @@ const FACT_SLOTS = [
     expectedName: "财务同步的表",
     sheetHint: "",
     skipRows: 3,
-    description: "金蝶关账后物料收发汇总表，第 4 行为真实表头。财务提供的表只取数量和真实成本单价。"
+    description: "数据由财务提供，保持数量的一致性，财务提供的表只取数量和真实成本单价。"
   },
   {
     id: "fact-2",
