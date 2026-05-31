@@ -16,10 +16,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function refreshDashboard() {
-  const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
+  const allRecords = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
+  const records = Object.fromEntries(Object.entries(allRecords).filter(([, record]) => record.appliedAt));
   const missing = DASHBOARD_REQUIRED_SLOTS.map((id) => SLOT_BY_ID[id]).filter((slot) => !records[slot.id]);
   if (missing.length) {
-    $("#detailRows").innerHTML = `<tr><td colspan="12" class="empty">缺少文件：${missing.map((slot) => slot.title).join("、")}。请到文件库上传，或更新 data/shared-library.json。</td></tr>`;
+    const pending = missing.filter((slot) => allRecords[slot.id] && !allRecords[slot.id].appliedAt);
+    const absent = missing.filter((slot) => !allRecords[slot.id]);
+    const parts = [];
+    if (absent.length) parts.push(`缺少文件：${absent.map((slot) => slot.title).join("、")}`);
+    if (pending.length) parts.push(`待应用文件：${pending.map((slot) => slot.title).join("、")}`);
+    const message = `${parts.join("；")}。请到文件库上传并点击“应用刷新”。`;
+    $("#sharedStatus").textContent = "看板数据未就绪";
+    $("#detailRows").innerHTML = `<tr><td colspan="12" class="empty">${escapeHtml(message)}</td></tr>`;
     clearDashboard();
     return;
   }
@@ -39,16 +47,21 @@ function buildWideRows(records) {
   const productHeaders = Object.keys(productRows[0] || {});
   dashboardDiagnostics = {
     productRows: productRows.length,
-    productHasSettlementColumn: productHeaders.includes("结算价"),
+    productHasSettlementColumn: productHeaders.some((header) => normalizeHeaderName(header) === normalizeHeaderName("结算价") || normalizeHeaderName(header) === normalizeHeaderName("结算价（含税）")),
     productHeaders: productHeaders.slice(0, 16),
     productCodeRows: 0,
     productSettlementRows: 0,
     productCodeSettlementRows: 0,
-    factRows: factRows.length
+    factRows: factRows.length,
+    factCodeRows: 0,
+    factEndingQtyRows: 0,
+    factEndingQtyTotal: 0,
+    matchedRows: 0,
+    pricedRows: 0
   };
   for (const row of productRows) {
     const code = normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 1)]));
-    const rawSettlementPrice = firstText(row, [firstValue(row, ["结算价"]), nthValue(row, 10)]);
+    const rawSettlementPrice = firstText(row, [firstValue(row, ["结算价", "结算价（含税）"]), nthValue(row, 10)]);
     const settlementPrice = toNumber(rawSettlementPrice);
     if (code) dashboardDiagnostics.productCodeRows += 1;
     if (settlementPrice > 0) dashboardDiagnostics.productSettlementRows += 1;
@@ -93,9 +106,14 @@ function buildWideRows(records) {
     const product = productByCode.get(materialCode) || {};
     const warehouseInfo = warehouseByName.get(warehouse) || {};
     const division = divisionByKey.get(makeJoinKey(row)) || {};
-    const financialPrice = firstNumber(row, [nthValue(row, 8), firstValue(row, ["真实成本单价", "期末库存真实成本", "成本单价", "单价"])]);
+    const financialPrice = firstNumber(row, [firstValue(row, ["真实成本单价", "期末库存真实成本", "成本单价", "单价"]), nthValue(row, 8)]);
     const settlementPrice = product.settlementPrice || 0;
-    const endingQty = firstNumber(row, [firstValue(row, ["(结存)数量（库存）", "结存数量", "库存数量"]), nthValue(row, 7)]);
+    const endingQty = firstNumber(row, [firstValue(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量", "库存数量", "期末数量", "数量"]), nthValue(row, 7)]);
+    if (materialCode) dashboardDiagnostics.factCodeRows += 1;
+    if (endingQty !== 0) dashboardDiagnostics.factEndingQtyRows += 1;
+    dashboardDiagnostics.factEndingQtyTotal += endingQty;
+    if (hasProductMatch && endingQty !== 0) dashboardDiagnostics.matchedRows += 1;
+    if (settlementPrice > 0 && endingQty !== 0) dashboardDiagnostics.pricedRows += 1;
 
     return {
       department: division.department || "未分部仓",
@@ -206,6 +224,7 @@ function renderPriceBasisStatus(priceBasis, rows) {
   $("#diagnosticPanel").textContent = [
     `诊断：商品维表 ${formatNumber(dashboardDiagnostics.productRows, 0)} 行，${dashboardDiagnostics.productHasSettlementColumn ? "已找到“结算价”列" : "未找到精确“结算价”列"}`,
     `有物料编码 ${formatNumber(dashboardDiagnostics.productCodeRows, 0)} 行，有结算价 ${formatNumber(dashboardDiagnostics.productSettlementRows, 0)} 行，物料编码+结算价同时有效 ${formatNumber(dashboardDiagnostics.productCodeSettlementRows, 0)} 行`,
+    `事实表有物料编码 ${formatNumber(dashboardDiagnostics.factCodeRows, 0)} 行，结存数量非 0 ${formatNumber(dashboardDiagnostics.factEndingQtyRows, 0)} 行，结存数量合计 ${formatNumber(dashboardDiagnostics.factEndingQtyTotal, 0)}`,
     `事实表 ${formatNumber(dashboardDiagnostics.factRows, 0)} 行，当前筛选 ${formatNumber(rows.length, 0)} 行，匹配商品维表 ${formatNumber(matchedRows.length, 0)} 行，匹配且有结算价 ${formatNumber(pricedRows.length, 0)} 行`
   ].join("；");
 }
@@ -230,7 +249,7 @@ function matchSelect(value, selected) {
 }
 
 function clearDashboard() {
-  ["totalQty", "totalValue", "inboundQty", "outboundQty"].forEach((id) => {
+  ["totalQty", "totalValue"].forEach((id) => {
     $(`#${id}`).textContent = id === "totalValue" ? "¥0" : "0";
   });
   ["departmentChart", "productLineChart", "warehouseTypeChart", "seriesChart"].forEach((id) => {
@@ -241,8 +260,6 @@ function clearDashboard() {
 function renderMetrics(rows) {
   $("#totalQty").textContent = formatNumber(sum(rows, "endingQty"), 0);
   $("#totalValue").textContent = formatMoney(sum(rows, "inventoryValue"));
-  $("#inboundQty").textContent = formatNumber(sum(rows, "inboundQty"), 0);
-  $("#outboundQty").textContent = formatNumber(sum(rows, "outboundQty"), 0);
 }
 
 function sum(rows, key) {

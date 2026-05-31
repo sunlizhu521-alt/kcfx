@@ -167,6 +167,14 @@ function normalizeText(value) {
   return text.endsWith(".0") ? text.slice(0, -2) : text;
 }
 
+function normalizeHeaderName(value) {
+  return normalizeText(value)
+    .replace(/（/g, "(")
+    .replace(/）/g, ")")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
 function normalizeMaterialCode(value) {
   return normalizeText(value).replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/\s+/g, "");
 }
@@ -177,7 +185,7 @@ function normalizeKey(value) {
 
 function toNumber(value) {
   if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-  const cleaned = normalizeText(value).replace(/,/g, "");
+  const cleaned = normalizeText(value).replace(/[,\s￥¥元]/g, "");
   if (!cleaned) return 0;
   const parsed = Number(cleaned);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -187,6 +195,12 @@ function firstValue(row, names) {
   for (const name of names) {
     if (Object.prototype.hasOwnProperty.call(row, name) && normalizeText(row[name]) !== "") {
       return row[name];
+    }
+  }
+  const wanted = names.map(normalizeHeaderName);
+  for (const [key, value] of Object.entries(row)) {
+    if (wanted.includes(normalizeHeaderName(key)) && normalizeText(value) !== "") {
+      return value;
     }
   }
   return "";
