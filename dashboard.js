@@ -2,6 +2,7 @@ const COLORS = ["#0f7b79", "#405c9a", "#2f8f5b", "#b87618", "#6c5ce7", "#d35400"
 let wideRows = [];
 let filteredRows = [];
 let dashboardDiagnostics = {};
+let factEndingQtyTotal = 0;
 const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse", "dim-warehouse-material"];
 
 const $ = (selector) => document.querySelector(selector);
@@ -18,7 +19,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function refreshDashboard() {
   const allRecords = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
   const records = Object.fromEntries(Object.entries(allRecords).filter(([, record]) => record.appliedAt));
-  const activeFact = records["fact-inventory"] || allRecords["fact-inventory"];
+  const factRecord = allRecords["fact-inventory"];
+  factEndingQtyTotal = sumFactEndingQty(factRecord?.rows || []);
   const missing = DASHBOARD_REQUIRED_SLOTS.map((id) => SLOT_BY_ID[id]).filter((slot) => !records[slot.id]);
   if (missing.length) {
     const pending = missing.filter((slot) => allRecords[slot.id] && !allRecords[slot.id].appliedAt);
@@ -30,7 +32,7 @@ async function refreshDashboard() {
     $("#sharedStatus").textContent = "看板数据未就绪";
     $("#detailRows").innerHTML = `<tr><td colspan="12" class="empty">${escapeHtml(message)}</td></tr>`;
     clearDashboard();
-    if (activeFact?.rows?.length) renderFactOnlyMetrics(activeFact.rows);
+    renderFactOnlyMetrics();
     return;
   }
 
@@ -259,13 +261,13 @@ function clearDashboard() {
   });
 }
 
-function renderFactOnlyMetrics(factRows) {
-  $("#totalQty").textContent = formatNumber(sumFactEndingQty(factRows), 0);
+function renderFactOnlyMetrics() {
+  $("#totalQty").textContent = formatNumber(factEndingQtyTotal, 0);
   $("#totalValue").textContent = "¥0";
 }
 
 function renderMetrics(rows) {
-  $("#totalQty").textContent = formatNumber(sum(rows, "endingQty"), 0);
+  $("#totalQty").textContent = formatNumber(factEndingQtyTotal, 0);
   $("#totalValue").textContent = formatMoney(sum(rows, "inventoryValue"));
 }
 
