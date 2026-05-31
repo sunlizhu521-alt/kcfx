@@ -42,7 +42,7 @@ function buildWideRows(records) {
       materialCode: code,
       sku: normalizeText(firstValue(row, ["SKU"])),
       materialName: normalizeText(firstValue(row, ["金蝶名称", "物料名称"])),
-      productLine: firstText(row, [nthValue(row, 7), firstValue(row, ["销售产品线", "产品线"])]),
+      productLine: firstText(row, [firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
       series: normalizeText(firstValue(row, ["销售系列", "系列"])),
       purchaseGroup: normalizeText(firstValue(row, ["采购分组"])),
       settlementPrice: firstNumber(row, [nthValue(row, 9), firstValue(row, ["结算价（含税）", "结算价", "内部结算价", "26年内部结算价", "2026年内部结算价"])])
@@ -54,8 +54,8 @@ function buildWideRows(records) {
     const name = normalizeText(firstValue(row, ["金蝶名称", "仓库名称"]));
     if (!name || warehouseByName.has(name)) continue;
     warehouseByName.set(name, {
-      warehouseType: firstText(row, [nthValue(row, 7), firstValue(row, ["一级仓库分类", "仓库类型", "财务维度仓库类型", "财务仓库类型"])]),
-      warehouseLocation: firstText(row, [nthValue(row, 8), firstValue(row, ["二级仓库分类", "仓库位置", "位置"])])
+      warehouseType: firstText(row, [firstValue(row, ["一级仓库分类", "仓库类型", "财务维度仓库类型", "财务仓库类型"]), nthValue(row, 7)]),
+      warehouseLocation: firstText(row, [firstValue(row, ["二级仓库分类", "仓库位置", "位置"]), nthValue(row, 8)])
     });
   }
 
@@ -64,7 +64,7 @@ function buildWideRows(records) {
     const key = makeJoinKey(row);
     if (!key || divisionByKey.has(key)) continue;
     divisionByKey.set(key, {
-      department: firstText(row, [nthValue(row, 7), firstValue(row, ["事业部", "销售事业部", "部门"])])
+      department: firstText(row, [firstValue(row, ["事业部", "销售事业部", "部门"]), nthValue(row, 7)])
     });
   }
 
