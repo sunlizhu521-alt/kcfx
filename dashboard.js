@@ -144,8 +144,8 @@ function renderDashboard() {
   }).map((row) => applyPriceBasis(row, priceBasis));
 
   renderMetrics(filteredRows);
-  renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "money");
-  renderBars("productLineChart", groupSum(filteredRows, "productLine", "inventoryValue"), "money");
+  renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "wan");
+  renderBars("productLineChart", groupSum(filteredRows, "productLine", "inventoryValue"), "wan");
   renderBars("warehouseTypeChart", groupSum(filteredRows, "warehouseType", "inventoryValue"), "money");
   renderRisk(filteredRows);
   renderDetail(filteredRows);
@@ -196,6 +196,10 @@ function groupSum(rows, key, valueKey, limit = 12) {
     .slice(0, limit);
 }
 
+function formatWan(value) {
+  return `${formatNumber(Number(value || 0) / 10000, 2)}万元`;
+}
+
 function renderBars(id, rows, mode) {
   const container = $(`#${id}`);
   if (!rows.length) {
@@ -205,7 +209,7 @@ function renderBars(id, rows, mode) {
   const max = Math.max(...rows.map((row) => row.value), 1);
   container.innerHTML = rows.map((row, index) => {
     const width = Math.max(2, row.value / max * 100);
-    const value = mode === "money" ? formatMoney(row.value) : formatNumber(row.value, 0);
+    const value = mode === "money" ? formatMoney(row.value) : mode === "wan" ? formatWan(row.value) : formatNumber(row.value, 0);
     return `
       <div class="bar-row" title="${escapeHtml(row.name)} ${escapeHtml(value)}">
         <div class="bar-label">${escapeHtml(row.name)}</div>

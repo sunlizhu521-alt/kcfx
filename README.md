@@ -6,7 +6,7 @@
 
 ```text
 kcfx/
-├── index.html              # 库存决策看板
+├── index.html              # 库存分析看板
 ├── fact-library.html       # 备货事实表库
 ├── file-library.html       # 维度表文件库
 ├── storage.js              # IndexedDB 与 Excel 解析
