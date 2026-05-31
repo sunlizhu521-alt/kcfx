@@ -206,6 +206,20 @@ function firstValue(row, names) {
   return "";
 }
 
+function firstValueByHeaderIncludes(row, includeWords, excludeWords = []) {
+  const includes = includeWords.map(normalizeHeaderName).filter(Boolean);
+  const excludes = excludeWords.map(normalizeHeaderName).filter(Boolean);
+  for (const [key, value] of Object.entries(row)) {
+    const header = normalizeHeaderName(key);
+    const hasAllWords = includes.every((word) => header.includes(word));
+    const hasExcludedWord = excludes.some((word) => header.includes(word));
+    if (hasAllWords && !hasExcludedWord && normalizeText(value) !== "") {
+      return value;
+    }
+  }
+  return "";
+}
+
 function makeJoinKey(row) {
   return [
     normalizeText(firstValue(row, ["库存组织"])),

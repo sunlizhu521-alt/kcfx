@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function refreshDashboard() {
   const allRecords = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
   const records = Object.fromEntries(Object.entries(allRecords).filter(([, record]) => record.appliedAt));
+  const activeFact = records["fact-inventory"] || allRecords["fact-inventory"];
   const missing = DASHBOARD_REQUIRED_SLOTS.map((id) => SLOT_BY_ID[id]).filter((slot) => !records[slot.id]);
   if (missing.length) {
     const pending = missing.filter((slot) => allRecords[slot.id] && !allRecords[slot.id].appliedAt);
@@ -29,6 +30,7 @@ async function refreshDashboard() {
     $("#sharedStatus").textContent = "看板数据未就绪";
     $("#detailRows").innerHTML = `<tr><td colspan="12" class="empty">${escapeHtml(message)}</td></tr>`;
     clearDashboard();
+    if (activeFact?.rows?.length) renderFactOnlyMetrics(activeFact.rows);
     return;
   }
 
@@ -61,7 +63,7 @@ function buildWideRows(records) {
   };
   for (const row of productRows) {
     const code = normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 1)]));
-    const rawSettlementPrice = firstText(row, [firstValue(row, ["结算价", "结算价（含税）"]), nthValue(row, 10)]);
+    const rawSettlementPrice = firstText(row, [firstValue(row, ["结算价", "结算价（含税）"]), firstValueByHeaderIncludes(row, ["结算价"]), nthValue(row, 10)]);
     const settlementPrice = toNumber(rawSettlementPrice);
     if (code) dashboardDiagnostics.productCodeRows += 1;
     if (settlementPrice > 0) dashboardDiagnostics.productSettlementRows += 1;
@@ -108,7 +110,7 @@ function buildWideRows(records) {
     const division = divisionByKey.get(makeJoinKey(row)) || {};
     const financialPrice = firstNumber(row, [firstValue(row, ["真实成本单价", "期末库存真实成本", "成本单价", "单价"]), nthValue(row, 8)]);
     const settlementPrice = product.settlementPrice || 0;
-    const endingQty = firstNumber(row, [firstValue(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量", "库存数量", "期末数量", "数量"]), nthValue(row, 7)]);
+    const endingQty = getEndingQty(row);
     if (materialCode) dashboardDiagnostics.factCodeRows += 1;
     if (endingQty !== 0) dashboardDiagnostics.factEndingQtyRows += 1;
     dashboardDiagnostics.factEndingQtyTotal += endingQty;
@@ -257,9 +259,27 @@ function clearDashboard() {
   });
 }
 
+function renderFactOnlyMetrics(factRows) {
+  $("#totalQty").textContent = formatNumber(sumFactEndingQty(factRows), 0);
+  $("#totalValue").textContent = "¥0";
+}
+
 function renderMetrics(rows) {
   $("#totalQty").textContent = formatNumber(sum(rows, "endingQty"), 0);
   $("#totalValue").textContent = formatMoney(sum(rows, "inventoryValue"));
+}
+
+function sumFactEndingQty(factRows) {
+  return factRows.reduce((total, row) => total + getEndingQty(row), 0);
+}
+
+function getEndingQty(row) {
+  return firstNumber(row, [
+    firstValue(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量", "库存数量", "期末数量"]),
+    firstValueByHeaderIncludes(row, ["结存", "数量"]),
+    firstValueByHeaderIncludes(row, ["库存", "数量"]),
+    nthValue(row, 7)
+  ]);
 }
 
 function sum(rows, key) {
