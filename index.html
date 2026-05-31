@@ -34,6 +34,7 @@
         <select id="priceBasisFilter"></select>
         <select id="departmentFilter"></select>
         <select id="productLineFilter"></select>
+        <select id="seriesFilter"></select>
         <select id="warehouseTypeFilter"></select>
         <select id="warehouseLocationFilter"></select>
         <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库 / 事业部">
@@ -57,12 +58,12 @@
           <div id="productLineChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>仓库类型资金占用</h2>
+          <h2>仓库类型资金占用（万元）</h2>
           <div id="warehouseTypeChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>呆滞风险 Top 20</h2>
-          <div id="riskTableWrap"></div>
+          <h2>产品系列 Top 10（万元）</h2>
+          <div id="seriesChart" class="chart-bars"></div>
         </div>
       </section>
 
@@ -93,6 +94,6 @@
 
   <script src="storage.js?v=20260531h"></script>
   <script src="shared-library.js?v=20260531h"></script>
-  <script src="dashboard.js?v=20260601a"></script>
+  <script src="dashboard.js?v=20260601b"></script>
 </body>
 </html>

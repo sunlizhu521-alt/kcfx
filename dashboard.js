@@ -8,7 +8,7 @@ const $ = (selector) => document.querySelector(selector);
 document.addEventListener("DOMContentLoaded", async () => {
   await loadSharedLibrary({ statusEl: $("#sharedStatus") });
   $("#refreshBtn").addEventListener("click", refreshDashboard);
-  ["priceBasisFilter", "departmentFilter", "productLineFilter", "warehouseTypeFilter", "warehouseLocationFilter", "searchInput"].forEach((id) => {
+  ["priceBasisFilter", "departmentFilter", "productLineFilter", "seriesFilter", "warehouseTypeFilter", "warehouseLocationFilter", "searchInput"].forEach((id) => {
     $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderDashboard);
   });
   await refreshDashboard();
@@ -113,6 +113,7 @@ function populateFilters(records) {
   ]);
   fillSelect($("#departmentFilter"), "全部事业部", uniqueColumnValues(warehouseMaterialRows, ["事业部"]));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
+  fillSelect($("#seriesFilter"), "全部销售系列", uniqueColumnValues(productRows, ["销售系列"]));
   fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
   fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueColumnValues(warehouseRows, ["二级仓库分类"]));
 }
@@ -148,6 +149,7 @@ function renderDashboard() {
     return textHit
       && matchSelect(row.department, $("#departmentFilter").value)
       && matchSelect(row.productLine, $("#productLineFilter").value)
+      && matchSelect(row.series, $("#seriesFilter").value)
       && matchSelect(row.warehouseType, $("#warehouseTypeFilter").value)
       && matchSelect(row.warehouseLocation, $("#warehouseLocationFilter").value);
   }).map((row) => applyPriceBasis(row, priceBasis));
@@ -155,8 +157,8 @@ function renderDashboard() {
   renderMetrics(filteredRows);
   renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "wan");
   renderBars("productLineChart", groupSum(filteredRows, "productLine", "inventoryValue"), "wan");
-  renderBars("warehouseTypeChart", groupSum(filteredRows, "warehouseType", "inventoryValue"), "money");
-  renderRisk(filteredRows);
+  renderBars("warehouseTypeChart", groupSum(filteredRows, "warehouseType", "inventoryValue"), "wan");
+  renderBars("seriesChart", groupSum(filteredRows, "series", "inventoryValue", 10), "wan");
   renderDetail(filteredRows);
 }
 
@@ -177,7 +179,7 @@ function clearDashboard() {
   ["totalQty", "totalValue", "inboundQty", "outboundQty"].forEach((id) => {
     $(`#${id}`).textContent = id === "totalValue" ? "¥0" : "0";
   });
-  ["departmentChart", "productLineChart", "warehouseTypeChart", "riskTableWrap"].forEach((id) => {
+  ["departmentChart", "productLineChart", "warehouseTypeChart", "seriesChart"].forEach((id) => {
     $(`#${id}`).innerHTML = `<div class="empty">暂无数据</div>`;
   });
 }
@@ -227,40 +229,6 @@ function renderBars(id, rows, mode) {
       </div>
     `;
   }).join("");
-}
-
-function renderRisk(rows) {
-  const riskRows = rows
-    .filter((row) => row.endingQty > 0 && row.outboundQty === 0)
-    .sort((a, b) => b.inventoryValue - a.inventoryValue)
-    .slice(0, 20);
-  $("#riskTableWrap").innerHTML = renderSmallTable(riskRows, [
-    ["materialCode", "物料编码"],
-    ["materialName", "物料名称"],
-    ["department", "事业部"],
-    ["endingQty", "结存数量", "number"],
-    ["inventoryValue", "库存价值", "money"]
-  ]);
-}
-
-function renderSmallTable(rows, columns) {
-  if (!rows.length) return `<div class="empty">暂无风险数据</div>`;
-  return `
-    <div class="table-panel" style="max-height:250px">
-      <table>
-        <thead><tr>${columns.map(([, label]) => `<th>${label}</th>`).join("")}</tr></thead>
-        <tbody>
-          ${rows.map((row) => `<tr>${columns.map(([key, , type]) => cell(row[key], type)).join("")}</tr>`).join("")}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function cell(value, type) {
-  if (type === "number") return `<td class="num">${formatNumber(value, 0)}</td>`;
-  if (type === "money") return `<td class="num">${formatMoney(value)}</td>`;
-  return `<td>${escapeHtml(value || "")}</td>`;
 }
 
 function renderDetail(rows) {
