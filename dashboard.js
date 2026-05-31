@@ -47,7 +47,7 @@ function buildWideRows(records) {
     factRows: factRows.length
   };
   for (const row of productRows) {
-    const code = normalizeText(firstValue(row, ["物料编码"]));
+    const code = normalizeMaterialCode(firstValue(row, ["物料编码"]));
     const rawSettlementPrice = firstValue(row, ["结算价"]);
     const settlementPrice = toNumber(rawSettlementPrice);
     if (code) dashboardDiagnostics.productCodeRows += 1;
@@ -86,7 +86,7 @@ function buildWideRows(records) {
   }
 
   return factRows.map((row) => {
-    const materialCode = normalizeText(firstValue(row, ["物料编码"]));
+    const materialCode = normalizeMaterialCode(firstValue(row, ["物料编码"]));
     const warehouse = normalizeText(firstValue(row, ["仓库名称", "金蝶名称", "仓库"]));
     const organization = normalizeText(firstValue(row, ["库存组织"]));
     const hasProductMatch = productByCode.has(materialCode);

@@ -167,6 +167,10 @@ function normalizeText(value) {
   return text.endsWith(".0") ? text.slice(0, -2) : text;
 }
 
+function normalizeMaterialCode(value) {
+  return normalizeText(value).replace(/[\u200B-\u200D\uFEFF]/g, "").replace(/\s+/g, "");
+}
+
 function normalizeKey(value) {
   return normalizeText(value).toLowerCase();
 }
@@ -192,7 +196,7 @@ function makeJoinKey(row) {
   return [
     normalizeText(firstValue(row, ["库存组织"])),
     normalizeText(firstValue(row, ["仓库名称", "金蝶名称", "仓库"])),
-    normalizeText(firstValue(row, ["物料编码"]))
+    normalizeMaterialCode(firstValue(row, ["物料编码"]))
   ].join("");
 }
 

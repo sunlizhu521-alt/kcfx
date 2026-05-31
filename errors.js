@@ -64,7 +64,7 @@ async function runErrorChecks() {
 function summarizeStockMaterials(rows) {
   const map = new Map();
   for (const row of rows) {
-    const materialCode = normalizeText(firstValue(row, ["物料编码"]));
+    const materialCode = normalizeMaterialCode(firstValue(row, ["物料编码"]));
     if (!materialCode) continue;
     const qty = toNumber(firstValue(row, [
       "数量",
@@ -114,7 +114,7 @@ function summarizeStockWarehouses(rows) {
 function mapProduct(rows) {
   const map = new Map();
   for (const row of rows) {
-    const materialCode = normalizeText(firstValue(row, ["物料编码"]));
+    const materialCode = normalizeMaterialCode(firstValue(row, ["物料编码"]));
     if (!materialCode || map.has(materialCode)) continue;
     map.set(materialCode, {
       sku: normalizeText(firstValue(row, ["SKU"])),
@@ -128,7 +128,7 @@ function mapProduct(rows) {
 function mapDivisionMaterialCodes(rows) {
   const set = new Set();
   for (const row of rows) {
-    const materialCode = normalizeText(firstValue(row, ["物料编码"]));
+    const materialCode = normalizeMaterialCode(firstValue(row, ["物料编码"]));
     if (materialCode) set.add(materialCode);
   }
   return set;
