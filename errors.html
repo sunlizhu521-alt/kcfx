@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>kcfx 报错信息提示</title>
-  <link rel="stylesheet" href="styles.css?v=20260531d">
+  <link rel="stylesheet" href="styles.css?v=20260531e">
 </head>
 <body>
   <div class="app-shell">
@@ -25,46 +25,61 @@
       <header class="topbar">
         <div>
           <h1>报错信息提示</h1>
-          <p>用于快速定位文件上传、应用刷新、共享数据和看板生成中的常见问题。</p>
+          <p>根据关账后库存事实表中有库存数量的物料编码，检查核心维表是否缺失映射。</p>
         </div>
+        <div class="status-pill" id="checkStatus">正在读取文件库...</div>
       </header>
 
-      <section class="error-grid">
-        <article class="error-card">
-          <h2>缺少文件</h2>
-          <p>库存决策看板提示缺少事实表或维度表时，请先到对应文件库上传文件，并点击应用刷新。</p>
-        </article>
-        <article class="error-card">
-          <h2>文件待应用</h2>
-          <p>上传文件后状态为待应用，说明文件已保存但尚未生效。请点击卡片内的应用刷新，或点击一键全部应用刷新。</p>
-        </article>
-        <article class="error-card">
-          <h2>替换文件失败</h2>
-          <p>替换已上传文件前，需要先输入验证秘钥并启用替换权限。当前验证秘钥为 3.1415926。</p>
-        </article>
-        <article class="error-card">
-          <h2>解析不到有效行</h2>
-          <p>通常是上传了错误文件、工作表不匹配、表头行不对，或 Excel 内容为空。请确认文件属于对应槽位。</p>
-        </article>
-        <article class="error-card">
-          <h2>事业部没有匹配</h2>
-          <p>请检查仓库物料事业部对照表中的库存组织、仓库名称、物料编码是否能与事实表组成一致的三元联合键。</p>
-        </article>
-        <article class="error-card">
-          <h2>产品线或 SKU 为空</h2>
-          <p>请检查商品分类维表是否使用物料编码作为主键，并确认 SKU、金蝶名称、销售产品线、销售系列、采购分组、结算价字段存在。</p>
-        </article>
-        <article class="error-card">
-          <h2>共享数据没有更新</h2>
-          <p>导出新的 shared-library.json 后，需要替换 data/shared-library.json 并推送到 GitHub。GitHub Pages 可能存在短暂缓存。</p>
-        </article>
-        <article class="error-card">
-          <h2>页面仍显示旧数据</h2>
-          <p>浏览器 IndexedDB 可能保留旧文件。可以重新应用刷新，或清理浏览器站点数据后重新打开页面。</p>
-        </article>
+      <section class="toolbar">
+        <button id="refreshBtn" type="button">应用刷新</button>
+      </section>
+
+      <section class="metrics">
+        <div class="metric-card"><span>有库存物料数</span><strong id="stockMaterialCount">0</strong></div>
+        <div class="metric-card"><span>商品分类缺失</span><strong id="productMissingCount">0</strong></div>
+        <div class="metric-card"><span>事业部对照缺失</span><strong id="divisionMissingCount">0</strong></div>
+        <div class="metric-card"><span>库存数量合计</span><strong id="stockQtyTotal">0</strong></div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title">商品分类维表没有这个有库存的物料编码</div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>物料编码</th>
+                <th>SKU</th>
+                <th>物料名称</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="productMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title">仓库物料事业部对照表没有这个有库存的物料编码</div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>物料编码</th>
+                <th>SKU</th>
+                <th>物料名称</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="divisionMissingRows"></tbody>
+          </table>
+        </div>
       </section>
     </main>
   </div>
+
+  <script src="storage.js?v=20260531e"></script>
+  <script src="shared-library.js?v=20260531e"></script>
+  <script src="errors.js?v=20260531e"></script>
 </body>
 </html>
 

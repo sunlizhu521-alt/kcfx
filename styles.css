@@ -555,6 +555,10 @@ input[type="file"]:disabled {
   line-height: 1.7;
 }
 
+.error-section {
+  margin-top: 16px;
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;
