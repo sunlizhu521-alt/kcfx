@@ -9,7 +9,7 @@ const DIMENSION_SLOTS = [
     title: "商品分类维表",
     expectedName: "Dim-YL医疗器械商品分类-2026年整理版",
     sheetHint: "Dim-YL医疗器械商品分类",
-    description: "按物料编码匹配 SKU、金蝶名称、销售产品线、销售系列、采购分组、财务加权平均价和结算价。"
+    description: "按物料编码匹配 SKU、金蝶名称、销售产品线、销售系列、采购分组、结算价。"
   },
   {
     id: "dim-warehouse",
@@ -25,7 +25,7 @@ const DIMENSION_SLOTS = [
     title: "仓库物料事业部对照表",
     expectedName: "Dim-仓库与物料对照表-2026年整理版",
     sheetHint: "",
-    description: "使用库存组织、仓库名称、物料编码三元联合键匹配事业部和财务维度仓库类型。"
+    description: "使用库存组织、仓库名称、物料编码三元联合键匹配事业部。"
   }
 ];
 
@@ -34,10 +34,10 @@ const FACT_SLOTS = [
     id: "fact-inventory",
     type: "fact",
     title: "关账后库存事实表",
-    expectedName: "4月底物料收发汇总表",
+    expectedName: "财务同步的表",
     sheetHint: "",
     skipRows: 3,
-    description: "金蝶关账后物料收发汇总表，第 4 行为真实表头。"
+    description: "金蝶关账后物料收发汇总表，第 4 行为真实表头。财务提供的表只取数量和真实成本单价。"
   }
 ];
 
@@ -191,4 +191,3 @@ function formatNumber(value, digits = 0) {
 function formatMoney(value) {
   return `¥${Number(value || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
 }
-
