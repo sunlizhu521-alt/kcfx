@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>kcfx 报错信息提示</title>
-  <link rel="stylesheet" href="styles.css?v=20260531e">
+  <link rel="stylesheet" href="styles.css?v=20260531f">
 </head>
 <body>
   <div class="app-shell">
@@ -38,7 +38,7 @@
         <div class="metric-card"><span>有库存物料数</span><strong id="stockMaterialCount">0</strong></div>
         <div class="metric-card"><span>商品分类缺失</span><strong id="productMissingCount">0</strong></div>
         <div class="metric-card"><span>事业部对照缺失</span><strong id="divisionMissingCount">0</strong></div>
-        <div class="metric-card"><span>库存数量合计</span><strong id="stockQtyTotal">0</strong></div>
+        <div class="metric-card"><span>仓库对照缺失</span><strong id="warehouseMissingCount">0</strong></div>
       </section>
 
       <section class="error-section">
@@ -74,12 +74,26 @@
           </table>
         </div>
       </section>
+
+      <section class="error-section">
+        <div class="table-title">仓库物料事业部对照表没有这个有库存的仓库</div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>仓库</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="warehouseMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
   </div>
 
-  <script src="storage.js?v=20260531e"></script>
-  <script src="shared-library.js?v=20260531e"></script>
-  <script src="errors.js?v=20260531e"></script>
+  <script src="storage.js?v=20260531f"></script>
+  <script src="shared-library.js?v=20260531f"></script>
+  <script src="errors.js?v=20260531f"></script>
 </body>
 </html>
-
