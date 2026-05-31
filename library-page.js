@@ -1,4 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
+const REPLACE_SECRET = "3.1415926";
 let replacementEnabled = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -13,8 +14,8 @@ function bindToolbar() {
   $("#downloadSharedBtn").addEventListener("click", downloadSharedLibrary);
   $("#enableReplaceBtn").addEventListener("click", () => {
     const key = $("#unlockInput").value.trim();
-    replacementEnabled = key.length > 0;
-    $("#permissionStatus").textContent = replacementEnabled ? "已启用秘钥替换权限" : "请输入验证秘钥";
+    replacementEnabled = key === REPLACE_SECRET;
+    $("#permissionStatus").textContent = replacementEnabled ? "已启用秘钥替换权限" : "验证秘钥不正确";
     renderLibrary();
   });
 }
