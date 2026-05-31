@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 库存决策看板</title>
-  <link rel="stylesheet" href="styles.css?v=20260531e">
+  <link rel="stylesheet" href="styles.css?v=20260531j">
 </head>
 <body>
   <div class="app-shell">
@@ -30,11 +30,12 @@
         <div class="status-pill" id="sharedStatus">正在同步共享文件库...</div>
       </header>
 
-      <section class="filter-row">
+      <section class="filter-row dashboard-filters">
+        <select id="priceBasisFilter"></select>
         <select id="departmentFilter"></select>
-        <select id="financeTypeFilter"></select>
         <select id="productLineFilter"></select>
-        <select id="warehouseClassFilter"></select>
+        <select id="warehouseTypeFilter"></select>
+        <select id="warehouseLocationFilter"></select>
         <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库 / 事业部">
         <button id="refreshBtn" type="button">应用刷新</button>
       </section>
@@ -56,8 +57,8 @@
           <div id="productLineChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>财务仓库类型资金占用</h2>
-          <div id="financeTypeChart" class="chart-bars"></div>
+          <h2>仓库类型资金占用</h2>
+          <div id="warehouseTypeChart" class="chart-bars"></div>
         </div>
         <div class="panel">
           <h2>呆滞风险 Top 20</h2>
@@ -71,7 +72,8 @@
           <thead>
             <tr>
               <th>事业部</th>
-              <th>财务仓库类型</th>
+              <th>仓库类型</th>
+              <th>仓库位置</th>
               <th>销售产品线</th>
               <th>销售系列</th>
               <th>仓库名称</th>
@@ -79,7 +81,7 @@
               <th>SKU</th>
               <th>物料名称</th>
               <th>结存数量</th>
-              <th>单价估值</th>
+              <th>价格口径单价</th>
               <th>库存价值</th>
             </tr>
           </thead>
@@ -89,8 +91,8 @@
     </main>
   </div>
 
-  <script src="storage.js?v=20260531e"></script>
-  <script src="shared-library.js?v=20260531e"></script>
-  <script src="dashboard.js?v=20260531e"></script>
+  <script src="storage.js?v=20260531h"></script>
+  <script src="shared-library.js?v=20260531h"></script>
+  <script src="dashboard.js?v=20260531j"></script>
 </body>
 </html>

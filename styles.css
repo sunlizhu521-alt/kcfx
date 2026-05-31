@@ -182,8 +182,29 @@ select {
 }
 
 .filter-row select,
+.filter-row input,
 .toolbar input {
   min-width: 190px;
+}
+
+.dashboard-filters {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.dashboard-filters select,
+.dashboard-filters input {
+  flex: 1 1 0;
+  min-width: 128px;
+}
+
+.dashboard-filters input {
+  flex-basis: 1.4fr;
+}
+
+.dashboard-filters button {
+  flex: 0 0 auto;
 }
 
 .metrics {

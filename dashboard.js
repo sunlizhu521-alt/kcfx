@@ -8,7 +8,7 @@ const $ = (selector) => document.querySelector(selector);
 document.addEventListener("DOMContentLoaded", async () => {
   await loadSharedLibrary({ statusEl: $("#sharedStatus") });
   $("#refreshBtn").addEventListener("click", refreshDashboard);
-  ["departmentFilter", "financeTypeFilter", "productLineFilter", "warehouseClassFilter", "searchInput"].forEach((id) => {
+  ["priceBasisFilter", "departmentFilter", "productLineFilter", "warehouseTypeFilter", "warehouseLocationFilter", "searchInput"].forEach((id) => {
     $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderDashboard);
   });
   await refreshDashboard();
@@ -18,7 +18,7 @@ async function refreshDashboard() {
   const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
   const missing = DASHBOARD_REQUIRED_SLOTS.map((id) => SLOT_BY_ID[id]).filter((slot) => !records[slot.id]);
   if (missing.length) {
-    $("#detailRows").innerHTML = `<tr><td colspan="11" class="empty">缺少文件：${missing.map((slot) => slot.title).join("、")}。请到文件库上传，或更新 data/shared-library.json。</td></tr>`;
+    $("#detailRows").innerHTML = `<tr><td colspan="12" class="empty">缺少文件：${missing.map((slot) => slot.title).join("、")}。请到文件库上传，或更新 data/shared-library.json。</td></tr>`;
     clearDashboard();
     return;
   }
@@ -42,11 +42,10 @@ function buildWideRows(records) {
       materialCode: code,
       sku: normalizeText(firstValue(row, ["SKU"])),
       materialName: normalizeText(firstValue(row, ["金蝶名称", "物料名称"])),
-      productLine: normalizeText(firstValue(row, ["销售产品线", "产品线"])),
+      productLine: firstText(row, [nthValue(row, 7), firstValue(row, ["销售产品线", "产品线"])]),
       series: normalizeText(firstValue(row, ["销售系列", "系列"])),
       purchaseGroup: normalizeText(firstValue(row, ["采购分组"])),
-      weightedPrice: toNumber(firstValue(row, ["财务加权平均价", "财务加权均价", "加权平均价"])),
-      settlementPrice: toNumber(firstValue(row, ["结算价", "内部结算价", "26年内部结算价", "2026年内部结算价"]))
+      settlementPrice: firstNumber(row, [nthValue(row, 9), firstValue(row, ["结算价（含税）", "结算价", "内部结算价", "26年内部结算价", "2026年内部结算价"])])
     });
   }
 
@@ -55,8 +54,8 @@ function buildWideRows(records) {
     const name = normalizeText(firstValue(row, ["金蝶名称", "仓库名称"]));
     if (!name || warehouseByName.has(name)) continue;
     warehouseByName.set(name, {
-      warehouseClass1: normalizeText(firstValue(row, ["一级仓库分类"])),
-      warehouseClass2: normalizeText(firstValue(row, ["二级仓库分类"]))
+      warehouseType: firstText(row, [nthValue(row, 7), firstValue(row, ["一级仓库分类", "仓库类型", "财务维度仓库类型", "财务仓库类型"])]),
+      warehouseLocation: firstText(row, [nthValue(row, 8), firstValue(row, ["二级仓库分类", "仓库位置", "位置"])])
     });
   }
 
@@ -65,8 +64,7 @@ function buildWideRows(records) {
     const key = makeJoinKey(row);
     if (!key || divisionByKey.has(key)) continue;
     divisionByKey.set(key, {
-      department: normalizeText(firstValue(row, ["事业部", "销售事业部", "部门"])),
-      financeType: normalizeText(firstValue(row, ["财务维度仓库类型", "财务仓库类型"]))
+      department: firstText(row, [nthValue(row, 7), firstValue(row, ["事业部", "销售事业部", "部门"])])
     });
   }
 
@@ -77,12 +75,12 @@ function buildWideRows(records) {
     const product = productByCode.get(materialCode) || {};
     const warehouseInfo = warehouseByName.get(warehouse) || {};
     const division = divisionByKey.get(makeJoinKey(row)) || {};
-    const price = product.weightedPrice > 0 ? product.weightedPrice : (product.settlementPrice || 0);
+    const financialPrice = firstNumber(row, [nthValue(row, 8), firstValue(row, ["真实成本单价", "期末库存真实成本", "成本单价", "单价"])]);
+    const settlementPrice = product.settlementPrice || 0;
     const endingQty = toNumber(firstValue(row, ["(结存)数量（库存）", "结存数量", "库存数量"]));
 
     return {
       department: division.department || "未分部仓",
-      financeType: division.financeType || "未归类仓",
       productLine: product.productLine || "其他产品线",
       series: product.series || "常规系列",
       warehouse,
@@ -90,23 +88,35 @@ function buildWideRows(records) {
       materialCode,
       sku: product.sku || "",
       materialName: product.materialName || normalizeText(firstValue(row, ["物料名称", "金蝶名称"])),
-      warehouseClass1: warehouseInfo.warehouseClass1 || "其他性质仓",
-      warehouseClass2: warehouseInfo.warehouseClass2 || "其他仓库",
+      warehouseType: warehouseInfo.warehouseType || "其他仓库类型",
+      warehouseLocation: warehouseInfo.warehouseLocation || "其他仓库位置",
       beginningQty: toNumber(firstValue(row, ["(期初)数量（库存）", "期初数量"])),
       inboundQty: toNumber(firstValue(row, ["(收入)数量（库存）", "收入数量", "入库数量"])),
       outboundQty: toNumber(firstValue(row, ["(发出)数量（库存）", "发出数量", "出库数量"])),
       endingQty,
-      price,
-      inventoryValue: endingQty * price
+      financialPrice,
+      settlementPrice,
+      price: financialPrice,
+      inventoryValue: endingQty * financialPrice
     };
   });
 }
 
 function populateFilters(rows) {
+  fillStaticSelect($("#priceBasisFilter"), [
+    ["financial", "财务维度"],
+    ["settlement", "结算价维度"]
+  ]);
   fillSelect($("#departmentFilter"), "全部事业部", uniqueValues(rows, "department"));
-  fillSelect($("#financeTypeFilter"), "全部财务仓库类型", uniqueValues(rows, "financeType"));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
-  fillSelect($("#warehouseClassFilter"), "全部仓库分类", uniqueValues(rows, "warehouseClass1"));
+  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueValues(rows, "warehouseType"));
+  fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(rows, "warehouseLocation"));
+}
+
+function fillStaticSelect(select, options) {
+  const current = select.value || options[0][0];
+  select.innerHTML = options.map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`).join("");
+  select.value = options.some(([value]) => value === current) ? current : options[0][0];
 }
 
 function fillSelect(select, allLabel, values) {
@@ -121,23 +131,33 @@ function uniqueValues(rows, key) {
 }
 
 function renderDashboard() {
+  const priceBasis = $("#priceBasisFilter").value || "financial";
   filteredRows = wideRows.filter((row) => {
     const q = normalizeKey($("#searchInput").value);
-    const textHit = !q || [row.department, row.financeType, row.productLine, row.series, row.warehouse, row.materialCode, row.sku, row.materialName]
+    const textHit = !q || [row.department, row.warehouseType, row.warehouseLocation, row.productLine, row.series, row.warehouse, row.materialCode, row.sku, row.materialName]
       .some((value) => normalizeKey(value).includes(q));
     return textHit
       && matchSelect(row.department, $("#departmentFilter").value)
-      && matchSelect(row.financeType, $("#financeTypeFilter").value)
       && matchSelect(row.productLine, $("#productLineFilter").value)
-      && matchSelect(row.warehouseClass1, $("#warehouseClassFilter").value);
-  });
+      && matchSelect(row.warehouseType, $("#warehouseTypeFilter").value)
+      && matchSelect(row.warehouseLocation, $("#warehouseLocationFilter").value);
+  }).map((row) => applyPriceBasis(row, priceBasis));
 
   renderMetrics(filteredRows);
   renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "money");
   renderBars("productLineChart", groupSum(filteredRows, "productLine", "inventoryValue"), "money");
-  renderBars("financeTypeChart", groupSum(filteredRows, "financeType", "inventoryValue"), "money");
+  renderBars("warehouseTypeChart", groupSum(filteredRows, "warehouseType", "inventoryValue"), "money");
   renderRisk(filteredRows);
   renderDetail(filteredRows);
+}
+
+function applyPriceBasis(row, priceBasis) {
+  const price = priceBasis === "settlement" ? row.settlementPrice : row.financialPrice;
+  return {
+    ...row,
+    price,
+    inventoryValue: row.endingQty * price
+  };
 }
 
 function matchSelect(value, selected) {
@@ -148,7 +168,7 @@ function clearDashboard() {
   ["totalQty", "totalValue", "inboundQty", "outboundQty"].forEach((id) => {
     $(`#${id}`).textContent = id === "totalValue" ? "¥0" : "0";
   });
-  ["departmentChart", "productLineChart", "financeTypeChart", "riskTableWrap"].forEach((id) => {
+  ["departmentChart", "productLineChart", "warehouseTypeChart", "riskTableWrap"].forEach((id) => {
     $(`#${id}`).innerHTML = `<div class="empty">暂无数据</div>`;
   });
 }
@@ -235,7 +255,8 @@ function renderDetail(rows) {
   $("#detailRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
       <td>${escapeHtml(row.department)}</td>
-      <td>${escapeHtml(row.financeType)}</td>
+      <td>${escapeHtml(row.warehouseType)}</td>
+      <td>${escapeHtml(row.warehouseLocation)}</td>
       <td>${escapeHtml(row.productLine)}</td>
       <td>${escapeHtml(row.series)}</td>
       <td>${escapeHtml(row.warehouse)}</td>
@@ -246,7 +267,28 @@ function renderDetail(rows) {
       <td class="num">${formatNumber(row.price, 4)}</td>
       <td class="num">${formatMoney(row.inventoryValue)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="11" class="empty">没有匹配数据</td></tr>`;
+  `).join("") : `<tr><td colspan="12" class="empty">没有匹配数据</td></tr>`;
+}
+
+function firstText(row, candidates) {
+  for (const candidate of candidates) {
+    const text = normalizeText(candidate);
+    if (text) return text;
+  }
+  return "";
+}
+
+function firstNumber(row, candidates) {
+  for (const candidate of candidates) {
+    const value = toNumber(candidate);
+    if (value !== 0 || normalizeText(candidate) === "0") return value;
+  }
+  return 0;
+}
+
+function nthValue(row, oneBasedIndex) {
+  const index = oneBasedIndex - 1;
+  return Object.values(row)[index] ?? "";
 }
 
 function escapeHtml(value) {
