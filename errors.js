@@ -1,7 +1,11 @@
 const $ = (selector) => document.querySelector(selector);
+let currentProductMissing = [];
+let currentDivisionMissing = [];
+let currentWarehouseMissing = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", runErrorChecks);
+  $("#downloadAllBtn").addEventListener("click", downloadAllErrorTables);
   await loadSharedLibrary({ statusEl: $("#checkStatus") });
   await runErrorChecks();
 });
@@ -18,6 +22,9 @@ async function runErrorChecks() {
     renderRows("#productMissingRows", []);
     renderRows("#divisionMissingRows", []);
     renderWarehouseRows("#warehouseMissingRows", []);
+    currentProductMissing = [];
+    currentDivisionMissing = [];
+    currentWarehouseMissing = [];
     return;
   }
 
@@ -33,6 +40,9 @@ async function runErrorChecks() {
 
   const enrichedProductMissing = productMissing.map((item) => enrichMissingRow(item, productMap));
   const enrichedDivisionMissing = divisionMissing.map((item) => enrichMissingRow(item, productMap));
+  currentProductMissing = enrichedProductMissing;
+  currentDivisionMissing = enrichedDivisionMissing;
+  currentWarehouseMissing = warehouseMissing;
 
   renderMetrics(stockMaterials, enrichedProductMissing, enrichedDivisionMissing, warehouseMissing);
   renderRows("#productMissingRows", enrichedProductMissing);
@@ -159,6 +169,50 @@ function renderWarehouseRows(selector, rows) {
       <td class="num">${formatNumber(row.qty)}</td>
     </tr>
   `).join("") : `<tr><td colspan="2" class="empty">暂无缺失数据</td></tr>`;
+}
+
+function downloadAllErrorTables() {
+  if (typeof XLSX === "undefined") {
+    window.alert("下载组件未加载，请刷新页面后重试。");
+    return;
+  }
+  const stamp = downloadTimestamp();
+  downloadRowsAsWorkbook("商品维度缺失表", stamp, currentProductMissing, [
+    ["materialCode", "物料编码"],
+    ["sku", "SKU"],
+    ["materialName", "物料名称"],
+    ["qty", "数量"]
+  ]);
+  downloadRowsAsWorkbook("仓库与物料维度表缺失", stamp, currentDivisionMissing, [
+    ["materialCode", "物料编码"],
+    ["sku", "SKU"],
+    ["materialName", "物料名称"],
+    ["qty", "数量"]
+  ]);
+  downloadRowsAsWorkbook("仓库名称", stamp, currentWarehouseMissing, [
+    ["warehouse", "仓库"],
+    ["qty", "数量"]
+  ]);
+}
+
+function downloadRowsAsWorkbook(prefix, stamp, rows, columns) {
+  const data = rows.map((row) => {
+    const item = {};
+    for (const [key, label] of columns) {
+      item[label] = row[key] ?? "";
+    }
+    return item;
+  });
+  const worksheet = XLSX.utils.json_to_sheet(data.length ? data : [Object.fromEntries(columns.map(([, label]) => [label, ""]))]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "报错明细");
+  XLSX.writeFile(workbook, `${prefix}${stamp}.xlsx`);
+}
+
+function downloadTimestamp() {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 }
 
 function escapeHtml(value) {

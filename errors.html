@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>kcfx 报错信息提示</title>
-  <link rel="stylesheet" href="styles.css?v=20260531f">
+  <link rel="stylesheet" href="styles.css?v=20260531g">
 </head>
 <body>
   <div class="app-shell">
@@ -32,6 +32,7 @@
 
       <section class="toolbar">
         <button id="refreshBtn" type="button">应用刷新</button>
+        <button id="downloadAllBtn" class="secondary" type="button">一键下载</button>
       </section>
 
       <section class="metrics">
@@ -76,7 +77,7 @@
       </section>
 
       <section class="error-section">
-        <div class="table-title">仓库物料事业部对照表没有这个有库存的仓库</div>
+        <div class="table-title">仓库、金蝶、旺店通、领星没有这个有库存的仓库</div>
         <div class="table-panel">
           <table>
             <thead>
@@ -92,8 +93,9 @@
     </main>
   </div>
 
-  <script src="storage.js?v=20260531f"></script>
-  <script src="shared-library.js?v=20260531f"></script>
-  <script src="errors.js?v=20260531f"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="storage.js?v=20260531g"></script>
+  <script src="shared-library.js?v=20260531g"></script>
+  <script src="errors.js?v=20260531g"></script>
 </body>
 </html>
