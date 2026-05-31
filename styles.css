@@ -350,6 +350,11 @@ td.num {
   color: #6b7b8b;
 }
 
+.slot-state.pending {
+  background: #fff3cf;
+  color: #8a5a00;
+}
+
 .summary-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(140px, 1fr));

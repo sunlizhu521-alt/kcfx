@@ -30,26 +30,26 @@ const DIMENSION_SLOTS = [
   {
     id: "dim-store-name",
     type: "dimension",
-    title: "店铺名称汇总",
-    expectedName: "Dim-店铺名称汇总",
+    title: "维度 4",
+    expectedName: "维度 4",
     sheetHint: "",
-    description: "汇总金蝶、领星与简称口径的店铺名称映射。"
+    description: "预留维度槽位。"
   },
   {
     id: "dim-customer-material",
     type: "dimension",
-    title: "客户物料对照表",
-    expectedName: "Dim-客户与物料对照表",
+    title: "维度 5",
+    expectedName: "维度 5",
     sheetHint: "",
-    description: "按客户和物料编码维护客户侧销售或渠道映射关系。"
+    description: "预留维度槽位。"
   },
   {
     id: "dim-purchase-division",
     type: "dimension",
-    title: "采购分工明细",
-    expectedName: "采购部分工明细",
+    title: "维度 6",
+    expectedName: "维度 6",
     sheetHint: "",
-    description: "按采购分组维护采购对接人、供应商、起订量和生产周期。"
+    description: "预留维度槽位。"
   },
   {
     id: "dim-7",

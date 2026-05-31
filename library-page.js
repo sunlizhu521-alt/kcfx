@@ -22,6 +22,19 @@ function bindToolbar() {
 
 async function refreshAll() {
   await loadSharedLibrary({ statusEl: $("#sharedStatus") });
+  const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
+  const count = pageSlots().filter((slot) => records[slot.id]).length;
+  if (!count) {
+    await renderLibrary();
+    return;
+  }
+  if (!window.confirm(`确认应用刷新 ${count} 个已上传文件？`)) return;
+  const appliedAt = new Date().toISOString();
+  for (const slot of pageSlots()) {
+    if (records[slot.id]) {
+      await saveRecord({ ...records[slot.id], appliedAt });
+    }
+  }
   await renderLibrary();
 }
 
@@ -48,7 +61,7 @@ async function renderLibrary() {
   const slots = pageSlots();
   const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
   const used = slots.filter((slot) => records[slot.id]).length;
-  const applied = slots.filter((slot) => records[slot.id]?.appliedAt || records[slot.id]).length;
+  const applied = slots.filter((slot) => records[slot.id]?.appliedAt).length;
   const latest = latestSavedAt(slots, records);
   const labels = pageLabels();
 
@@ -81,8 +94,8 @@ function latestSavedAt(slots, records) {
 }
 
 function renderCard(slot, record, labels) {
-  const stateClass = record ? "applied" : "empty";
-  const stateText = record ? "已应用" : "空";
+  const stateClass = record?.appliedAt ? "applied" : (record ? "pending" : "empty");
+  const stateText = record?.appliedAt ? "已应用" : (record ? "待应用" : "空");
   const fileName = record?.fileName || slot.expectedName;
   const month = record?.savedAt ? `${new Date(record.savedAt).getFullYear()}年${new Date(record.savedAt).getMonth() + 1}月` : "";
   const updateDate = record?.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", {
@@ -185,8 +198,9 @@ async function saveSlot(slotId) {
     status.textContent = "正在解析文件...";
     const record = await readExcelFile(file, slot);
     if (!record.rows.length) throw new Error("文件未解析到有效行。");
-    await saveRecord({ ...record, appliedAt: new Date().toISOString() });
-    status.textContent = "已保存到浏览器文件库。";
+    const { appliedAt, ...pendingRecord } = record;
+    await saveRecord(pendingRecord);
+    status.textContent = "已保存到浏览器文件库，请点击应用刷新后生效。";
     await renderLibrary();
   } catch (error) {
     status.textContent = `解析失败：${error.message}`;
@@ -196,6 +210,7 @@ async function saveSlot(slotId) {
 async function applySlot(slotId) {
   const record = await getRecord(slotId);
   if (!record) return;
+  if (!window.confirm(`确认应用刷新：${record.fileName || SLOT_BY_ID[slotId].title}？`)) return;
   await saveRecord({ ...record, appliedAt: new Date().toISOString() });
   await renderLibrary();
 }
