@@ -45,7 +45,10 @@ function buildWideRows(records) {
       productLine: firstText(row, [firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
       series: normalizeText(firstValue(row, ["销售系列", "系列"])),
       purchaseGroup: normalizeText(firstValue(row, ["采购分组"])),
-      settlementPrice: firstNumber(row, [nthValue(row, 9), firstValue(row, ["结算价（含税）", "结算价", "内部结算价", "26年内部结算价", "2026年内部结算价"])])
+      settlementPrice: firstNumber(row, [
+        firstValue(row, ["结算价（含税）", "结算价(含税)", "结算价含税", "含税结算价", "结算价", "内部结算价", "26年内部结算价", "2026年内部结算价"]),
+        nthValue(row, 9)
+      ])
     });
   }
 
