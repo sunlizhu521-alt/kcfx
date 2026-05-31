@@ -1,6 +1,7 @@
 const COLORS = ["#0f7b79", "#405c9a", "#2f8f5b", "#b87618", "#6c5ce7", "#d35400", "#2980b9", "#7f8c8d"];
 let wideRows = [];
 let filteredRows = [];
+let dashboardDiagnostics = {};
 const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse", "dim-warehouse-material"];
 
 const $ = (selector) => document.querySelector(selector);
@@ -35,11 +36,25 @@ function buildWideRows(records) {
   const warehouseMaterialRows = records["dim-warehouse-material"].rows || [];
 
   const productByCode = new Map();
+  const productHeaders = Object.keys(productRows[0] || {});
+  dashboardDiagnostics = {
+    productRows: productRows.length,
+    productHasSettlementColumn: productHeaders.includes("结算价"),
+    productHeaders: productHeaders.slice(0, 16),
+    productCodeRows: 0,
+    productSettlementRows: 0,
+    productCodeSettlementRows: 0,
+    factRows: factRows.length
+  };
   for (const row of productRows) {
     const code = normalizeText(firstValue(row, ["物料编码"]));
+    const rawSettlementPrice = firstValue(row, ["结算价"]);
+    const settlementPrice = toNumber(rawSettlementPrice);
+    if (code) dashboardDiagnostics.productCodeRows += 1;
+    if (settlementPrice > 0) dashboardDiagnostics.productSettlementRows += 1;
+    if (code && settlementPrice > 0) dashboardDiagnostics.productCodeSettlementRows += 1;
     if (!code) continue;
     const current = productByCode.get(code) || {};
-    const settlementPrice = toNumber(firstValue(row, ["结算价"]));
     productByCode.set(code, {
       materialCode: code,
       sku: current.sku || normalizeText(firstValue(row, ["SKU"])),
@@ -74,6 +89,7 @@ function buildWideRows(records) {
     const materialCode = normalizeText(firstValue(row, ["物料编码"]));
     const warehouse = normalizeText(firstValue(row, ["仓库名称", "金蝶名称", "仓库"]));
     const organization = normalizeText(firstValue(row, ["库存组织"]));
+    const hasProductMatch = productByCode.has(materialCode);
     const product = productByCode.get(materialCode) || {};
     const warehouseInfo = warehouseByName.get(warehouse) || {};
     const division = divisionByKey.get(makeJoinKey(row)) || {};
@@ -98,6 +114,7 @@ function buildWideRows(records) {
       endingQty,
       financialPrice,
       settlementPrice,
+      hasProductMatch,
       price: financialPrice,
       inventoryValue: endingQty * financialPrice
     };
@@ -177,11 +194,20 @@ function renderChartTitles(priceBasis) {
 function renderPriceBasisStatus(priceBasis, rows) {
   if (priceBasis !== "settlement") {
     $("#sharedStatus").textContent = `财务维度：${formatNumber(rows.length, 0)} 行，按真实成本单价计算。`;
+    $("#diagnosticPanel").classList.remove("show");
+    $("#diagnosticPanel").textContent = "";
     return;
   }
   const pricedRows = rows.filter((row) => row.settlementPrice > 0 && row.endingQty !== 0);
+  const matchedRows = rows.filter((row) => row.hasProductMatch && row.endingQty !== 0);
   const amount = sum(rows, "inventoryValue");
   $("#sharedStatus").textContent = `结算价维度：${formatNumber(rows.length, 0)} 行，结算价有效 ${formatNumber(pricedRows.length, 0)} 行，金额 ${formatMoney(amount)}。`;
+  $("#diagnosticPanel").classList.add("show");
+  $("#diagnosticPanel").textContent = [
+    `诊断：商品维表 ${formatNumber(dashboardDiagnostics.productRows, 0)} 行，${dashboardDiagnostics.productHasSettlementColumn ? "已找到“结算价”列" : "未找到精确“结算价”列"}`,
+    `有物料编码 ${formatNumber(dashboardDiagnostics.productCodeRows, 0)} 行，有结算价 ${formatNumber(dashboardDiagnostics.productSettlementRows, 0)} 行，物料编码+结算价同时有效 ${formatNumber(dashboardDiagnostics.productCodeSettlementRows, 0)} 行`,
+    `事实表 ${formatNumber(dashboardDiagnostics.factRows, 0)} 行，当前筛选 ${formatNumber(rows.length, 0)} 行，匹配商品维表 ${formatNumber(matchedRows.length, 0)} 行，匹配且有结算价 ${formatNumber(pricedRows.length, 0)} 行`
+  ].join("；");
 }
 
 function renderNoSettlementDataHint(rows) {

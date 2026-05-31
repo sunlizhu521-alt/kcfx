@@ -207,6 +207,22 @@ select {
   flex: 0 0 auto;
 }
 
+.diagnostic-panel {
+  display: none;
+  margin: -4px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #d8c28e;
+  border-radius: 8px;
+  background: #fff8e6;
+  color: #6f4e00;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.diagnostic-panel.show {
+  display: block;
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
