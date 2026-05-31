@@ -488,7 +488,17 @@ input[type="file"]:disabled {
   display: none;
 }
 
+.slot-file-input,
+.drop-zone .slot-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .drop-zone {
+  position: relative;
   min-height: 184px;
   display: grid;
   place-items: center;
@@ -501,7 +511,7 @@ input[type="file"]:disabled {
 }
 
 .drop-zone input {
-  display: none;
+  display: block;
 }
 
 .drop-zone strong {

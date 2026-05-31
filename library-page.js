@@ -104,7 +104,7 @@ function renderCard(slot, record, labels) {
         <h2>${escapeHtml(slot.title)}</h2>
         <p class="slot-description">${escapeHtml(slot.description)}</p>
         <label class="drop-zone">
-          <input type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}">
+          <input class="slot-file-input" type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}">
           <strong>${labels.emptyAction}</strong>
           <span>刷新月份和更新日期会自动记录</span>
         </label>
@@ -136,7 +136,7 @@ function renderCard(slot, record, labels) {
         <span>更新日期</span>
         <strong>${escapeHtml(updateDate)}</strong>
       </div>
-      <input type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}" ${replacementEnabled ? "" : "disabled"}>
+      <input class="slot-file-input" type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}">
       <div class="card-actions">
         <button type="button" data-save="${slot.id}" ${replacementEnabled ? "" : "disabled"}>替换文件</button>
         <button class="secondary" type="button" data-apply="${slot.id}">应用刷新</button>
@@ -149,7 +149,10 @@ function renderCard(slot, record, labels) {
 
 function bindCardEvents() {
   document.querySelectorAll("[data-save]").forEach((button) => {
-    button.addEventListener("click", () => saveSlot(button.dataset.save));
+    button.addEventListener("click", () => chooseSlotFile(button.dataset.save));
+  });
+  document.querySelectorAll("[data-file-input]").forEach((input) => {
+    input.addEventListener("change", () => saveSlot(input.dataset.fileInput));
   });
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => clearSlot(button.dataset.delete));
@@ -157,6 +160,15 @@ function bindCardEvents() {
   document.querySelectorAll("[data-apply]").forEach((button) => {
     button.addEventListener("click", () => applySlot(button.dataset.apply));
   });
+}
+
+function chooseSlotFile(slotId) {
+  const input = document.querySelector(`[data-file-input="${slotId}"]`);
+  const status = $(`#status-${slotId}`);
+  if (!input) return;
+  input.value = "";
+  status.textContent = "请选择要上传的 Excel 文件。";
+  input.click();
 }
 
 async function saveSlot(slotId) {
