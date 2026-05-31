@@ -47,8 +47,8 @@ function buildWideRows(records) {
     factRows: factRows.length
   };
   for (const row of productRows) {
-    const code = normalizeMaterialCode(firstValue(row, ["物料编码"]));
-    const rawSettlementPrice = firstValue(row, ["结算价"]);
+    const code = normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 1)]));
+    const rawSettlementPrice = firstText(row, [firstValue(row, ["结算价"]), nthValue(row, 10)]);
     const settlementPrice = toNumber(rawSettlementPrice);
     if (code) dashboardDiagnostics.productCodeRows += 1;
     if (settlementPrice > 0) dashboardDiagnostics.productSettlementRows += 1;
@@ -86,7 +86,7 @@ function buildWideRows(records) {
   }
 
   return factRows.map((row) => {
-    const materialCode = normalizeMaterialCode(firstValue(row, ["物料编码"]));
+    const materialCode = normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 3)]));
     const warehouse = normalizeText(firstValue(row, ["仓库名称", "金蝶名称", "仓库"]));
     const organization = normalizeText(firstValue(row, ["库存组织"]));
     const hasProductMatch = productByCode.has(materialCode);
@@ -95,7 +95,7 @@ function buildWideRows(records) {
     const division = divisionByKey.get(makeJoinKey(row)) || {};
     const financialPrice = firstNumber(row, [nthValue(row, 8), firstValue(row, ["真实成本单价", "期末库存真实成本", "成本单价", "单价"])]);
     const settlementPrice = product.settlementPrice || 0;
-    const endingQty = toNumber(firstValue(row, ["(结存)数量（库存）", "结存数量", "库存数量"]));
+    const endingQty = firstNumber(row, [firstValue(row, ["(结存)数量（库存）", "结存数量", "库存数量"]), nthValue(row, 7)]);
 
     return {
       department: division.department || "未分部仓",
