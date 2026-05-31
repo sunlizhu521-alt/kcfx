@@ -24,7 +24,7 @@ async function refreshDashboard() {
   }
 
   wideRows = buildWideRows(records);
-  populateFilters(wideRows);
+  populateFilters(records);
   renderDashboard();
 }
 
@@ -102,15 +102,19 @@ function buildWideRows(records) {
   });
 }
 
-function populateFilters(rows) {
+function populateFilters(records) {
+  const productRows = records["dim-product"].rows || [];
+  const warehouseRows = records["dim-warehouse"].rows || [];
+  const warehouseMaterialRows = records["dim-warehouse-material"].rows || [];
+
   fillStaticSelect($("#priceBasisFilter"), [
     ["financial", "财务维度"],
     ["settlement", "结算价维度"]
   ]);
-  fillSelect($("#departmentFilter"), "全部事业部", uniqueValues(rows, "department"));
-  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
-  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueValues(rows, "warehouseType"));
-  fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(rows, "warehouseLocation"));
+  fillSelect($("#departmentFilter"), "全部事业部", uniqueColumnValues(warehouseMaterialRows, ["事业部"]));
+  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
+  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
+  fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueColumnValues(warehouseRows, ["二级仓库分类"]));
 }
 
 function fillStaticSelect(select, options) {
@@ -127,6 +131,11 @@ function fillSelect(select, allLabel, values) {
 
 function uniqueValues(rows, key) {
   return [...new Set(rows.map((row) => row[key]).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function uniqueColumnValues(rows, columnNames) {
+  return [...new Set(rows.map((row) => normalizeText(firstValue(row, columnNames))).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "zh-CN"));
 }
 
