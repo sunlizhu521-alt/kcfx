@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
+
+# Do not commit raw company Excel workbooks unless the repository is private
+# and the data is approved for sharing.
+*.xlsx
+*.xlsm
+*.xls
+*.csv
+
+!data/shared-library.json

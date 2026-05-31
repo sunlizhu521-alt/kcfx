@@ -1,0 +1,194 @@
+const KC_DB_NAME = "kcfx-dashboard";
+const KC_DB_VERSION = 1;
+const KC_STORE = "files";
+
+const DIMENSION_SLOTS = [
+  {
+    id: "dim-product",
+    type: "dimension",
+    title: "商品分类维表",
+    expectedName: "Dim-YL医疗器械商品分类-2026年整理版",
+    sheetHint: "Dim-YL医疗器械商品分类",
+    description: "按物料编码匹配 SKU、金蝶名称、销售产品线、销售系列、采购分组、财务加权平均价和结算价。"
+  },
+  {
+    id: "dim-warehouse",
+    type: "dimension",
+    title: "仓库分类维表",
+    expectedName: "Dim-仓库_金蝶、旺店通、领星-2026年整理版",
+    sheetHint: "Dim-仓库汇总整理",
+    description: "按仓库金蝶名称匹配一级仓库分类和二级仓库分类。"
+  },
+  {
+    id: "dim-warehouse-material",
+    type: "dimension",
+    title: "仓库物料事业部对照表",
+    expectedName: "Dim-仓库与物料对照表-2026年整理版",
+    sheetHint: "",
+    description: "使用库存组织、仓库名称、物料编码三元联合键匹配事业部和财务维度仓库类型。"
+  }
+];
+
+const FACT_SLOTS = [
+  {
+    id: "fact-inventory",
+    type: "fact",
+    title: "关账后库存事实表",
+    expectedName: "4月底物料收发汇总表",
+    sheetHint: "",
+    skipRows: 3,
+    description: "金蝶关账后物料收发汇总表，第 4 行为真实表头。"
+  }
+];
+
+const ALL_SLOTS = [...FACT_SLOTS, ...DIMENSION_SLOTS];
+const SLOT_BY_ID = Object.fromEntries(ALL_SLOTS.map((slot) => [slot.id, slot]));
+
+function openKcfxDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(KC_DB_NAME, KC_DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(KC_STORE)) {
+        db.createObjectStore(KC_STORE, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function withStore(mode, callback) {
+  const db = await openKcfxDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(KC_STORE, mode);
+    const store = tx.objectStore(KC_STORE);
+    const result = callback(store);
+    tx.oncomplete = () => resolve(result);
+    tx.onerror = () => reject(tx.error);
+  }).finally(() => db.close());
+}
+
+function getRecord(id) {
+  return withStore("readonly", (store) => new Promise((resolve, reject) => {
+    const request = store.get(id);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  }));
+}
+
+function getAllRecords() {
+  return withStore("readonly", (store) => new Promise((resolve, reject) => {
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  }));
+}
+
+function saveRecord(record) {
+  return withStore("readwrite", (store) => {
+    store.put(record);
+  });
+}
+
+function deleteRecord(id) {
+  return withStore("readwrite", (store) => {
+    store.delete(id);
+  });
+}
+
+function normalizeText(value) {
+  if (value === null || value === undefined) return "";
+  const text = String(value).trim();
+  return text.endsWith(".0") ? text.slice(0, -2) : text;
+}
+
+function normalizeKey(value) {
+  return normalizeText(value).toLowerCase();
+}
+
+function toNumber(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const cleaned = normalizeText(value).replace(/,/g, "");
+  if (!cleaned) return 0;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function firstValue(row, names) {
+  for (const name of names) {
+    if (Object.prototype.hasOwnProperty.call(row, name) && normalizeText(row[name]) !== "") {
+      return row[name];
+    }
+  }
+  return "";
+}
+
+function makeJoinKey(row) {
+  return [
+    normalizeText(firstValue(row, ["库存组织"])),
+    normalizeText(firstValue(row, ["仓库名称", "金蝶名称", "仓库"])),
+    normalizeText(firstValue(row, ["物料编码"]))
+  ].join("");
+}
+
+function pickSheetName(workbook, hint) {
+  if (hint) {
+    const found = workbook.SheetNames.find((name) => name.includes(hint));
+    if (found) return found;
+  }
+  return workbook.SheetNames[0];
+}
+
+function parseWorkbookRows(workbook, slot) {
+  const sheetName = pickSheetName(workbook, slot.sheetHint);
+  const sheet = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+    defval: "",
+    raw: false,
+    range: slot.skipRows || 0
+  });
+  return {
+    sheetName,
+    rows: rows.map((row) => {
+      const cleaned = {};
+      Object.entries(row).forEach(([key, value]) => {
+        cleaned[normalizeText(key)] = value;
+      });
+      return cleaned;
+    })
+  };
+}
+
+async function readExcelFile(file, slot) {
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+  const parsed = parseWorkbookRows(workbook, slot);
+  return {
+    id: slot.id,
+    type: slot.type,
+    title: slot.title,
+    expectedName: slot.expectedName,
+    fileName: file.name,
+    size: file.size,
+    lastModified: file.lastModified,
+    savedAt: new Date().toISOString(),
+    sheetName: parsed.sheetName,
+    rows: parsed.rows
+  };
+}
+
+function recordIsNewer(shared, local) {
+  if (!local) return true;
+  if ((shared.size || 0) !== (local.size || 0)) return true;
+  return Date.parse(shared.savedAt || 0) > Date.parse(local.savedAt || 0);
+}
+
+function formatNumber(value, digits = 0) {
+  return Number(value || 0).toLocaleString("zh-CN", { maximumFractionDigits: digits });
+}
+
+function formatMoney(value) {
+  return `¥${Number(value || 0).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}`;
+}
+

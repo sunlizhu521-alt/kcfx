@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>kcfx 维度表文件库</title>
+  <link rel="stylesheet" href="styles.css?v=20260531a">
+</head>
+<body data-library-type="dimension">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>kcfx</strong>
+        <span>关账后库存决策看板</span>
+      </div>
+      <nav class="nav">
+        <a href="index.html">库存决策看板</a>
+        <a href="fact-library.html">备货事实表库</a>
+        <a class="active" href="file-library.html">维度表文件库</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1>维度表文件库</h1>
+          <p>上传商品分类、仓库分类、仓库物料事业部对照表。看板按物料编码与三元联合键匹配。</p>
+        </div>
+        <div class="status-pill" id="sharedStatus">正在同步共享文件库...</div>
+      </header>
+
+      <section class="toolbar">
+        <button id="refreshBtn" type="button">应用刷新</button>
+        <button id="downloadSharedBtn" class="secondary" type="button">导出共享数据包</button>
+      </section>
+
+      <section id="libraryGrid" class="library-grid"></section>
+    </main>
+  </div>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="storage.js?v=20260531a"></script>
+  <script src="shared-library.js?v=20260531a"></script>
+  <script src="library-page.js?v=20260531a"></script>
+</body>
+</html>
+

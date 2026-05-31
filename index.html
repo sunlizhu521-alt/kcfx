@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>kcfx 库存决策看板</title>
+  <link rel="stylesheet" href="styles.css?v=20260531a">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>kcfx</strong>
+        <span>关账后库存决策看板</span>
+      </div>
+      <nav class="nav">
+        <a class="active" href="index.html">库存决策看板</a>
+        <a href="fact-library.html">备货事实表库</a>
+        <a href="file-library.html">维度表文件库</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1>库存决策看板</h1>
+          <p>基于关账后事实表、商品分类、仓库分类、仓库物料对照表生成财务口径库存宽表。</p>
+        </div>
+        <div class="status-pill" id="sharedStatus">正在同步共享文件库...</div>
+      </header>
+
+      <section class="filter-row">
+        <select id="departmentFilter"></select>
+        <select id="financeTypeFilter"></select>
+        <select id="productLineFilter"></select>
+        <select id="warehouseClassFilter"></select>
+        <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库 / 事业部">
+        <button id="refreshBtn" type="button">应用刷新</button>
+      </section>
+
+      <section class="metrics">
+        <div class="metric-card"><span>结存库存总量</span><strong id="totalQty">0</strong></div>
+        <div class="metric-card"><span>库存资产估值</span><strong id="totalValue">¥0</strong></div>
+        <div class="metric-card"><span>累计入库数量</span><strong id="inboundQty">0</strong></div>
+        <div class="metric-card"><span>累计出库数量</span><strong id="outboundQty">0</strong></div>
+      </section>
+
+      <section class="dashboard-grid">
+        <div class="panel">
+          <h2>事业部库存资产排行</h2>
+          <div id="departmentChart" class="chart-bars"></div>
+        </div>
+        <div class="panel">
+          <h2>销售产品线库存资产排行</h2>
+          <div id="productLineChart" class="chart-bars"></div>
+        </div>
+        <div class="panel">
+          <h2>财务仓库类型资金占用</h2>
+          <div id="financeTypeChart" class="chart-bars"></div>
+        </div>
+        <div class="panel">
+          <h2>呆滞风险 Top 20</h2>
+          <div id="riskTableWrap"></div>
+        </div>
+      </section>
+
+      <section class="table-panel">
+        <div class="table-title">库存明细</div>
+        <table>
+          <thead>
+            <tr>
+              <th>事业部</th>
+              <th>财务仓库类型</th>
+              <th>销售产品线</th>
+              <th>销售系列</th>
+              <th>仓库名称</th>
+              <th>物料编码</th>
+              <th>SKU</th>
+              <th>物料名称</th>
+              <th>结存数量</th>
+              <th>单价估值</th>
+              <th>库存价值</th>
+            </tr>
+          </thead>
+          <tbody id="detailRows"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="storage.js?v=20260531a"></script>
+  <script src="shared-library.js?v=20260531a"></script>
+  <script src="dashboard.js?v=20260531a"></script>
+</body>
+</html>
+
