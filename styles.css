@@ -438,6 +438,14 @@ td.num {
   font-size: 18px;
 }
 
+.slot-description {
+  min-height: 40px;
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .library-card h3 {
   margin: 0 0 6px;
   min-height: 44px;

@@ -101,6 +101,7 @@ function renderCard(slot, record, labels) {
           <span class="slot-state ${stateClass}">${stateText}</span>
         </div>
         <h2>${escapeHtml(slot.title)}</h2>
+        <p class="slot-description">${escapeHtml(slot.description)}</p>
         <label class="drop-zone">
           <input type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}">
           <strong>${labels.emptyAction}</strong>
@@ -123,6 +124,7 @@ function renderCard(slot, record, labels) {
         <span class="slot-state ${stateClass}">${stateText}</span>
       </div>
       <h2>${escapeHtml(slot.title)}</h2>
+      <p class="slot-description">${escapeHtml(slot.description)}</p>
       <h3>${escapeHtml(fileName)}</h3>
       <p class="file-kind">Excel 工作簿 · ${formatFileSize(record.size || 0)}</p>
       <div class="slot-info">
