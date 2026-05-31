@@ -17,7 +17,7 @@ const DIMENSION_SLOTS = [
     title: "仓库分类维表",
     expectedName: "Dim-仓库_金蝶、旺店通、领星-2026年整理版",
     sheetHint: "Dim-仓库汇总整理",
-    description: "按仓库金蝶名称匹配一级仓库分类和二级仓库分类。"
+    description: "按仓库金蝶名称匹配一级仓库分类和二级仓库分类，区分仓库属性和仓库位置。"
   },
   {
     id: "dim-warehouse-material",
