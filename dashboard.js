@@ -37,15 +37,17 @@ function buildWideRows(records) {
   const productByCode = new Map();
   for (const row of productRows) {
     const code = normalizeText(firstValue(row, ["物料编码"]));
-    if (!code || productByCode.has(code)) continue;
+    if (!code) continue;
+    const current = productByCode.get(code) || {};
+    const settlementPrice = toNumber(firstValue(row, ["结算价"]));
     productByCode.set(code, {
       materialCode: code,
-      sku: normalizeText(firstValue(row, ["SKU"])),
-      materialName: normalizeText(firstValue(row, ["金蝶名称", "物料名称"])),
-      productLine: firstText(row, [firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
-      series: normalizeText(firstValue(row, ["销售系列", "系列"])),
-      purchaseGroup: normalizeText(firstValue(row, ["采购分组"])),
-      settlementPrice: toNumber(firstValue(row, ["结算价"]))
+      sku: current.sku || normalizeText(firstValue(row, ["SKU"])),
+      materialName: current.materialName || normalizeText(firstValue(row, ["金蝶名称", "物料名称"])),
+      productLine: current.productLine || firstText(row, [firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
+      series: current.series || normalizeText(firstValue(row, ["销售系列", "系列"])),
+      purchaseGroup: current.purchaseGroup || normalizeText(firstValue(row, ["采购分组"])),
+      settlementPrice: current.settlementPrice > 0 ? current.settlementPrice : settlementPrice
     });
   }
 
