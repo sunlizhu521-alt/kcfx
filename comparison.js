@@ -31,11 +31,17 @@ let currentComparison = {
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", runComparison);
   $("#diffTypeFilter").addEventListener("change", () => {
-    populateDimensionFilters(currentComparison);
+    populateDimensionFilters(currentComparison, "type");
     renderCurrentDiffTable();
   });
-  $("#departmentFilter").addEventListener("change", renderCurrentDiffTable);
-  $("#productLineFilter").addEventListener("change", renderCurrentDiffTable);
+  $("#departmentFilter").addEventListener("change", () => {
+    populateDimensionFilters(currentComparison, "department");
+    renderCurrentDiffTable();
+  });
+  $("#productLineFilter").addEventListener("change", () => {
+    populateDimensionFilters(currentComparison, "productLine");
+    renderCurrentDiffTable();
+  });
   $("#seriesFilter").addEventListener("change", renderCurrentDiffTable);
   $("#downloadBtn").addEventListener("click", downloadCurrentDiffTable);
   await loadSharedLibrary({ statusEl: $("#compareStatus") });
@@ -336,11 +342,23 @@ function firstText(candidates) {
   return "";
 }
 
-function populateDimensionFilters(result) {
-  const rows = ($("#diffTypeFilter").value || "qty") === "price" ? result.priceDiffRows : result.qtyDiffRows;
-  fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniqueValues(rows, "department"), DEPARTMENT_ORDER));
-  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
-  fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(rows, "series"));
+function populateDimensionFilters(result, changed = "all") {
+  const rows = baseDiffRows(result);
+  if (changed === "type" || changed === "all") {
+    fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniqueValues(rows, "department"), DEPARTMENT_ORDER));
+  }
+  const departmentRows = rows.filter((row) => matchSelect(row.department, $("#departmentFilter").value));
+  if (changed === "type" || changed === "all" || changed === "department") {
+    fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(departmentRows, "productLine"));
+  }
+  const productLineRows = departmentRows.filter((row) => matchSelect(row.productLine, $("#productLineFilter").value));
+  if (changed === "type" || changed === "all" || changed === "department" || changed === "productLine") {
+    fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(productLineRows, "series"));
+  }
+}
+
+function baseDiffRows(result) {
+  return ($("#diffTypeFilter").value || "qty") === "price" ? result.priceDiffRows : result.qtyDiffRows;
 }
 
 function fillSelect(select, allLabel, values) {
