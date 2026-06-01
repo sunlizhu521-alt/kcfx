@@ -48,18 +48,8 @@ def json_value(value):
     return str(value).strip()
 
 
-def unique_headers(headers):
-    counts = {}
-    result = []
-    for index, header in enumerate(headers):
-        base = norm(header) or f"__EMPTY{'' if index == 0 else '_' + str(index)}"
-        if base in counts:
-            counts[base] += 1
-            result.append(f"{base}_{counts[base]}")
-        else:
-            counts[base] = 0
-            result.append(base)
-    return result
+def header_name(value, index):
+    return norm(value) or f"__EMPTY_{index + 1}"
 
 
 def pick_sheet(workbook):
@@ -76,13 +66,14 @@ def parse_file(slot_id, path):
     rows_iter = sheet.iter_rows(values_only=True)
     for _ in range(header_row - 1):
         next(rows_iter, None)
-    headers = unique_headers(next(rows_iter))
+    headers = [header_name(value, index) for index, value in enumerate(next(rows_iter))]
     rows = []
     for values in rows_iter:
         if not values or not any(value not in (None, "") for value in values):
             continue
         row = {}
-        for header, value in zip(headers, values):
+        for index, header in enumerate(headers):
+            value = values[index] if index < len(values) else ""
             row[header] = json_value(value)
         rows.append(row)
     workbook.close()

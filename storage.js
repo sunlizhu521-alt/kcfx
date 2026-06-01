@@ -274,20 +274,21 @@ function pickSheetName(workbook) {
 function parseWorkbookRows(workbook, slot) {
   const sheetName = pickSheetName(workbook);
   const sheet = workbook.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json(sheet, {
+  const matrix = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
     defval: "",
     raw: false,
+    blankrows: false,
     range: slot.skipRows || 0
   });
+  const headers = (matrix[0] || []).map((value, index) => normalizeHeaderCell(value, index));
+  const rows = matrix.slice(1)
+    .filter((values) => Array.isArray(values) && values.some((value) => normalizeText(value) !== ""))
+    .map((values) => rowFromHeaderValues(headers, values));
   return {
     sheetName,
-    rows: rows.map((row) => {
-      const cleaned = {};
-      Object.entries(row).forEach(([key, value]) => {
-        cleaned[normalizeText(key)] = value;
-      });
-      return cleaned;
-    })
+    headers,
+    rows
   };
 }
 
@@ -296,9 +297,29 @@ function nthValue(row, oneBasedIndex) {
   return Object.values(row || {})[index] ?? "";
 }
 
+function normalizeHeaderCell(value, index) {
+  const text = normalizeText(value);
+  return text || `__EMPTY_${index + 1}`;
+}
+
+function rowFromHeaderValues(headers, values) {
+  const row = {};
+  headers.forEach((header, index) => {
+    row[header] = normalizeCellValue(values[index]);
+  });
+  return row;
+}
+
+function normalizeCellValue(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number" && !Number.isFinite(value)) return "";
+  if (typeof value === "string" && value.startsWith("#")) return "";
+  return value;
+}
+
 function buildParseDiagnostics(parsed) {
   const rows = parsed.rows || [];
-  const headers = Object.keys(rows[0] || {});
+  const headers = parsed.headers || Object.keys(rows[0] || {});
   return {
     sheetName: parsed.sheetName || "",
     headerFirst12: headers.slice(0, 12),
