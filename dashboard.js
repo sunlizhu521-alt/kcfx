@@ -326,14 +326,18 @@ function sumFactEndingQty(factRows) {
 
 function sumFactFinancialTotals(factRows) {
   return factRows.reduce((total, row) => {
-    const qty = parseNumberCell(getEndingQtyCell(row));
-    const hValue = parseNumberCell(getFinancialPriceCell(row));
-    if (!hValue.valid) return total;
+    if (!normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 3)]))) return total;
+    const qty = parseNumberCell(getFinancialQtyCell(row));
+    const price = parseNumberCell(getFinancialPriceCell(row));
     return {
-      qty: total.qty + hValue.value,
-      value: total.value + (qty.valid ? qty.value * hValue.value : 0)
+      qty: total.qty + (qty.valid ? qty.value : 0),
+      value: total.value + (qty.valid && price.valid ? qty.value * price.value : 0)
     };
   }, { qty: 0, value: 0 });
+}
+
+function getFinancialQtyCell(row) {
+  return nthValue(row, 7);
 }
 
 function getEndingQty(row) {
