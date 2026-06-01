@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 2,
+  "project": "kcfx",
+  "name": "库存分析看板文件库",
+  "savedAt": "2026-06-01T07:50:43.730Z",
+  "sourcePackage": "data/shared-library.json",
+  "records": {
+    "fact-inventory": {
+      "id": "fact-inventory",
+      "type": "fact",
+      "title": "关账后库存事实表",
+      "fileName": "物料收发汇总表_2026052411192401_115816.xlsx",
+      "path": "data/kcfx-library/fact/fact-inventory.json",
+      "rows": 15078,
+      "size": 782784,
+      "savedAt": "2026-05-24T04:12:39.567936Z",
+      "appliedAt": "2026-05-24T04:12:39.567936Z"
+    },
+    "dim-product": {
+      "id": "dim-product",
+      "type": "dimension",
+      "title": "商品分类维表",
+      "fileName": "Dim-YL医疗器械商品分类-2026年整理版.xlsx",
+      "path": "data/kcfx-library/dimensions/dim-product.json",
+      "rows": 21297,
+      "size": 2197517,
+      "savedAt": "2026-05-31T22:57:22.121043Z",
+      "appliedAt": "2026-05-31T22:57:22.121043Z"
+    },
+    "dim-warehouse": {
+      "id": "dim-warehouse",
+      "type": "dimension",
+      "title": "仓库、金蝶、旺店通、领星",
+      "fileName": "Dim-仓库_金蝶、旺店通、领星-2026年整理版.xlsx",
+      "path": "data/kcfx-library/dimensions/dim-warehouse.json",
+      "rows": 275,
+      "size": 248725,
+      "savedAt": "2026-05-31T02:14:46.882350Z",
+      "appliedAt": "2026-05-31T02:14:46.882350Z"
+    },
+    "dim-warehouse-material": {
+      "id": "dim-warehouse-material",
+      "type": "dimension",
+      "title": "仓库物料事业部对照表",
+      "fileName": "Dim-仓库与物料对照表-2026年整理版.xlsx",
+      "path": "data/kcfx-library/dimensions/dim-warehouse-material.json",
+      "rows": 14964,
+      "size": 885305,
+      "savedAt": "2026-05-31T21:41:28.480022Z",
+      "appliedAt": "2026-05-31T21:41:28.480022Z"
+    },
+    "dim-store-name": {
+      "id": "dim-store-name",
+      "type": "dimension",
+      "title": "维度 4",
+      "fileName": "Dim-店铺名称汇总（金蝶&领星&简称）2026年整理版.xlsx",
+      "path": "data/kcfx-library/dimensions/dim-store-name.json",
+      "rows": 7,
+      "size": 79457,
+      "savedAt": "2026-05-27T06:51:34.802696Z",
+      "appliedAt": "2026-05-27T06:51:34.802696Z"
+    },
+    "dim-customer-material": {
+      "id": "dim-customer-material",
+      "type": "dimension",
+      "title": "维度 5",
+      "fileName": "Dim-客户与物料对照表-2026年整理版.xlsx",
+      "path": "data/kcfx-library/dimensions/dim-customer-material.json",
+      "rows": 10763,
+      "size": 659402,
+      "savedAt": "2026-05-27T06:12:30.534353Z",
+      "appliedAt": "2026-05-27T06:12:30.534353Z"
+    },
+    "dim-purchase-division": {
+      "id": "dim-purchase-division",
+      "type": "dimension",
+      "title": "维度 6",
+      "fileName": "采购部分工明细表-2026.04.16.xlsx",
+      "path": "data/kcfx-library/dimensions/dim-purchase-division.json",
+      "rows": 4,
+      "size": 11974,
+      "savedAt": "2026-05-24T21:24:38.802437Z",
+      "appliedAt": "2026-05-24T21:24:38.802437Z"
+    }
+  }
+}

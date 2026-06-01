@@ -1,0 +1,31 @@
+{
+  "id": "dim-purchase-division",
+  "type": "dimension",
+  "title": "维度 6",
+  "expectedName": "维度 6",
+  "fileName": "采购部分工明细表-2026.04.16.xlsx",
+  "size": 11974,
+  "lastModified": 1779657878802,
+  "savedAt": "2026-05-24T21:24:38.802437Z",
+  "appliedAt": "2026-05-24T21:24:38.802437Z",
+  "sheetName": "对内事业部",
+  "rows": [
+    {
+      "部门": "海外事业一部",
+      "对接人": "李奇"
+    },
+    {
+      "部门": "海外事业二部",
+      "对接人": "徐英"
+    },
+    {
+      "部门": "全球招商部",
+      "对接人": "陈燕"
+    },
+    {
+      "部门": "国内事业部",
+      "对接人": "胡婷婷"
+    }
+  ],
+  "libraryPath": "data/kcfx-library/dimensions/dim-purchase-division.json"
+}

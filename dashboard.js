@@ -70,7 +70,7 @@ function buildFactReferenceDiagnostics(record) {
     ghValidRows: 0,
     gSum: 0,
     ghValue: 0,
-    path: "IndexedDB: kcfx-dashboard/files/fact-inventory; GitHub: data/shared-library.json#records.fact-inventory"
+    path: record?.libraryPath || "data/kcfx-library/fact/fact-inventory.json"
   };
   for (const row of rows) {
     const materialCode = normalizeMaterialCode(nthValue(row, 3));
@@ -274,10 +274,10 @@ function renderDataSourcePanel(records) {
     const slot = SLOT_BY_ID[id];
     const record = records[id];
     if (!record) return `<div><strong>${escapeHtml(slot.title)}</strong>：未应用</div>`;
-    const source = record.sharedSavedAt ? "GitHub共享包 + 浏览器本地库" : "浏览器本地库";
+    const source = record.libraryPath ? "库存分析看板文件库 + 浏览器本地库" : record.sharedSavedAt ? "GitHub共享包 + 浏览器本地库" : "浏览器本地库";
     const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
     const appliedAt = record.appliedAt ? new Date(record.appliedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
-    const path = `IndexedDB: kcfx-dashboard/files/${id}；GitHub: data/shared-library.json#records.${id}`;
+    const path = `IndexedDB: kcfx-dashboard/files/${id}；GitHub: ${record.libraryPath || `data/kcfx-library/${slot.type === "fact" ? "fact" : "dimensions"}/${id}.json`}`;
     return `<div><strong>${escapeHtml(slot.title)}</strong>：${escapeHtml(record.fileName || "-")}；来源：${escapeHtml(source)}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>${escapeHtml(path)}</code></div>`;
   });
   $("#dataSourcePanel").innerHTML = items.join("");
@@ -289,7 +289,7 @@ function renderFactDiagnosticPanel(extraLines = []) {
   const savedAt = factReferenceDiagnostics.savedAt
     ? new Date(factReferenceDiagnostics.savedAt).toLocaleString("zh-CN", { hour12: false })
     : "-";
-  const source = factReferenceDiagnostics.sharedSavedAt ? "GitHub共享包 + 浏览器本地库" : "浏览器本地库";
+  const source = factReferenceDiagnostics.path ? "库存分析看板文件库 + 浏览器本地库" : "浏览器本地库";
   const lines = [
     `当前事实表引用：${factReferenceDiagnostics.fileName || "-"}`,
     `来源：${source}`,
