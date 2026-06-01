@@ -266,16 +266,13 @@ function makeJoinKey(row) {
   ].join("");
 }
 
-function pickSheetName(workbook, hint) {
-  if (hint) {
-    const found = workbook.SheetNames.find((name) => name.includes(hint));
-    if (found) return found;
-  }
+function pickSheetName(workbook) {
+  // 固定规则：只读取第一个 sheet。不要自动匹配或猜测 sheet。
   return workbook.SheetNames[0];
 }
 
 function parseWorkbookRows(workbook, slot) {
-  const sheetName = pickSheetName(workbook, slot.sheetHint);
+  const sheetName = pickSheetName(workbook);
   const sheet = workbook.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json(sheet, {
     defval: "",

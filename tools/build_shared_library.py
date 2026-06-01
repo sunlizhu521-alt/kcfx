@@ -62,18 +62,15 @@ def unique_headers(headers):
     return result
 
 
-def pick_sheet(workbook, hint):
-    if hint:
-        for name in workbook.sheetnames:
-            if hint in name:
-                return name
+def pick_sheet(workbook):
+    # 固定规则：只读取第一个 sheet。不要自动匹配或猜测 sheet。
     return workbook.sheetnames[0]
 
 
 def parse_file(slot_id, path):
     slot = SLOTS[slot_id]
     workbook = load_workbook(path, read_only=True, data_only=True)
-    sheet_name = pick_sheet(workbook, slot["sheetHint"])
+    sheet_name = pick_sheet(workbook)
     sheet = workbook[sheet_name]
     header_row = (slot.get("skipRows") or 0) + 1
     rows_iter = sheet.iter_rows(values_only=True)
