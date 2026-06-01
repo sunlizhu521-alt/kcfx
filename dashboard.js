@@ -4,6 +4,14 @@ let filteredRows = [];
 let dashboardDiagnostics = {};
 let factEndingQtyTotal = 0;
 const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse", "dim-warehouse-material"];
+const FINANCIAL_PRICE_HEADERS = [
+  "真实成本单价",
+  "期末库存真实成本",
+  "期末库存真实成本单价",
+  "集团期末库存真实成本",
+  "真实成本",
+  "成本单价"
+];
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -49,6 +57,7 @@ function buildWideRows(records) {
 
   const productByCode = new Map();
   const productHeaders = Object.keys(productRows[0] || {});
+  const factHeaders = [...new Set(factRows.flatMap((row) => Object.keys(row)))];
   dashboardDiagnostics = {
     productRows: productRows.length,
     productHasSettlementColumn: productHeaders.some((header) => normalizeHeaderName(header) === normalizeHeaderName("结算价") || normalizeHeaderName(header) === normalizeHeaderName("结算价（含税）")),
@@ -57,6 +66,7 @@ function buildWideRows(records) {
     productSettlementRows: 0,
     productCodeSettlementRows: 0,
     factRows: factRows.length,
+    factHasFinancialPriceColumn: factHeaders.some(isFinancialPriceHeader),
     factCodeRows: 0,
     factEndingQtyRows: 0,
     factEndingQtyTotal: 0,
@@ -197,12 +207,16 @@ function renderDashboard() {
 
   renderChartTitles(priceBasis);
   renderPriceBasisStatus(priceBasis, filteredRows);
-  renderMetrics(filteredRows);
-  renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "wan");
-  renderBars("productLineChart", groupSum(filteredRows.filter((row) => row.productLine !== "健康办公"), "productLine", "inventoryValue"), "wan");
-  renderBars("warehouseTypeChart", groupSum(filteredRows.filter((row) => row.warehouseType), "warehouseType", "inventoryValue"), "wan");
-  renderBars("seriesChart", groupSum(filteredRows, "series", "inventoryValue", 10), "wan");
-  renderDetail(filteredRows);
+  renderMetrics(filteredRows, priceBasis);
+  if (priceBasis === "financial" && !dashboardDiagnostics.factHasFinancialPriceColumn) {
+    renderMissingFinancialPriceCharts();
+  } else {
+    renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "wan");
+    renderBars("productLineChart", groupSum(filteredRows.filter((row) => row.productLine !== "健康办公"), "productLine", "inventoryValue"), "wan");
+    renderBars("warehouseTypeChart", groupSum(filteredRows.filter((row) => row.warehouseType), "warehouseType", "inventoryValue"), "wan");
+    renderBars("seriesChart", groupSum(filteredRows, "series", "inventoryValue", 10), "wan");
+  }
+  renderDetail(filteredRows, priceBasis);
 }
 
 function renderChartTitles(priceBasis) {
@@ -215,7 +229,11 @@ function renderChartTitles(priceBasis) {
 
 function renderPriceBasisStatus(priceBasis, rows) {
   if (priceBasis !== "settlement") {
-    $("#sharedStatus").textContent = `财务维度：${formatNumber(rows.length, 0)} 行，按真实成本单价计算。`;
+    if (!dashboardDiagnostics.factHasFinancialPriceColumn) {
+      $("#sharedStatus").textContent = "财务维度：关账后库存事实表缺少真实成本单价列，无法计算结存数量 × 真实成本单价。";
+    } else {
+      $("#sharedStatus").textContent = `财务维度：${formatNumber(rows.length, 0)} 行，金额 ${formatMoney(sum(rows, "inventoryValue"))}。`;
+    }
     $("#diagnosticPanel").classList.remove("show");
     $("#diagnosticPanel").textContent = "";
     return;
@@ -266,8 +284,12 @@ function renderFactOnlyMetrics() {
   $("#totalValue").textContent = formatMoneyWithYi(0);
 }
 
-function renderMetrics(rows) {
+function renderMetrics(rows, priceBasis) {
   $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
+  if (priceBasis === "financial" && !dashboardDiagnostics.factHasFinancialPriceColumn) {
+    $("#totalValue").textContent = "缺少真实成本单价列";
+    return;
+  }
   $("#totalValue").textContent = formatMoneyWithYi(sum(rows, "inventoryValue"));
 }
 
@@ -295,18 +317,16 @@ function getEndingQty(row) {
 }
 
 function getFinancialPrice(row) {
-  return firstNumber(row, [
-    firstValue(row, [
-      "真实成本单价",
-      "期末库存真实成本",
-      "期末库存真实成本单价",
-      "集团期末库存真实成本",
-      "真实成本",
-      "成本单价"
-    ]),
-    firstValueByHeaderIncludes(row, ["真实", "成本"]),
-    firstValueByHeaderIncludes(row, ["成本", "单价"])
-  ]);
+  for (const [header, value] of Object.entries(row)) {
+    if (isFinancialPriceHeader(header)) return toNumber(value);
+  }
+  return 0;
+}
+
+function isFinancialPriceHeader(header) {
+  const normalized = normalizeHeaderName(header);
+  if (FINANCIAL_PRICE_HEADERS.some((name) => normalized === normalizeHeaderName(name))) return true;
+  return normalized.includes(normalizeHeaderName("真实")) && normalized.includes(normalizeHeaderName("成本"));
 }
 
 function sum(rows, key) {
@@ -354,7 +374,14 @@ function renderBars(id, rows, mode) {
   }).join("");
 }
 
-function renderDetail(rows) {
+function renderMissingFinancialPriceCharts() {
+  ["departmentChart", "productLineChart", "warehouseTypeChart", "seriesChart"].forEach((id) => {
+    $(`#${id}`).innerHTML = `<div class="empty">关账后库存事实表缺少真实成本单价列</div>`;
+  });
+}
+
+function renderDetail(rows, priceBasis) {
+  const financialPriceMissing = priceBasis === "financial" && !dashboardDiagnostics.factHasFinancialPriceColumn;
   const shown = rows.slice(0, 1000);
   $("#detailRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -368,8 +395,8 @@ function renderDetail(rows) {
       <td>${escapeHtml(row.sku)}</td>
       <td>${escapeHtml(row.materialName)}</td>
       <td class="num">${formatNumber(row.endingQty, 0)}</td>
-      <td class="num">${formatNumber(row.price, 4)}</td>
-      <td class="num">${formatMoney(row.inventoryValue)}</td>
+      <td class="num">${financialPriceMissing ? "缺少单价" : formatNumber(row.price, 4)}</td>
+      <td class="num">${financialPriceMissing ? "无法计算" : formatMoney(row.inventoryValue)}</td>
     </tr>
   `).join("") : `<tr><td colspan="12" class="empty">没有匹配数据</td></tr>`;
 }
