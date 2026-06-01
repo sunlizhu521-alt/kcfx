@@ -98,6 +98,7 @@ function summarizeInventoryRows(rows, keyOptions) {
       materialName: getInventoryMaterialName(row)
     });
     item.inventoryQty += qty;
+    item.inventoryValue += qty * price;
     if (price > 0 && qty !== 0) {
       item.inventoryPriceAmount += price * Math.abs(qty);
       item.inventoryPriceWeight += Math.abs(qty);
@@ -123,6 +124,7 @@ function summarizeDetailRows(rows, keyOptions) {
       materialName: getDetailMaterialName(row)
     });
     item.detailQty += qty;
+    item.detailValue += qty * price;
     if (price > 0 && qty !== 0) {
       item.detailPriceAmount += price * Math.abs(qty);
       item.detailPriceWeight += Math.abs(qty);
@@ -160,9 +162,9 @@ function compareMaps(inventoryMap, detailMap, productMap, departmentMap) {
       inventoryPrice,
       detailPrice,
       priceDiff: inventoryPrice - detailPrice,
-      inventoryValue: (inventory.inventoryQty || 0) * inventoryPrice,
-      detailValue: (detail.detailQty || 0) * detailPrice,
-      valueDiff: ((inventory.inventoryQty || 0) * inventoryPrice) - ((detail.detailQty || 0) * detailPrice)
+      inventoryValue: inventory.inventoryValue || 0,
+      detailValue: detail.detailValue || 0,
+      valueDiff: (inventory.inventoryValue || 0) - (detail.detailValue || 0)
     };
   });
 
@@ -230,8 +232,10 @@ function ensureItem(map, key, defaults) {
       detailQty: 0,
       inventoryPriceAmount: 0,
       inventoryPriceWeight: 0,
+      inventoryValue: 0,
       detailPriceAmount: 0,
-      detailPriceWeight: 0
+      detailPriceWeight: 0,
+      detailValue: 0
     });
   }
   const item = map.get(key);
