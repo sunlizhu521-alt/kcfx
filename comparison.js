@@ -20,6 +20,10 @@ let currentComparison = {
   inventoryQtyTotal: 0,
   detailQtyTotal: 0,
   qtyDiffTotal: 0,
+  inventoryValueTotal: 0,
+  detailValueTotal: 0,
+  valueDiffTotal: 0,
+  allRows: [],
   qtyDiffRows: [],
   priceDiffRows: []
 };
@@ -49,7 +53,7 @@ async function runComparison() {
 
   if (!inventoryRecord || !detailRecord) {
     $("#compareStatus").textContent = "缺少关账后库存事实表或收发明细汇总表，请先到备货事实表库上传并应用刷新。";
-    currentComparison = { inventoryQtyTotal: 0, detailQtyTotal: 0, qtyDiffTotal: 0, qtyDiffRows: [], priceDiffRows: [] };
+    currentComparison = { inventoryQtyTotal: 0, detailQtyTotal: 0, qtyDiffTotal: 0, inventoryValueTotal: 0, detailValueTotal: 0, valueDiffTotal: 0, allRows: [], qtyDiffRows: [], priceDiffRows: [] };
     renderMetrics(currentComparison);
     $("#matchBasis").textContent = "等待两张事实表应用后生成对比。";
     renderCurrentDiffTable();
@@ -155,7 +159,10 @@ function compareMaps(inventoryMap, detailMap, productMap, departmentMap) {
       qtyDiff: (inventory.inventoryQty || 0) - (detail.detailQty || 0),
       inventoryPrice,
       detailPrice,
-      priceDiff: inventoryPrice - detailPrice
+      priceDiff: inventoryPrice - detailPrice,
+      inventoryValue: (inventory.inventoryQty || 0) * inventoryPrice,
+      detailValue: (detail.detailQty || 0) * detailPrice,
+      valueDiff: ((inventory.inventoryQty || 0) * inventoryPrice) - ((detail.detailQty || 0) * detailPrice)
     };
   });
 
@@ -172,6 +179,10 @@ function compareMaps(inventoryMap, detailMap, productMap, departmentMap) {
     inventoryQtyTotal: rows.reduce((sum, row) => sum + row.inventoryQty, 0),
     detailQtyTotal: rows.reduce((sum, row) => sum + row.detailQty, 0),
     qtyDiffTotal: rows.reduce((sum, row) => sum + row.qtyDiff, 0),
+    inventoryValueTotal: rows.reduce((sum, row) => sum + row.inventoryValue, 0),
+    detailValueTotal: rows.reduce((sum, row) => sum + row.detailValue, 0),
+    valueDiffTotal: rows.reduce((sum, row) => sum + row.valueDiff, 0),
+    allRows: rows,
     qtyDiffRows,
     priceDiffRows
   };
@@ -363,16 +374,25 @@ function matchSelect(value, selected) {
 }
 
 function renderMetrics(result, qtyRows = result.qtyDiffRows, priceRows = result.priceDiffRows) {
+  const valueRows = filterRows(result.allRows || []);
   $("#inventoryQtyTotal").textContent = formatNumberWithYi(result.inventoryQtyTotal);
   $("#detailQtyTotal").textContent = formatNumberWithYi(result.detailQtyTotal);
   $("#qtyDiffTotal").textContent = formatNumber(qtyRows.reduce((sum, row) => sum + row.qtyDiff, 0), 3);
-  $("#qtyDiffCount").textContent = formatNumber(qtyRows.length, 0);
-  $("#priceDiffCount").textContent = formatNumber(priceRows.length, 0);
+  const inventoryValue = valueRows.reduce((sum, row) => sum + row.inventoryValue, 0);
+  const detailValue = valueRows.reduce((sum, row) => sum + row.detailValue, 0);
+  $("#inventoryValueTotal").textContent = formatMoneyWithYi(inventoryValue);
+  $("#detailValueTotal").textContent = formatMoneyWithYi(detailValue);
+  $("#valueDiffTotal").textContent = formatMoneyWithYi(inventoryValue - detailValue);
 }
 
 function formatNumberWithYi(value) {
   const numeric = Number(value || 0);
   return `${formatNumber(numeric, 3)}（${(numeric / 100000000).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}亿）`;
+}
+
+function formatMoneyWithYi(value) {
+  const numeric = Number(value || 0);
+  return `¥${numeric.toLocaleString("zh-CN", { maximumFractionDigits: 2 })}（${(numeric / 100000000).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}亿）`;
 }
 
 function renderMatchBasis(options, inventoryRecord, detailRecord) {

@@ -296,11 +296,23 @@ select {
 }
 
 .comparison-metrics {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .comparison-metrics .metric-card {
   min-width: 0;
+  min-height: 86px;
+  padding: 14px 12px;
+}
+
+.comparison-metrics .metric-card span {
+  line-height: 1.25;
+}
+
+.comparison-metrics .metric-card strong {
+  font-size: clamp(16px, 1.45vw, 24px);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .comparison-summary {
@@ -750,7 +762,7 @@ input[type="file"]:disabled {
   }
 
   .comparison-metrics {
-    grid-template-columns: repeat(5, minmax(140px, 1fr));
+    grid-template-columns: repeat(6, minmax(150px, 1fr));
     overflow-x: auto;
     padding-bottom: 4px;
   }
