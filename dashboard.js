@@ -81,10 +81,13 @@ function buildFactReferenceDiagnostics(record) {
     materialRows: 0,
     gHeader: headers[6] || "-",
     hHeader: headers[7] || "-",
+    iHeader: headers[8] || "-",
     gValidRows: 0,
     hValidRows: 0,
+    iValidRows: 0,
     ghValidRows: 0,
     gSum: 0,
+    iSum: 0,
     ghValue: 0,
     parseDiagnostics: record?.parseDiagnostics || null,
     path: record?.libraryPath || "data/kcfx-library/fact/fact-inventory.json"
@@ -93,11 +96,16 @@ function buildFactReferenceDiagnostics(record) {
     if (getFactMaterialCode(row)) result.materialRows += 1;
     const qty = parseNumberCell(nthValue(row, 7));
     const price = parseNumberCell(nthValue(row, 8));
+    const amount = parseNumberCell(nthValue(row, 9));
     if (qty.valid) {
       result.gValidRows += 1;
       result.gSum += qty.value;
     }
     if (price.valid) result.hValidRows += 1;
+    if (amount.valid) {
+      result.iValidRows += 1;
+      result.iSum += amount.value;
+    }
     if (qty.valid && price.valid) {
       result.ghValidRows += 1;
       result.ghValue += qty.value * price.value;
@@ -179,6 +187,7 @@ function buildWideRows(records) {
     const warehouseInfo = warehouseByName.get(warehouse) || {};
     const division = departmentByWarehouseKey.get(makeWarehouseDepartmentKeyFromFact(row)) || {};
     const financialPrice = getFinancialPrice(row);
+    const financialAmount = getFinancialAmount(row);
     const settlementPrice = product.settlementPrice || 0;
     const endingQty = getEndingQty(row);
     if (materialCode) dashboardDiagnostics.factCodeRows += 1;
@@ -203,10 +212,11 @@ function buildWideRows(records) {
       outboundQty: toNumber(firstValue(row, ["(发出)数量（库存）", "发出数量", "出库数量"])),
       endingQty,
       financialPrice,
+      financialAmount,
       settlementPrice,
       hasProductMatch,
       price: financialPrice,
-      inventoryValue: endingQty * financialPrice
+      inventoryValue: financialAmount
     };
   });
 }
@@ -350,11 +360,14 @@ function renderFactDiagnosticPanel(extraLines = []) {
     `有物料编码行：${formatNumber(factReferenceDiagnostics.materialRows || 0, 0)}`,
     `G列：${factReferenceDiagnostics.gHeader || "-"}`,
     `H列：${factReferenceDiagnostics.hHeader || "-"}`,
+    `I列：${factReferenceDiagnostics.iHeader || "-"}`,
     `G列样例：${gSamples || "-"}`,
     `H列样例：${hSamples || "-"}`,
     `G列有效行：${formatNumber(factReferenceDiagnostics.gValidRows || 0, 0)}`,
     `H列有效行：${formatNumber(factReferenceDiagnostics.hValidRows || 0, 0)}`,
+    `I列有效行：${formatNumber(factReferenceDiagnostics.iValidRows || 0, 0)}`,
     `G列求和：${formatNumber(factReferenceDiagnostics.gSum || 0, 3)}`,
+    `I列求和：${formatNumber(factReferenceDiagnostics.iSum || 0, 5)}`,
     `G×H金额：${formatMoney(factReferenceDiagnostics.ghValue || 0)}`,
     `引用路径：${factReferenceDiagnostics.path || "-"}`
   ];
@@ -392,10 +405,11 @@ function renderNoSettlementDataHint(rows) {
 
 function applyPriceBasis(row, priceBasis) {
   const price = priceBasis === "settlement" ? row.settlementPrice : row.financialPrice;
+  const inventoryValue = priceBasis === "settlement" ? row.endingQty * price : row.financialAmount;
   return {
     ...row,
     price,
-    inventoryValue: row.endingQty * price
+    inventoryValue
   };
 }
 
@@ -479,6 +493,10 @@ function getFinancialPrice(row) {
 
 function getFinancialPriceCell(row) {
   return nthValue(row, 8);
+}
+
+function getFinancialAmount(row) {
+  return parseNumberCell(getFinancialAmountCell(row)).value;
 }
 
 function getFinancialAmountCell(row) {
