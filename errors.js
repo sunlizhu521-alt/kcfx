@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function runErrorChecks() {
-  const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
+  const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
   const fact = records["fact-inventory"];
   const product = records["dim-product"];
   const division = records["dim-warehouse-material"];

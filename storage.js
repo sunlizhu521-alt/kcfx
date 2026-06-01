@@ -149,6 +149,28 @@ function getAllRecords() {
   }));
 }
 
+async function getActiveRecords() {
+  const records = await getAllRecords();
+  return records.filter((record) => record.appliedAt);
+}
+
+function getDisplayRecord(record) {
+  if (!record) return null;
+  return record.pending || record;
+}
+
+function hasPendingRecord(record) {
+  return Boolean(record?.pending);
+}
+
+function promotePendingRecord(record) {
+  const source = record?.pending || record;
+  if (!source) return null;
+  const next = { ...source, appliedAt: new Date().toISOString() };
+  delete next.pending;
+  return next;
+}
+
 function saveRecord(record) {
   return withStore("readwrite", (store) => {
     store.put(record);
@@ -277,7 +299,10 @@ async function readExcelFile(file, slot) {
 function recordIsNewer(shared, local) {
   if (!local) return true;
   const sharedTime = Date.parse(shared.savedAt || 0);
-  const localTime = Date.parse(local.savedAt || 0);
+  const localSavedTime = Date.parse(local.savedAt || 0);
+  const pendingSavedTime = Date.parse(local.pending?.savedAt || 0);
+  const localTimes = [localSavedTime, pendingSavedTime].filter((time) => Number.isFinite(time));
+  const localTime = localTimes.length ? Math.max(...localTimes) : NaN;
   if (Number.isFinite(sharedTime) && Number.isFinite(localTime) && sharedTime <= localTime) return false;
   if ((shared.size || 0) !== (local.size || 0)) return true;
   return Number.isFinite(sharedTime) && (!Number.isFinite(localTime) || sharedTime > localTime);

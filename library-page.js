@@ -12,6 +12,8 @@ function bindToolbar() {
   $("#refreshBtn").addEventListener("click", refreshAll);
   $("#applyAllBtn").addEventListener("click", refreshAll);
   $("#downloadSharedBtn").addEventListener("click", downloadSharedLibrary);
+  $("#importSharedBtn")?.addEventListener("click", () => $("#importSharedInput")?.click());
+  $("#importSharedInput")?.addEventListener("change", importSharedLibraryFile);
   $("#enableReplaceBtn").addEventListener("click", () => {
     const key = $("#unlockInput").value.trim();
     replacementEnabled = key === REPLACE_SECRET;
@@ -29,10 +31,9 @@ async function refreshAll() {
     return;
   }
   if (!window.confirm(`确认应用刷新 ${count} 个已上传文件？`)) return;
-  const appliedAt = new Date().toISOString();
   for (const slot of pageSlots()) {
     if (records[slot.id]) {
-      await saveRecord({ ...records[slot.id], appliedAt });
+      await saveRecord(promotePendingRecord(records[slot.id]));
     }
   }
   await renderLibrary();
@@ -61,7 +62,7 @@ async function renderLibrary() {
   const slots = pageSlots();
   const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
   const used = slots.filter((slot) => records[slot.id]).length;
-  const applied = slots.filter((slot) => records[slot.id]).length;
+  const applied = slots.filter((slot) => records[slot.id]?.appliedAt).length;
   const latest = latestSavedAt(slots, records);
   const labels = pageLabels();
 
@@ -86,7 +87,7 @@ async function renderLibrary() {
 
 function latestSavedAt(slots, records) {
   const times = slots
-    .map((slot) => records[slot.id]?.savedAt)
+    .map((slot) => getDisplayRecord(records[slot.id])?.savedAt)
     .filter(Boolean)
     .map((item) => Date.parse(item))
     .filter((item) => Number.isFinite(item));
@@ -94,11 +95,13 @@ function latestSavedAt(slots, records) {
 }
 
 function renderCard(slot, record, labels) {
-  const stateClass = record ? "applied" : "empty";
-  const stateText = record ? "当前引用" : "空";
-  const fileName = record?.fileName || slot.expectedName;
-  const month = record?.savedAt ? `${new Date(record.savedAt).getFullYear()}年${new Date(record.savedAt).getMonth() + 1}月` : "";
-  const updateDate = record?.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", {
+  const displayRecord = getDisplayRecord(record);
+  const pending = hasPendingRecord(record) || (record && !record.appliedAt);
+  const stateClass = pending ? "pending" : record?.appliedAt ? "applied" : "empty";
+  const stateText = pending ? "待应用" : record?.appliedAt ? "当前引用" : "空";
+  const fileName = displayRecord?.fileName || slot.expectedName;
+  const month = displayRecord?.savedAt ? `${new Date(displayRecord.savedAt).getFullYear()}年${new Date(displayRecord.savedAt).getMonth() + 1}月` : "";
+  const updateDate = displayRecord?.savedAt ? new Date(displayRecord.savedAt).toLocaleString("zh-CN", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -140,7 +143,7 @@ function renderCard(slot, record, labels) {
       <h2>${escapeHtml(slot.title)}</h2>
       <p class="slot-description">${escapeHtml(slot.description)}</p>
       <h3>${escapeHtml(fileName)}</h3>
-      <p class="file-kind">Excel 工作簿 · ${formatFileSize(record.size || 0)}</p>
+      <p class="file-kind">Excel 工作簿 · ${formatFileSize(displayRecord.size || 0)}</p>
       <div class="slot-info">
         <span>刷新月份</span>
         <strong>${escapeHtml(month)}</strong>
@@ -202,9 +205,13 @@ async function saveSlot(slotId) {
     status.textContent = "正在解析文件...";
     const record = await readExcelFile(file, slot);
     if (!record.rows.length) throw new Error("文件未解析到有效行。");
-    const appliedAt = new Date().toISOString();
-    await saveRecord({ ...record, appliedAt });
-    status.textContent = "已保存到浏览器文件库，并已作为当前引用文件生效。";
+    const existing = await getRecord(slotId);
+    if (existing?.appliedAt) {
+      await saveRecord({ ...existing, pending: { ...record, appliedAt: "" } });
+    } else {
+      await saveRecord({ ...record, appliedAt: "" });
+    }
+    status.textContent = "已保存到文件库，状态为待应用。点击应用刷新后，看板才会读取这份文件。";
     await renderLibrary();
   } catch (error) {
     status.textContent = `解析失败：${error.message}`;
@@ -214,8 +221,9 @@ async function saveSlot(slotId) {
 async function applySlot(slotId) {
   const record = await getRecord(slotId);
   if (!record) return;
-  if (!window.confirm(`确认应用刷新：${record.fileName || SLOT_BY_ID[slotId].title}？`)) return;
-  await saveRecord({ ...record, appliedAt: new Date().toISOString() });
+  const displayRecord = getDisplayRecord(record);
+  if (!window.confirm(`确认应用刷新：${displayRecord.fileName || SLOT_BY_ID[slotId].title}？`)) return;
+  await saveRecord(promotePendingRecord(record));
   await renderLibrary();
 }
 

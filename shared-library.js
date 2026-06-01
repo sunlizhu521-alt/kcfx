@@ -54,3 +54,26 @@ async function downloadSharedLibrary() {
   link.click();
   URL.revokeObjectURL(url);
 }
+
+async function importSharedLibraryFile(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  if (!file) return;
+  const statusEl = document.querySelector("#sharedStatus");
+  try {
+    const payload = JSON.parse(await file.text());
+    const records = payload.records || {};
+    let imported = 0;
+    for (const [id, record] of Object.entries(records)) {
+      if (!SLOT_BY_ID[id] || !Array.isArray(record.rows)) continue;
+      await saveRecord({ ...record, id, importedAt: new Date().toISOString() });
+      imported += 1;
+    }
+    if (statusEl) statusEl.textContent = `已导入 ${imported} 个文件库记录。`;
+    if (typeof renderLibrary === "function") await renderLibrary();
+  } catch (error) {
+    if (statusEl) statusEl.textContent = `导入失败：${error.message}`;
+  } finally {
+    input.value = "";
+  }
+}

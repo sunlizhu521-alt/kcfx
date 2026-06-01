@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function refreshDashboard() {
-  const allRecords = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
+  const allRecords = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
   const records = allRecords;
   const factRecord = allRecords["fact-inventory"];
   factReferenceDiagnostics = buildFactReferenceDiagnostics(factRecord);

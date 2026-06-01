@@ -592,6 +592,10 @@ input[type="file"]:disabled {
   display: none;
 }
 
+.hidden-file-input {
+  display: none;
+}
+
 .slot-file-input,
 .drop-zone .slot-file-input {
   position: absolute;
