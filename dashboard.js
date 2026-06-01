@@ -149,8 +149,8 @@ function populateFilters(records) {
   const warehouseMaterialRows = records["dim-warehouse-material"].rows || [];
 
   fillStaticSelect($("#priceBasisFilter"), [
-    ["financial", "财务维度"],
-    ["settlement", "结算价维度"]
+    ["settlement", "结算价维度"],
+    ["financial", "财务维度"]
   ]);
   fillSelect($("#departmentFilter"), "全部事业部", uniqueColumnValues(warehouseMaterialRows, ["事业部"]));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
@@ -182,7 +182,7 @@ function uniqueColumnValues(rows, columnNames) {
 }
 
 function renderDashboard() {
-  const priceBasis = $("#priceBasisFilter").value || "financial";
+  const priceBasis = $("#priceBasisFilter").value || "settlement";
   filteredRows = wideRows.filter((row) => {
     const q = normalizeKey($("#searchInput").value);
     const textHit = !q || [row.department, row.warehouseType, row.warehouseLocation, row.productLine, row.series, row.warehouse, row.materialCode, row.sku, row.materialName]
@@ -263,16 +263,20 @@ function clearDashboard() {
 
 function renderFactOnlyMetrics() {
   $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
-  $("#totalValue").textContent = "¥0";
+  $("#totalValue").textContent = formatMoneyWithYi(0);
 }
 
 function renderMetrics(rows) {
   $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
-  $("#totalValue").textContent = formatMoney(sum(rows, "inventoryValue"));
+  $("#totalValue").textContent = formatMoneyWithYi(sum(rows, "inventoryValue"));
 }
 
 function formatQuantityWithYi(value) {
   return `${formatNumber(value, 0)}（${formatNumber(Number(value || 0) / 100000000, 2)}亿）`;
+}
+
+function formatMoneyWithYi(value) {
+  return `${formatMoney(value)}（${formatNumber(Number(value || 0) / 100000000, 2)}亿）`;
 }
 
 function sumFactEndingQty(factRows) {
@@ -317,7 +321,7 @@ function renderBars(id, rows, mode) {
     return;
   }
   const total = rows.reduce((value, row) => value + (Number(row.value) || 0), 0);
-  if (mode === "wan" && total === 0 && ($("#priceBasisFilter").value || "financial") === "settlement") {
+  if (mode === "wan" && total === 0 && ($("#priceBasisFilter").value || "settlement") === "settlement") {
     container.innerHTML = renderNoSettlementDataHint(filteredRows);
     return;
   }
