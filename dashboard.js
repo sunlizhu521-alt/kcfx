@@ -88,7 +88,7 @@ function buildWideRows(records) {
     const name = normalizeText(firstValue(row, ["金蝶名称", "仓库名称"]));
     if (!name || warehouseByName.has(name)) continue;
     warehouseByName.set(name, {
-      warehouseType: firstText(row, [firstValue(row, ["一级仓库分类", "仓库类型", "财务维度仓库类型", "财务仓库类型"]), nthValue(row, 7)]),
+      warehouseType: normalizeText(firstValue(row, ["一级仓库分类"])),
       warehouseLocation: firstText(row, [firstValue(row, ["二级仓库分类", "仓库位置", "位置"]), nthValue(row, 8)])
     });
   }
@@ -128,7 +128,7 @@ function buildWideRows(records) {
       materialCode,
       sku: product.sku || "",
       materialName: product.materialName || normalizeText(firstValue(row, ["物料名称", "金蝶名称"])),
-      warehouseType: warehouseInfo.warehouseType || "其他仓库类型",
+      warehouseType: warehouseInfo.warehouseType || "",
       warehouseLocation: warehouseInfo.warehouseLocation || "其他仓库位置",
       beginningQty: toNumber(firstValue(row, ["(期初)数量（库存）", "期初数量"])),
       inboundQty: toNumber(firstValue(row, ["(收入)数量（库存）", "收入数量", "入库数量"])),
@@ -200,7 +200,7 @@ function renderDashboard() {
   renderMetrics(filteredRows);
   renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "wan");
   renderBars("productLineChart", groupSum(filteredRows, "productLine", "inventoryValue"), "wan");
-  renderBars("warehouseTypeChart", groupSum(filteredRows, "warehouseType", "inventoryValue"), "wan");
+  renderBars("warehouseTypeChart", groupSum(filteredRows.filter((row) => row.warehouseType), "warehouseType", "inventoryValue"), "wan");
   renderBars("seriesChart", groupSum(filteredRows, "series", "inventoryValue", 10), "wan");
   renderDetail(filteredRows);
 }
