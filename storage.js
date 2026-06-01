@@ -276,8 +276,11 @@ async function readExcelFile(file, slot) {
 
 function recordIsNewer(shared, local) {
   if (!local) return true;
+  const sharedTime = Date.parse(shared.savedAt || 0);
+  const localTime = Date.parse(local.savedAt || 0);
+  if (Number.isFinite(sharedTime) && Number.isFinite(localTime) && sharedTime <= localTime) return false;
   if ((shared.size || 0) !== (local.size || 0)) return true;
-  return Date.parse(shared.savedAt || 0) > Date.parse(local.savedAt || 0);
+  return Number.isFinite(sharedTime) && (!Number.isFinite(localTime) || sharedTime > localTime);
 }
 
 function formatNumber(value, digits = 0) {
