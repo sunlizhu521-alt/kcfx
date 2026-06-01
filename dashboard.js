@@ -3,6 +3,7 @@ let wideRows = [];
 let filteredRows = [];
 let dashboardDiagnostics = {};
 let factEndingQtyTotal = 0;
+let factFinancialValueTotal = 0;
 const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse", "dim-warehouse-material"];
 const FINANCIAL_PRICE_HEADERS = [
   "真实成本单价",
@@ -29,6 +30,7 @@ async function refreshDashboard() {
   const records = Object.fromEntries(Object.entries(allRecords).filter(([, record]) => record.appliedAt));
   const factRecord = allRecords["fact-inventory"];
   factEndingQtyTotal = sumFactEndingQty(factRecord?.rows || []);
+  factFinancialValueTotal = sumFactFinancialValue(factRecord?.rows || []);
   const missing = DASHBOARD_REQUIRED_SLOTS.map((id) => SLOT_BY_ID[id]).filter((slot) => !records[slot.id]);
   if (missing.length) {
     const pending = missing.filter((slot) => allRecords[slot.id] && !allRecords[slot.id].appliedAt);
@@ -286,8 +288,8 @@ function renderFactOnlyMetrics() {
 
 function renderMetrics(rows, priceBasis) {
   $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
-  if (priceBasis === "financial" && !dashboardDiagnostics.factHasFinancialPriceColumn) {
-    $("#totalValue").textContent = "缺少真实成本单价列";
+  if (priceBasis === "financial") {
+    $("#totalValue").textContent = formatMoneyWithYi(factFinancialValueTotal);
     return;
   }
   $("#totalValue").textContent = formatMoneyWithYi(sum(rows, "inventoryValue"));
@@ -306,6 +308,10 @@ function sumFactEndingQty(factRows) {
     if (!normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 3)]))) return total;
     return total + getEndingQty(row);
   }, 0);
+}
+
+function sumFactFinancialValue(factRows) {
+  return factRows.reduce((total, row) => total + getEndingQty(row) * getFinancialPrice(row), 0);
 }
 
 function getEndingQty(row) {
