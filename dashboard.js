@@ -327,11 +327,11 @@ function sumFactEndingQty(factRows) {
 function sumFactFinancialTotals(factRows) {
   return factRows.reduce((total, row) => {
     const qty = parseNumberCell(getEndingQtyCell(row));
-    const price = parseNumberCell(getFinancialPriceCell(row));
-    if (!qty.valid || !price.valid) return total;
+    const hValue = parseNumberCell(getFinancialPriceCell(row));
+    if (!hValue.valid) return total;
     return {
-      qty: total.qty + qty.value,
-      value: total.value + qty.value * price.value
+      qty: total.qty + hValue.value,
+      value: total.value + (qty.valid ? qty.value * hValue.value : 0)
     };
   }, { qty: 0, value: 0 });
 }
