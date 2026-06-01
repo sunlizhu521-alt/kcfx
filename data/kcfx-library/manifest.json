@@ -3,7 +3,6 @@
   "project": "kcfx",
   "name": "库存分析看板文件库",
   "savedAt": "2026-06-01T07:50:43.730Z",
-  "sourcePackage": "data/shared-library.json",
   "records": {
     "fact-inventory": {
       "id": "fact-inventory",

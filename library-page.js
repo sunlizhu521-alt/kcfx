@@ -25,15 +25,17 @@ function bindToolbar() {
 async function refreshAll() {
   await loadSharedLibrary({ statusEl: $("#sharedStatus") });
   const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
-  const count = pageSlots().filter((slot) => records[slot.id]).length;
+  const applicableSlots = pageSlots().filter((slot) => getDisplayRecord(records[slot.id]));
+  const count = applicableSlots.length;
   if (!count) {
     await renderLibrary();
     return;
   }
   if (!window.confirm(`确认应用刷新 ${count} 个已上传文件？`)) return;
-  for (const slot of pageSlots()) {
-    if (records[slot.id]) {
-      await saveRecord(promotePendingRecord(records[slot.id]));
+  for (const slot of applicableSlots) {
+    const nextRecord = promotePendingRecord(records[slot.id]);
+    if (nextRecord) {
+      await saveRecord(nextRecord);
     }
   }
   await renderLibrary();
@@ -61,8 +63,8 @@ function pageLabels() {
 async function renderLibrary() {
   const slots = pageSlots();
   const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
-  const used = slots.filter((slot) => records[slot.id]).length;
-  const applied = slots.filter((slot) => records[slot.id]?.appliedAt).length;
+  const used = slots.filter((slot) => getDisplayRecord(records[slot.id])).length;
+  const applied = slots.filter((slot) => records[slot.id]?.appliedAt && !isDeletedRecord(records[slot.id])).length;
   const latest = latestSavedAt(slots, records);
   const labels = pageLabels();
 
@@ -81,7 +83,7 @@ async function renderLibrary() {
     hour12: false
   }).replace(/\//g, "/") : "-";
 
-  $("#libraryGrid").innerHTML = slots.map((slot) => renderCard(slot, records[slot.id], labels)).join("");
+  $("#libraryGrid").innerHTML = slots.map((slot) => renderCard(slot, isDeletedRecord(records[slot.id]) ? null : records[slot.id], labels)).join("");
   bindCardEvents();
 }
 
@@ -228,6 +230,7 @@ async function applySlot(slotId) {
 }
 
 async function clearSlot(slotId) {
+  if (!window.confirm(`确认删除：${SLOT_BY_ID[slotId]?.title || slotId}？删除后刷新不会再从库存分析看板文件库自动恢复。`)) return;
   await deleteRecord(slotId);
   await renderLibrary();
 }

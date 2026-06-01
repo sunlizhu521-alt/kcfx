@@ -1,11 +1,8 @@
 const KC_FILE_LIBRARY_MANIFEST = "data/kcfx-library/manifest.json";
-const KC_LEGACY_SHARED_LIBRARY = "data/shared-library.json";
 
 async function loadSharedLibrary(options = {}) {
   const statusEl = options.statusEl || null;
-  const primary = await loadKcfxFileLibrary(statusEl);
-  if (primary.ok) return primary;
-  return loadLegacySharedLibrary(statusEl, primary.error);
+  return loadKcfxFileLibrary(statusEl);
 }
 
 async function loadKcfxFileLibrary(statusEl) {
@@ -49,44 +46,8 @@ async function loadKcfxFileLibrary(statusEl) {
     }
     return { ok: true, imported, manifest };
   } catch (error) {
+    if (statusEl) statusEl.textContent = `库存分析看板文件库未加载：${error.message}`;
     return { ok: false, error };
-  }
-}
-
-async function loadLegacySharedLibrary(statusEl, primaryError) {
-  const cacheKey = `v=${Date.now()}`;
-  try {
-    const response = await fetch(`${KC_LEGACY_SHARED_LIBRARY}?${cacheKey}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const payload = await response.json();
-    const records = payload.records || {};
-    const sharedSavedAt = payload.savedAt || "";
-    let imported = 0;
-
-    for (const [id, record] of Object.entries(records)) {
-      if (!SLOT_BY_ID[id] || !Array.isArray(record.rows)) continue;
-      const local = await getRecord(id);
-      const nextRecord = {
-        ...record,
-        id,
-        sharedSavedAt,
-        libraryPath: `${KC_LEGACY_SHARED_LIBRARY}#records.${id}`
-      };
-      if (recordIsNewer({ ...nextRecord, savedAt: sharedSavedAt || record.savedAt }, local)) {
-        await saveRecord(nextRecord);
-        imported += 1;
-      }
-    }
-
-    if (statusEl) {
-      statusEl.textContent = imported
-        ? `新文件库未加载，已从旧共享包同步 ${imported} 个文件。`
-        : "新文件库未加载，旧共享包已检查，无需更新。";
-    }
-    return { ok: true, imported, payload, primaryError };
-  } catch (error) {
-    if (statusEl) statusEl.textContent = `库存分析看板文件库未加载：${primaryError?.message || error.message}`;
-    return { ok: false, error, primaryError };
   }
 }
 
@@ -94,7 +55,8 @@ async function buildSharedLibraryPayload() {
   const all = await getAllRecords();
   const records = {};
   for (const record of all) {
-    records[record.id] = record;
+    const displayRecord = getDisplayRecord(record);
+    if (displayRecord) records[record.id] = displayRecord;
   }
   return {
     schemaVersion: 1,

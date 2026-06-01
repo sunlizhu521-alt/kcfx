@@ -17,7 +17,6 @@ function main() {
     project: "kcfx",
     name: "库存分析看板文件库",
     savedAt: new Date().toISOString(),
-    sourcePackage: "data/shared-library.json",
     records: {}
   };
 

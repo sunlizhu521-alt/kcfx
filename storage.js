@@ -151,19 +151,24 @@ function getAllRecords() {
 
 async function getActiveRecords() {
   const records = await getAllRecords();
-  return records.filter((record) => record.appliedAt);
+  return records.filter((record) => record.appliedAt && !isDeletedRecord(record));
 }
 
 function getDisplayRecord(record) {
-  if (!record) return null;
+  if (!record || isDeletedRecord(record)) return null;
   return record.pending || record;
 }
 
 function hasPendingRecord(record) {
-  return Boolean(record?.pending);
+  return !isDeletedRecord(record) && Boolean(record?.pending);
+}
+
+function isDeletedRecord(record) {
+  return Boolean(record?.deletedAt);
 }
 
 function promotePendingRecord(record) {
+  if (isDeletedRecord(record)) return null;
   const source = record?.pending || record;
   if (!source) return null;
   const next = { ...source, appliedAt: new Date().toISOString() };
@@ -177,9 +182,20 @@ function saveRecord(record) {
   });
 }
 
-function deleteRecord(id) {
+async function deleteRecord(id) {
+  const current = await getRecord(id);
+  const slot = SLOT_BY_ID[id] || {};
+  const deletedAt = new Date().toISOString();
   return withStore("readwrite", (store) => {
-    store.delete(id);
+    store.put({
+      id,
+      type: current?.type || slot.type || "",
+      title: current?.title || slot.title || id,
+      expectedName: current?.expectedName || slot.expectedName || "",
+      fileName: "",
+      savedAt: deletedAt,
+      deletedAt
+    });
   });
 }
 
@@ -298,6 +314,7 @@ async function readExcelFile(file, slot) {
 
 function recordIsNewer(shared, local) {
   if (!local) return true;
+  if (isDeletedRecord(local)) return false;
   const sharedTime = Date.parse(shared.savedAt || 0);
   const localSavedTime = Date.parse(local.savedAt || 0);
   const pendingSavedTime = Date.parse(local.pending?.savedAt || 0);
