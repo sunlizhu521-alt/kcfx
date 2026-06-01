@@ -1,5 +1,10 @@
 const $ = (selector) => document.querySelector(selector);
 const REPLACE_SECRET = "3.1415926";
+const GITHUB_OWNER = "sunlizhu521-alt";
+const GITHUB_REPO = "kcfx";
+const GITHUB_FILE_PATH = "data/shared-library.json";
+const GITHUB_BRANCHES = ["main", "gh-pages"];
+const GITHUB_TOKEN_KEY = "kcfx-github-token";
 let replacementEnabled = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -12,6 +17,10 @@ function bindToolbar() {
   $("#refreshBtn").addEventListener("click", refreshAll);
   $("#applyAllBtn").addEventListener("click", refreshAll);
   $("#downloadSharedBtn").addEventListener("click", downloadSharedLibrary);
+  $("#saveGithubTokenBtn").addEventListener("click", saveGithubToken);
+  const savedToken = localStorage.getItem(GITHUB_TOKEN_KEY) || "";
+  $("#githubTokenInput").value = savedToken;
+  updateGithubSyncStatus(savedToken ? "GitHub Token 已保存，替换或应用后会自动同步。" : "请输入 GitHub Token 后可自动更新共享文件库");
   $("#enableReplaceBtn").addEventListener("click", () => {
     const key = $("#unlockInput").value.trim();
     replacementEnabled = key === REPLACE_SECRET;
@@ -35,6 +44,7 @@ async function refreshAll() {
       await saveRecord({ ...records[slot.id], appliedAt });
     }
   }
+  await syncSharedLibraryToGitHub("应用刷新");
   await renderLibrary();
 }
 
@@ -200,7 +210,9 @@ async function saveSlot(slotId) {
     if (!record.rows.length) throw new Error("文件未解析到有效行。");
     const { appliedAt, ...pendingRecord } = record;
     await saveRecord(pendingRecord);
-    status.textContent = "已保存到浏览器文件库，请点击应用刷新后生效。";
+    status.textContent = "已保存到浏览器文件库，正在同步 GitHub 共享文件库...";
+    await syncSharedLibraryToGitHub("替换文件");
+    status.textContent = "已保存到浏览器文件库，并已尝试同步 GitHub。请点击应用刷新后生效。";
     await renderLibrary();
   } catch (error) {
     status.textContent = `解析失败：${error.message}`;
@@ -212,11 +224,13 @@ async function applySlot(slotId) {
   if (!record) return;
   if (!window.confirm(`确认应用刷新：${record.fileName || SLOT_BY_ID[slotId].title}？`)) return;
   await saveRecord({ ...record, appliedAt: new Date().toISOString() });
+  await syncSharedLibraryToGitHub("应用刷新");
   await renderLibrary();
 }
 
 async function clearSlot(slotId) {
   await deleteRecord(slotId);
+  await syncSharedLibraryToGitHub("删除文件");
   await renderLibrary();
 }
 
@@ -234,4 +248,105 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#039;"
   }[char]));
+}
+
+function saveGithubToken() {
+  const token = $("#githubTokenInput").value.trim();
+  if (!token) {
+    localStorage.removeItem(GITHUB_TOKEN_KEY);
+    updateGithubSyncStatus("GitHub Token 已清空，后续只保存到当前浏览器。");
+    return;
+  }
+  localStorage.setItem(GITHUB_TOKEN_KEY, token);
+  updateGithubSyncStatus("GitHub Token 已保存，替换或应用后会自动同步。");
+}
+
+function updateGithubSyncStatus(message) {
+  const status = $("#githubSyncStatus");
+  if (status) status.textContent = message;
+}
+
+async function syncSharedLibraryToGitHub(actionName) {
+  const token = localStorage.getItem(GITHUB_TOKEN_KEY) || "";
+  if (!token) {
+    updateGithubSyncStatus(`${actionName}已在当前浏览器完成；未填写 GitHub Token，未同步到 GitHub。`);
+    return false;
+  }
+
+  updateGithubSyncStatus(`${actionName}已保存，正在更新 GitHub 共享文件库...`);
+  const payload = await buildSharedLibraryPayload();
+  const content = JSON.stringify(payload);
+  const message = `Update kcfx shared library after ${actionName}`;
+
+  try {
+    for (const branch of GITHUB_BRANCHES) {
+      await commitSharedLibraryToBranch({ token, branch, content, message });
+    }
+    updateGithubSyncStatus(`${actionName}已同步到 GitHub，共享文件库已更新。`);
+    return true;
+  } catch (error) {
+    updateGithubSyncStatus(`${actionName}已在当前浏览器完成；GitHub 同步失败：${error.message}`);
+    return false;
+  }
+}
+
+async function commitSharedLibraryToBranch({ token, branch, content, message }) {
+  const apiBase = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
+  const headers = {
+    "Accept": "application/vnd.github+json",
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+  const ref = await githubJson(`${apiBase}/git/ref/heads/${encodeURIComponent(branch)}`, { headers });
+  const commit = await githubJson(`${apiBase}/git/commits/${ref.object.sha}`, { headers });
+  const blob = await githubJson(`${apiBase}/git/blobs`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ content, encoding: "utf-8" })
+  });
+  const tree = await githubJson(`${apiBase}/git/trees`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      base_tree: commit.tree.sha,
+      tree: [{
+        path: GITHUB_FILE_PATH,
+        mode: "100644",
+        type: "blob",
+        sha: blob.sha
+      }]
+    })
+  });
+  const nextCommit = await githubJson(`${apiBase}/git/commits`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      message,
+      tree: tree.sha,
+      parents: [ref.object.sha]
+    })
+  });
+  await githubJson(`${apiBase}/git/refs/heads/${encodeURIComponent(branch)}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({ sha: nextCommit.sha })
+  });
+}
+
+async function githubJson(url, options = {}) {
+  const response = await fetch(url, options);
+  const text = await response.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text };
+    }
+  }
+  if (!response.ok) {
+    throw new Error(data.message || `GitHub HTTP ${response.status}`);
+  }
+  return data;
 }
