@@ -3,6 +3,7 @@ let wideRows = [];
 let filteredRows = [];
 let dashboardDiagnostics = {};
 let factEndingQtyTotal = 0;
+let factFinancialQtyTotal = 0;
 let factFinancialValueTotal = 0;
 const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse", "dim-warehouse-material"];
 const FINANCIAL_PRICE_HEADERS = [
@@ -30,7 +31,9 @@ async function refreshDashboard() {
   const records = Object.fromEntries(Object.entries(allRecords).filter(([, record]) => record.appliedAt));
   const factRecord = allRecords["fact-inventory"];
   factEndingQtyTotal = sumFactEndingQty(factRecord?.rows || []);
-  factFinancialValueTotal = sumFactFinancialValue(factRecord?.rows || []);
+  const financialTotals = sumFactFinancialTotals(factRecord?.rows || []);
+  factFinancialQtyTotal = financialTotals.qty;
+  factFinancialValueTotal = financialTotals.value;
   const missing = DASHBOARD_REQUIRED_SLOTS.map((id) => SLOT_BY_ID[id]).filter((slot) => !records[slot.id]);
   if (missing.length) {
     const pending = missing.filter((slot) => allRecords[slot.id] && !allRecords[slot.id].appliedAt);
@@ -302,11 +305,12 @@ function renderFactOnlyMetrics() {
 }
 
 function renderMetrics(rows, priceBasis) {
-  $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
   if (priceBasis === "financial") {
+    $("#totalQty").textContent = formatQuantityWithYi(factFinancialQtyTotal);
     $("#totalValue").textContent = formatMoneyWithYi(factFinancialValueTotal);
     return;
   }
+  $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
   $("#totalValue").textContent = formatMoneyWithYi(sum(rows, "inventoryValue"));
 }
 
@@ -325,12 +329,24 @@ function sumFactEndingQty(factRows) {
   }, 0);
 }
 
-function sumFactFinancialValue(factRows) {
-  return factRows.reduce((total, row) => total + getEndingQty(row) * getFinancialPrice(row), 0);
+function sumFactFinancialTotals(factRows) {
+  return factRows.reduce((total, row) => {
+    const qty = parseNumberCell(getEndingQtyCell(row));
+    const price = parseNumberCell(getFinancialPriceCell(row));
+    if (!qty.valid || !price.valid) return total;
+    return {
+      qty: total.qty + qty.value,
+      value: total.value + qty.value * price.value
+    };
+  }, { qty: 0, value: 0 });
 }
 
 function getEndingQty(row) {
-  return firstNumber(row, [
+  return parseNumberCell(getEndingQtyCell(row)).value;
+}
+
+function getEndingQtyCell(row) {
+  return firstText(row, [
     firstValue(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量"]),
     firstValueByHeaderIncludes(row, ["结存", "数量"]),
     nthValue(row, 7)
@@ -338,10 +354,14 @@ function getEndingQty(row) {
 }
 
 function getFinancialPrice(row) {
+  return parseNumberCell(getFinancialPriceCell(row)).value;
+}
+
+function getFinancialPriceCell(row) {
   for (const [header, value] of Object.entries(row)) {
-    if (isFinancialPriceHeader(header)) return toNumber(value);
+    if (isFinancialPriceHeader(header)) return value;
   }
-  return 0;
+  return "";
 }
 
 function isFinancialPriceHeader(header) {
@@ -352,6 +372,15 @@ function isFinancialPriceHeader(header) {
 
 function sum(rows, key) {
   return rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
+}
+
+function parseNumberCell(value) {
+  const text = normalizeText(value);
+  if (!text) return { valid: false, value: 0 };
+  const cleaned = text.replace(/[,\s￥¥元]/g, "");
+  if (!cleaned || /^#/.test(cleaned)) return { valid: false, value: 0 };
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? { valid: true, value: parsed } : { valid: false, value: 0 };
 }
 
 function groupSum(rows, key, valueKey, limit = 12) {
