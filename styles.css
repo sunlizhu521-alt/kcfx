@@ -571,6 +571,22 @@ td.num {
   line-height: 1.4;
 }
 
+.parse-info {
+  display: grid;
+  gap: 4px;
+  min-height: 0;
+}
+
+.parse-info strong,
+.parse-info em {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #243443;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
 .card-actions {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

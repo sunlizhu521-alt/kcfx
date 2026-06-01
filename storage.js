@@ -294,6 +294,24 @@ function parseWorkbookRows(workbook, slot) {
   };
 }
 
+function nthValue(row, oneBasedIndex) {
+  const index = oneBasedIndex - 1;
+  return Object.values(row || {})[index] ?? "";
+}
+
+function buildParseDiagnostics(parsed) {
+  const rows = parsed.rows || [];
+  const headers = Object.keys(rows[0] || {});
+  return {
+    sheetName: parsed.sheetName || "",
+    headerFirst12: headers.slice(0, 12),
+    gHeader: headers[6] || "",
+    hHeader: headers[7] || "",
+    gSamples: rows.slice(0, 3).map((row) => nthValue(row, 7)),
+    hSamples: rows.slice(0, 3).map((row) => nthValue(row, 8))
+  };
+}
+
 async function readExcelFile(file, slot) {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
@@ -308,6 +326,7 @@ async function readExcelFile(file, slot) {
     lastModified: file.lastModified,
     savedAt: new Date().toISOString(),
     sheetName: parsed.sheetName,
+    parseDiagnostics: buildParseDiagnostics(parsed),
     rows: parsed.rows
   };
 }

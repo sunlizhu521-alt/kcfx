@@ -158,6 +158,7 @@ function renderCard(slot, record, labels) {
         <span>引用路径</span>
         <strong>${escapeHtml(recordReferencePath(record))}</strong>
       </div>
+      ${renderParseDiagnostics(displayRecord)}
       <input class="slot-file-input" type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}">
       <div class="card-actions">
         <button type="button" data-save="${slot.id}" ${replacementEnabled ? "" : "disabled"}>替换文件</button>
@@ -239,6 +240,23 @@ function recordReferencePath(record) {
   const source = record.libraryPath ? "库存分析看板文件库 + 浏览器本地库" : record.sharedSavedAt ? "GitHub共享包 + 浏览器本地库" : "浏览器本地库";
   const githubPath = record.libraryPath || `data/kcfx-library/${record.type === "fact" ? "fact" : "dimensions"}/${record.id}.json`;
   return `${source} / IndexedDB: kcfx-dashboard/files/${record.id} / GitHub: ${githubPath}`;
+}
+
+function renderParseDiagnostics(record) {
+  const diagnostics = record?.parseDiagnostics;
+  if (!diagnostics) return "";
+  const headerText = (diagnostics.headerFirst12 || []).filter(Boolean).join(" / ");
+  const gSamples = (diagnostics.gSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
+  const hSamples = (diagnostics.hSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
+  return `
+    <div class="slot-info parse-info">
+      <span>解析诊断</span>
+      <strong>Sheet：${escapeHtml(diagnostics.sheetName || "-")}；G列：${escapeHtml(diagnostics.gHeader || "-")}；H列：${escapeHtml(diagnostics.hHeader || "-")}</strong>
+      <em>前12字段：${escapeHtml(headerText || "-")}</em>
+      <em>G列样例：${escapeHtml(gSamples || "-")}</em>
+      <em>H列样例：${escapeHtml(hSamples || "-")}</em>
+    </div>
+  `;
 }
 
 function formatFileSize(bytes) {

@@ -70,6 +70,7 @@ function buildFactReferenceDiagnostics(record) {
     ghValidRows: 0,
     gSum: 0,
     ghValue: 0,
+    parseDiagnostics: record?.parseDiagnostics || null,
     path: record?.libraryPath || "data/kcfx-library/fact/fact-inventory.json"
   };
   for (const row of rows) {
@@ -290,14 +291,22 @@ function renderFactDiagnosticPanel(extraLines = []) {
     ? new Date(factReferenceDiagnostics.savedAt).toLocaleString("zh-CN", { hour12: false })
     : "-";
   const source = factReferenceDiagnostics.path ? "库存分析看板文件库 + 浏览器本地库" : "浏览器本地库";
+  const parseDiagnostics = factReferenceDiagnostics.parseDiagnostics || {};
+  const parsedHeaders = (parseDiagnostics.headerFirst12 || []).filter(Boolean).join(" / ");
+  const gSamples = (parseDiagnostics.gSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
+  const hSamples = (parseDiagnostics.hSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
   const lines = [
     `当前事实表引用：${factReferenceDiagnostics.fileName || "-"}`,
     `来源：${source}`,
     `保存时间：${savedAt}`,
+    `解析Sheet：${parseDiagnostics.sheetName || "-"}`,
+    `解析前12字段：${parsedHeaders || "-"}`,
     `行数：${formatNumber(factReferenceDiagnostics.rowCount || 0, 0)}`,
     `有物料编码行：${formatNumber(factReferenceDiagnostics.materialRows || 0, 0)}`,
     `G列：${factReferenceDiagnostics.gHeader || "-"}`,
     `H列：${factReferenceDiagnostics.hHeader || "-"}`,
+    `G列样例：${gSamples || "-"}`,
+    `H列样例：${hSamples || "-"}`,
     `G列有效行：${formatNumber(factReferenceDiagnostics.gValidRows || 0, 0)}`,
     `H列有效行：${formatNumber(factReferenceDiagnostics.hValidRows || 0, 0)}`,
     `G列求和：${formatNumber(factReferenceDiagnostics.gSum || 0, 3)}`,
