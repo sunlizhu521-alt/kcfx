@@ -153,13 +153,15 @@ select {
 }
 
 .status-pill {
-  max-width: 420px;
+  max-width: min(760px, 62vw);
   border: 1px solid #d8c28e;
   border-radius: 999px;
   padding: 8px 12px;
   background: #fff7e3;
   color: #7a4d0b;
   font-weight: 700;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .panel,
