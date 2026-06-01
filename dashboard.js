@@ -2,6 +2,7 @@ const COLORS = ["#0f7b79", "#405c9a", "#2f8f5b", "#b87618", "#6c5ce7", "#d35400"
 let wideRows = [];
 let filteredRows = [];
 let dashboardDiagnostics = {};
+let factReferenceDiagnostics = {};
 let factEndingQtyTotal = 0;
 let factFinancialQtyTotal = 0;
 let factFinancialValueTotal = 0;
@@ -30,6 +31,7 @@ async function refreshDashboard() {
   const allRecords = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
   const records = allRecords;
   const factRecord = allRecords["fact-inventory"];
+  factReferenceDiagnostics = buildFactReferenceDiagnostics(factRecord);
   factEndingQtyTotal = sumFactEndingQty(factRecord?.rows || []);
   const financialTotals = sumFactFinancialTotals(factRecord?.rows || []);
   factFinancialQtyTotal = financialTotals.qty;
@@ -41,6 +43,7 @@ async function refreshDashboard() {
     $("#detailRows").innerHTML = `<tr><td colspan="12" class="empty">${escapeHtml(message)}</td></tr>`;
     clearDashboard();
     renderFactOnlyMetrics();
+    renderFactDiagnosticPanel();
     return;
   }
 
@@ -48,6 +51,44 @@ async function refreshDashboard() {
   populateFilters(records);
   renderDataSourcePanel(records);
   renderDashboard();
+}
+
+function buildFactReferenceDiagnostics(record) {
+  const rows = record?.rows || [];
+  const firstRow = rows[0] || {};
+  const headers = Object.keys(firstRow);
+  const result = {
+    fileName: record?.fileName || "-",
+    savedAt: record?.savedAt || "",
+    sharedSavedAt: record?.sharedSavedAt || "",
+    rowCount: rows.length,
+    materialRows: 0,
+    gHeader: headers[6] || "-",
+    hHeader: headers[7] || "-",
+    gValidRows: 0,
+    hValidRows: 0,
+    ghValidRows: 0,
+    gSum: 0,
+    ghValue: 0,
+    path: "IndexedDB: kcfx-dashboard/files/fact-inventory; GitHub: data/shared-library.json#records.fact-inventory"
+  };
+  for (const row of rows) {
+    const materialCode = normalizeMaterialCode(nthValue(row, 3));
+    if (!materialCode) continue;
+    result.materialRows += 1;
+    const qty = parseNumberCell(nthValue(row, 7));
+    const price = parseNumberCell(nthValue(row, 8));
+    if (qty.valid) {
+      result.gValidRows += 1;
+      result.gSum += qty.value;
+    }
+    if (price.valid) result.hValidRows += 1;
+    if (qty.valid && price.valid) {
+      result.ghValidRows += 1;
+      result.ghValue += qty.value * price.value;
+    }
+  }
+  return result;
 }
 
 function buildWideRows(records) {
@@ -242,6 +283,31 @@ function renderDataSourcePanel(records) {
   $("#dataSourcePanel").innerHTML = items.join("");
 }
 
+function renderFactDiagnosticPanel(extraLines = []) {
+  const panel = $("#diagnosticPanel");
+  if (!panel) return;
+  const savedAt = factReferenceDiagnostics.savedAt
+    ? new Date(factReferenceDiagnostics.savedAt).toLocaleString("zh-CN", { hour12: false })
+    : "-";
+  const source = factReferenceDiagnostics.sharedSavedAt ? "GitHub共享包 + 浏览器本地库" : "浏览器本地库";
+  const lines = [
+    `当前事实表引用：${factReferenceDiagnostics.fileName || "-"}`,
+    `来源：${source}`,
+    `保存时间：${savedAt}`,
+    `行数：${formatNumber(factReferenceDiagnostics.rowCount || 0, 0)}`,
+    `有物料编码行：${formatNumber(factReferenceDiagnostics.materialRows || 0, 0)}`,
+    `G列：${factReferenceDiagnostics.gHeader || "-"}`,
+    `H列：${factReferenceDiagnostics.hHeader || "-"}`,
+    `G列有效行：${formatNumber(factReferenceDiagnostics.gValidRows || 0, 0)}`,
+    `H列有效行：${formatNumber(factReferenceDiagnostics.hValidRows || 0, 0)}`,
+    `G列求和：${formatNumber(factReferenceDiagnostics.gSum || 0, 3)}`,
+    `G×H金额：${formatMoney(factReferenceDiagnostics.ghValue || 0)}`,
+    `引用路径：${factReferenceDiagnostics.path || "-"}`
+  ];
+  panel.classList.add("show");
+  panel.innerHTML = [...lines, ...extraLines].map((line) => `<span>${escapeHtml(line)}</span>`).join("");
+}
+
 function renderPriceBasisStatus(priceBasis, rows) {
   if (priceBasis !== "settlement") {
     if (!dashboardDiagnostics.factHasFinancialPriceColumn) {
@@ -249,21 +315,19 @@ function renderPriceBasisStatus(priceBasis, rows) {
     } else {
       $("#sharedStatus").textContent = `财务维度：${formatNumber(rows.length, 0)} 行，金额 ${formatMoney(sum(rows, "inventoryValue"))}。`;
     }
-    $("#diagnosticPanel").classList.remove("show");
-    $("#diagnosticPanel").textContent = "";
+    renderFactDiagnosticPanel();
     return;
   }
   const pricedRows = rows.filter((row) => row.settlementPrice > 0 && row.endingQty !== 0);
   const matchedRows = rows.filter((row) => row.hasProductMatch && row.endingQty !== 0);
   const amount = sum(rows, "inventoryValue");
   $("#sharedStatus").textContent = `结算价维度：${formatNumber(rows.length, 0)} 行，结算价有效 ${formatNumber(pricedRows.length, 0)} 行，金额 ${formatMoney(amount)}。`;
-  $("#diagnosticPanel").classList.add("show");
-  $("#diagnosticPanel").textContent = [
+  renderFactDiagnosticPanel([
     `诊断：商品维表 ${formatNumber(dashboardDiagnostics.productRows, 0)} 行，${dashboardDiagnostics.productHasSettlementColumn ? "已找到“结算价”列" : "未找到精确“结算价”列"}`,
     `有物料编码 ${formatNumber(dashboardDiagnostics.productCodeRows, 0)} 行，有结算价 ${formatNumber(dashboardDiagnostics.productSettlementRows, 0)} 行，物料编码+结算价同时有效 ${formatNumber(dashboardDiagnostics.productCodeSettlementRows, 0)} 行`,
     `事实表有物料编码 ${formatNumber(dashboardDiagnostics.factCodeRows, 0)} 行，结存数量非 0 ${formatNumber(dashboardDiagnostics.factEndingQtyRows, 0)} 行，结存数量合计 ${formatNumber(dashboardDiagnostics.factEndingQtyTotal, 0)}`,
     `事实表 ${formatNumber(dashboardDiagnostics.factRows, 0)} 行，当前筛选 ${formatNumber(rows.length, 0)} 行，匹配商品维表 ${formatNumber(matchedRows.length, 0)} 行，匹配且有结算价 ${formatNumber(pricedRows.length, 0)} 行`
-  ].join("；");
+  ]);
 }
 
 function renderNoSettlementDataHint(rows) {

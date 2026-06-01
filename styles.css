@@ -211,6 +211,8 @@ select {
 
 .diagnostic-panel {
   display: none;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   margin: -4px 0 14px;
   padding: 10px 12px;
   border: 1px solid #d8c28e;
@@ -222,7 +224,20 @@ select {
 }
 
 .diagnostic-panel.show {
-  display: block;
+  display: flex;
+}
+
+.diagnostic-panel span {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 24px;
+  border: 1px solid rgba(216, 194, 142, .72);
+  border-radius: 6px;
+  padding: 2px 7px;
+  background: rgba(255, 255, 255, .55);
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .data-source-panel {
