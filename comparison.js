@@ -273,10 +273,7 @@ function getInventoryMaterialName(row) {
 }
 
 function getInventoryTrueCost(row) {
-  return firstNumber([
-    firstValue(row, ["真实成本-货品", "真实成本单价", "期末库存真实成本"]),
-    nthValue(row, 8)
-  ]);
+  return firstNumber([nthValue(row, 8)]);
 }
 
 function getDetailMaterialCode(row) {
@@ -405,7 +402,7 @@ function renderMatchBasis(options, inventoryRecord, detailRecord) {
   if (options.useWarehouse) parts.splice(options.useOrganization ? 1 : 0, 0, "仓库");
   $("#matchBasis").textContent = [
     `匹配键：${parts.join(" + ")}`,
-    `关账后库存事实表：结存数量取 G 列，真实成本-货品优先按列名识别，缺失时取 H 列。`,
+    `关账后库存事实表：结存数量取 G 列，库存资产估值取 G 列 × H 列真实成本单价。`,
     `收发明细汇总表：0430结余库存数量按列名识别，结算价(含税)固定取 P 列。`,
     `当前文件：${inventoryRecord.fileName || "-"} / ${detailRecord.fileName || "-"}`
   ].join(" ");
