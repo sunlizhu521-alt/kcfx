@@ -250,11 +250,16 @@ function normalizeKeyPart(value) {
 }
 
 function renderMetrics(result) {
-  $("#inventoryQtyTotal").textContent = formatNumber(result.inventoryQtyTotal, 3);
-  $("#detailQtyTotal").textContent = formatNumber(result.detailQtyTotal, 3);
+  $("#inventoryQtyTotal").textContent = formatNumberWithYi(result.inventoryQtyTotal);
+  $("#detailQtyTotal").textContent = formatNumberWithYi(result.detailQtyTotal);
   $("#qtyDiffTotal").textContent = formatNumber(result.qtyDiffTotal, 3);
   $("#qtyDiffCount").textContent = formatNumber(result.qtyDiffRows.length, 0);
   $("#priceDiffCount").textContent = formatNumber(result.priceDiffRows.length, 0);
+}
+
+function formatNumberWithYi(value) {
+  const numeric = Number(value || 0);
+  return `${formatNumber(numeric, 3)}（${(numeric / 100000000).toLocaleString("zh-CN", { maximumFractionDigits: 2 })}亿）`;
 }
 
 function renderMatchBasis(options, inventoryRecord, detailRecord) {
