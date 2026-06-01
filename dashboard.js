@@ -6,7 +6,7 @@ let factReferenceDiagnostics = {};
 let factEndingQtyTotal = 0;
 let factFinancialQtyTotal = 0;
 let factFinancialValueTotal = 0;
-const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse", "dim-warehouse-material"];
+const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse"];
 const FINANCIAL_PRICE_HEADERS = [
   "真实成本单价",
   "期末库存真实成本",
@@ -96,8 +96,6 @@ function buildWideRows(records) {
   const factRows = records["fact-inventory"].rows || [];
   const productRows = records["dim-product"].rows || [];
   const warehouseRows = records["dim-warehouse"].rows || [];
-  const warehouseMaterialRows = records["dim-warehouse-material"].rows || [];
-
   const productByCode = new Map();
   const productHeaders = Object.keys(productRows[0] || {});
   const factHeaders = [...new Set(factRows.flatMap((row) => Object.keys(row)))];
@@ -137,32 +135,31 @@ function buildWideRows(records) {
   }
 
   const warehouseByName = new Map();
+  const departmentByWarehouseKey = new Map();
   for (const row of warehouseRows) {
-    const name = normalizeText(firstValue(row, ["金蝶名称", "仓库名称"]));
-    if (!name || warehouseByName.has(name)) continue;
-    warehouseByName.set(name, {
-      warehouseType: normalizeText(firstValue(row, ["一级仓库分类"])),
-      warehouseLocation: firstText(row, [firstValue(row, ["二级仓库分类", "仓库位置", "位置"]), nthValue(row, 8)])
-    });
-  }
-
-  const divisionByKey = new Map();
-  for (const row of warehouseMaterialRows) {
-    const key = makeJoinKey(row);
-    if (!key || divisionByKey.has(key)) continue;
-    divisionByKey.set(key, {
-      department: firstText(row, [firstValue(row, ["事业部", "销售事业部", "部门"]), nthValue(row, 7)])
-    });
+    const name = normalizeText(nthValue(row, 2));
+    if (name && !warehouseByName.has(name)) {
+      warehouseByName.set(name, {
+        warehouseType: normalizeText(firstValue(row, ["一级仓库分类"])),
+        warehouseLocation: firstText(row, [firstValue(row, ["二级仓库分类", "仓库位置", "位置"]), nthValue(row, 8)])
+      });
+    }
+    const departmentKey = makeWarehouseDepartmentKeyFromDimension(row);
+    if (departmentKey && !departmentByWarehouseKey.has(departmentKey)) {
+      departmentByWarehouseKey.set(departmentKey, {
+        department: normalizeText(nthValue(row, 7))
+      });
+    }
   }
 
   return factRows.map((row) => {
-    const materialCode = normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 3)]));
-    const warehouse = normalizeText(firstValue(row, ["仓库名称", "金蝶名称", "仓库"]));
-    const organization = normalizeText(firstValue(row, ["库存组织"]));
+    const materialCode = normalizeMaterialCode(nthValue(row, 1));
+    const warehouse = normalizeText(nthValue(row, 6));
+    const organization = normalizeText(nthValue(row, 12));
     const hasProductMatch = productByCode.has(materialCode);
     const product = productByCode.get(materialCode) || {};
     const warehouseInfo = warehouseByName.get(warehouse) || {};
-    const division = divisionByKey.get(makeJoinKey(row)) || {};
+    const division = departmentByWarehouseKey.get(makeWarehouseDepartmentKeyFromFact(row)) || {};
     const financialPrice = getFinancialPrice(row);
     const settlementPrice = product.settlementPrice || 0;
     const endingQty = getEndingQty(row);
@@ -199,13 +196,11 @@ function buildWideRows(records) {
 function populateFilters(records) {
   const productRows = records["dim-product"].rows || [];
   const warehouseRows = records["dim-warehouse"].rows || [];
-  const warehouseMaterialRows = records["dim-warehouse-material"].rows || [];
-
   fillStaticSelect($("#priceBasisFilter"), [
     ["settlement", "结算价维度"],
     ["financial", "财务维度"]
   ]);
-  fillSelect($("#departmentFilter"), "全部事业部", uniqueColumnValues(warehouseMaterialRows, ["事业部"]));
+  fillSelect($("#departmentFilter"), "全部事业部", uniquePhysicalColumnValues(warehouseRows, 7));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
   fillSelect($("#seriesFilter"), "全部销售系列", uniqueColumnValues(productRows, ["销售系列"]));
   fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
@@ -232,6 +227,27 @@ function uniqueValues(rows, key) {
 function uniqueColumnValues(rows, columnNames) {
   return [...new Set(rows.map((row) => normalizeText(firstValue(row, columnNames))).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function uniquePhysicalColumnValues(rows, oneBasedIndex) {
+  return [...new Set(rows.map((row) => normalizeText(nthValue(row, oneBasedIndex))).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function makeWarehouseDepartmentKeyFromFact(row) {
+  return [
+    normalizeText(nthValue(row, 12)),
+    normalizeText(nthValue(row, 6)),
+    normalizeMaterialCode(nthValue(row, 1))
+  ].join("");
+}
+
+function makeWarehouseDepartmentKeyFromDimension(row) {
+  return [
+    normalizeText(nthValue(row, 1)),
+    normalizeText(nthValue(row, 2)),
+    normalizeMaterialCode(nthValue(row, 3))
+  ].join("");
 }
 
 function renderDashboard() {
