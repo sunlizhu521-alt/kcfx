@@ -42,7 +42,7 @@ async function runErrorChecks() {
   const warehouseMissing = stockWarehouses.filter((item) => !divisionWarehouses.has(item.warehouse));
   const settlementMissing = stockMaterials.filter((item) => {
     const productItem = productMap.get(item.materialCode);
-    return !productItem || productItem.settlementPrice <= 0;
+    return productItem && isSalesFinishedProduct(productItem) && productItem.settlementPrice <= 0;
   });
 
   const enrichedProductMissing = productMissing.map((item) => enrichMissingRow(item, productMap));
@@ -119,10 +119,22 @@ function mapProduct(rows) {
     map.set(materialCode, {
       sku: normalizeText(firstValue(row, ["SKU"])),
       materialName: normalizeText(firstValue(row, ["金蝶名称", "物料名称", "货品名称"])),
+      productLine: normalizeText(firstValue(row, ["销售产品线", "产品线"])),
+      materialGroup: normalizeText(firstValue(row, ["物料分组"])),
+      category1: normalizeText(firstValue(row, ["一级品类"])),
+      productStatus: normalizeText(firstValue(row, ["产品状态（Dim）", "产品状态"])),
       settlementPrice: toNumber(firstValue(row, ["结算价（含税）", "结算价", "内部结算价", "26年内部结算价", "2026年内部结算价"]))
     });
   }
   return map;
+}
+
+function isSalesFinishedProduct(product) {
+  const productLine = normalizeText(product.productLine);
+  if (!productLine) return false;
+  if (["其他/配件", "配件", "售后配件"].includes(productLine)) return false;
+  if (productLine.includes("配件") && !productLine.includes("成品")) return false;
+  return true;
 }
 
 function mapDivisionMaterialCodes(rows) {
@@ -149,6 +161,7 @@ function enrichMissingRow(item, productMap) {
     materialCode: item.materialCode,
     sku: item.sku || product.sku || "",
     materialName: item.materialName || product.materialName || "",
+    productLine: product.productLine || "",
     qty: item.qty
   };
 }
@@ -189,9 +202,10 @@ function renderSettlementRows(selector, rows) {
     <tr>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
+      <td>${escapeHtml(row.productLine)}</td>
       <td class="num">${formatNumber(row.qty)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="3" class="empty">暂无缺失数据</td></tr>`;
+  `).join("") : `<tr><td colspan="4" class="empty">暂无缺失数据</td></tr>`;
 }
 
 function downloadAllErrorTables() {
@@ -219,6 +233,7 @@ function downloadAllErrorTables() {
   downloadRowsAsWorkbook("结算价缺失表", stamp, currentSettlementMissing, [
     ["materialCode", "物料编码"],
     ["materialName", "物料名称"],
+    ["productLine", "销售产品线"],
     ["qty", "数量"]
   ]);
 }
