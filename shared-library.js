@@ -6,13 +6,14 @@ async function loadSharedLibrary(options = {}) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
     const records = payload.records || {};
+    const sharedSavedAt = payload.savedAt || "";
     let imported = 0;
 
     for (const [id, record] of Object.entries(records)) {
       if (!SLOT_BY_ID[id] || !Array.isArray(record.rows)) continue;
       const local = await getRecord(id);
-      if (recordIsNewer(record, local)) {
-        await saveRecord({ ...record, id });
+      if (recordIsNewer({ ...record, savedAt: sharedSavedAt || record.savedAt }, local)) {
+        await saveRecord({ ...record, id, sharedSavedAt });
         imported += 1;
       }
     }
@@ -53,4 +54,3 @@ async function downloadSharedLibrary() {
   link.click();
   URL.revokeObjectURL(url);
 }
-
