@@ -15,6 +15,22 @@ const FINANCIAL_PRICE_HEADERS = [
   "真实成本",
   "成本单价"
 ];
+const DEPARTMENT_ORDER = [
+  "海外事业一部",
+  "海外事业二部",
+  "国内事业部",
+  "全球招商部",
+  "瑞朗德销售部",
+  "瑞朗德工厂",
+  "电子车间",
+  "宁波工厂",
+  "试制中心",
+  "售后配件仓",
+  "委外仓",
+  "系统集成仓",
+  "封样仓",
+  "供应商仓（后续划分事业部）"
+];
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -205,7 +221,7 @@ function populateFilters(records) {
     ["settlement", "结算价维度"],
     ["financial", "财务维度"]
   ]);
-  fillSelect($("#departmentFilter"), "\u5168\u90e8\u4e8b\u4e1a\u90e8", uniquePhysicalColumnValues(warehouseMaterialRows, 7));
+  fillSelect($("#departmentFilter"), "\u5168\u90e8\u4e8b\u4e1a\u90e8", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
   fillSelect($("#seriesFilter"), "全部销售系列", uniqueColumnValues(productRows, ["销售系列"]));
   fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
@@ -237,6 +253,16 @@ function uniqueColumnValues(rows, columnNames) {
 function uniquePhysicalColumnValues(rows, oneBasedIndex) {
   return [...new Set(rows.map((row) => normalizeText(nthValue(row, oneBasedIndex))).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function sortByPreferredOrder(values, preferredOrder) {
+  const rank = new Map(preferredOrder.map((value, index) => [value, index]));
+  return [...values].sort((a, b) => {
+    const aRank = rank.has(a) ? rank.get(a) : Number.MAX_SAFE_INTEGER;
+    const bRank = rank.has(b) ? rank.get(b) : Number.MAX_SAFE_INTEGER;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.localeCompare(b, "zh-CN");
+  });
 }
 
 function makeWarehouseDepartmentKeyFromFact(row) {
