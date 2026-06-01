@@ -110,7 +110,7 @@ function buildWideRows(records) {
     const product = productByCode.get(materialCode) || {};
     const warehouseInfo = warehouseByName.get(warehouse) || {};
     const division = divisionByKey.get(makeJoinKey(row)) || {};
-    const financialPrice = firstNumber(row, [firstValue(row, ["真实成本单价", "期末库存真实成本", "成本单价", "单价"]), nthValue(row, 8)]);
+    const financialPrice = getFinancialPrice(row);
     const settlementPrice = product.settlementPrice || 0;
     const endingQty = getEndingQty(row);
     if (materialCode) dashboardDiagnostics.factCodeRows += 1;
@@ -291,6 +291,21 @@ function getEndingQty(row) {
     firstValue(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量"]),
     firstValueByHeaderIncludes(row, ["结存", "数量"]),
     nthValue(row, 7)
+  ]);
+}
+
+function getFinancialPrice(row) {
+  return firstNumber(row, [
+    firstValue(row, [
+      "真实成本单价",
+      "期末库存真实成本",
+      "期末库存真实成本单价",
+      "集团期末库存真实成本",
+      "真实成本",
+      "成本单价"
+    ]),
+    firstValueByHeaderIncludes(row, ["真实", "成本"]),
+    firstValueByHeaderIncludes(row, ["成本", "单价"])
   ]);
 }
 
