@@ -132,7 +132,7 @@ function mapProduct(rows) {
 function isSalesFinishedProduct(product) {
   const productLine = normalizeText(product.productLine);
   if (!productLine) return false;
-  if (["其他/配件", "配件", "售后配件"].includes(productLine)) return false;
+  if (["其他/配件", "配件", "售后配件", "健康办公"].includes(productLine)) return false;
   if (productLine.includes("配件") && !productLine.includes("成品")) return false;
   return true;
 }
