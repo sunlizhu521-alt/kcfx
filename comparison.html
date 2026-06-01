@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>库存分析看板 对比分析</title>
+  <link rel="stylesheet" href="styles.css?v=20260602a">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>库存分析看板</strong>
+        <span>供应链维护更新</span>
+      </div>
+      <nav class="nav">
+        <a href="index.html">库存分析看板</a>
+        <a class="active" href="comparison.html">对比分析</a>
+        <a href="fact-library.html">备货事实表库</a>
+        <a href="file-library.html">维度表文件库</a>
+        <a href="errors.html">报错信息提示</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1>对比分析</h1>
+          <p>分析关账后库存事实表与收发明细汇总表的数量差异、真实成本与结算价差异。</p>
+        </div>
+        <div class="status-pill" id="compareStatus">正在读取文件库...</div>
+      </header>
+
+      <section class="toolbar">
+        <button id="refreshBtn" type="button">应用刷新</button>
+      </section>
+
+      <div id="sourcePanel" class="data-source-panel"></div>
+
+      <section class="metrics comparison-metrics">
+        <div class="metric-card"><span>关账后库存数量</span><strong id="inventoryQtyTotal">0</strong></div>
+        <div class="metric-card"><span>0430结余库存数量</span><strong id="detailQtyTotal">0</strong></div>
+        <div class="metric-card"><span>数量差异</span><strong id="qtyDiffTotal">0</strong></div>
+        <div class="metric-card"><span>数量差异行</span><strong id="qtyDiffCount">0</strong></div>
+        <div class="metric-card"><span>价格差异行</span><strong id="priceDiffCount">0</strong></div>
+      </section>
+
+      <section class="panel comparison-summary">
+        <h2>匹配口径</h2>
+        <p id="matchBasis">正在识别字段...</p>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title">数量差异：结存数量 vs 0430结余库存数量</div>
+        <div class="table-panel comparison-table">
+          <table>
+            <thead>
+              <tr>
+                <th>使用组织</th>
+                <th>仓库</th>
+                <th>物料编码</th>
+                <th>物料名称</th>
+                <th>关账后库存结存数量</th>
+                <th>收发明细0430结余库存数量</th>
+                <th>差异</th>
+              </tr>
+            </thead>
+            <tbody id="qtyDiffRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title">价格差异：真实成本-货品 vs P列结算价(含税)</div>
+        <div class="table-panel comparison-table">
+          <table>
+            <thead>
+              <tr>
+                <th>使用组织</th>
+                <th>仓库</th>
+                <th>物料编码</th>
+                <th>物料名称</th>
+                <th>关账后库存真实成本-货品</th>
+                <th>收发明细P列结算价(含税)</th>
+                <th>差异</th>
+              </tr>
+            </thead>
+            <tbody id="priceDiffRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="storage.js?v=20260602a"></script>
+  <script src="shared-library.js?v=20260601d"></script>
+  <script src="comparison.js?v=20260602a"></script>
+</body>
+</html>
