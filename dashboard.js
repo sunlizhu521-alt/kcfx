@@ -445,10 +445,10 @@ function sumFactEndingQty(factRows) {
 function sumFactFinancialTotals(factRows) {
   return factRows.reduce((total, row) => {
     const qty = parseNumberCell(getFinancialQtyCell(row));
-    const price = parseNumberCell(getFinancialPriceCell(row));
+    const amount = parseNumberCell(getFinancialAmountCell(row));
     return {
       qty: total.qty + (qty.valid ? qty.value : 0),
-      value: total.value + (qty.valid && price.valid ? qty.value * price.value : 0)
+      value: total.value + (amount.valid ? amount.value : 0)
     };
   }, { qty: 0, value: 0 });
 }
@@ -479,6 +479,10 @@ function getFinancialPrice(row) {
 
 function getFinancialPriceCell(row) {
   return nthValue(row, 8);
+}
+
+function getFinancialAmountCell(row) {
+  return nthValue(row, 9);
 }
 
 function isFinancialPriceHeader(header) {
