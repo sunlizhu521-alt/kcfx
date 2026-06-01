@@ -26,7 +26,10 @@ let currentComparison = {
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", runComparison);
-  $("#diffTypeFilter").addEventListener("change", renderCurrentDiffTable);
+  $("#diffTypeFilter").addEventListener("change", () => {
+    populateDimensionFilters(currentComparison);
+    renderCurrentDiffTable();
+  });
   $("#departmentFilter").addEventListener("change", renderCurrentDiffTable);
   $("#productLineFilter").addEventListener("change", renderCurrentDiffTable);
   $("#seriesFilter").addEventListener("change", renderCurrentDiffTable);
@@ -322,7 +325,7 @@ function firstText(candidates) {
 }
 
 function populateDimensionFilters(result) {
-  const rows = [...result.qtyDiffRows, ...result.priceDiffRows];
+  const rows = ($("#diffTypeFilter").value || "qty") === "price" ? result.priceDiffRows : result.qtyDiffRows;
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniqueValues(rows, "department"), DEPARTMENT_ORDER));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
   fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(rows, "series"));
