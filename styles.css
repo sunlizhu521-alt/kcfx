@@ -225,6 +225,26 @@ select {
   display: block;
 }
 
+.data-source-panel {
+  margin: -4px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #c8d6e2;
+  border-radius: 8px;
+  background: #f8fbfd;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.data-source-panel strong {
+  color: var(--ink);
+}
+
+.data-source-panel code {
+  color: #38546b;
+  white-space: nowrap;
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -528,6 +548,12 @@ td.num {
   padding: 10px;
   border-radius: 6px;
   background: #f1f6fa;
+}
+
+.path-info strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .card-actions {

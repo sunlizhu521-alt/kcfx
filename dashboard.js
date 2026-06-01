@@ -48,6 +48,7 @@ async function refreshDashboard() {
 
   wideRows = buildWideRows(records);
   populateFilters(records);
+  renderDataSourcePanel(records);
   renderDashboard();
 }
 
@@ -227,6 +228,20 @@ function renderChartTitles(priceBasis) {
   $("#productLineChartTitle").textContent = settlementMode ? "销售产品线库存资金（万元）" : "销售产品线库存资产排行（万元）";
   $("#warehouseTypeChartTitle").textContent = settlementMode ? "仓库类型资金" : "仓库类型资金占用（万元）";
   $("#seriesChartTitle").textContent = settlementMode ? "产品系列 资金Top 10（万元）" : "产品系列 Top 10（万元）";
+}
+
+function renderDataSourcePanel(records) {
+  const items = DASHBOARD_REQUIRED_SLOTS.map((id) => {
+    const slot = SLOT_BY_ID[id];
+    const record = records[id];
+    if (!record) return `<div><strong>${escapeHtml(slot.title)}</strong>：未应用</div>`;
+    const source = record.sharedSavedAt ? "GitHub共享包 + 浏览器本地库" : "浏览器本地库";
+    const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
+    const appliedAt = record.appliedAt ? new Date(record.appliedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
+    const path = `IndexedDB: kcfx-dashboard/files/${id}；GitHub: data/shared-library.json#records.${id}`;
+    return `<div><strong>${escapeHtml(slot.title)}</strong>：${escapeHtml(record.fileName || "-")}；来源：${escapeHtml(source)}；保存：${escapeHtml(savedAt)}；应用：${escapeHtml(appliedAt)}；<code>${escapeHtml(path)}</code></div>`;
+  });
+  $("#dataSourcePanel").innerHTML = items.join("");
 }
 
 function renderPriceBasisStatus(priceBasis, rows) {
