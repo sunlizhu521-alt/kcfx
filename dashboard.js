@@ -90,9 +90,7 @@ function buildFactReferenceDiagnostics(record) {
     path: record?.libraryPath || "data/kcfx-library/fact/fact-inventory.json"
   };
   for (const row of rows) {
-    const materialCode = normalizeMaterialCode(nthValue(row, 3));
-    if (!materialCode) continue;
-    result.materialRows += 1;
+    if (getFactMaterialCode(row)) result.materialRows += 1;
     const qty = parseNumberCell(nthValue(row, 7));
     const price = parseNumberCell(nthValue(row, 8));
     if (qty.valid) {
@@ -439,14 +437,13 @@ function formatMoneyWithYi(value) {
 
 function sumFactEndingQty(factRows) {
   return factRows.reduce((total, row) => {
-    if (!normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 3)]))) return total;
-    return total + getEndingQty(row);
+    const qty = parseNumberCell(getFinancialQtyCell(row));
+    return total + (qty.valid ? qty.value : 0);
   }, 0);
 }
 
 function sumFactFinancialTotals(factRows) {
   return factRows.reduce((total, row) => {
-    if (!normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 3)]))) return total;
     const qty = parseNumberCell(getFinancialQtyCell(row));
     const price = parseNumberCell(getFinancialPriceCell(row));
     return {
@@ -454,6 +451,10 @@ function sumFactFinancialTotals(factRows) {
       value: total.value + (qty.valid && price.valid ? qty.value * price.value : 0)
     };
   }, { qty: 0, value: 0 });
+}
+
+function getFactMaterialCode(row) {
+  return normalizeMaterialCode(nthValue(row, 1));
 }
 
 function getFinancialQtyCell(row) {
