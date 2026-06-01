@@ -262,13 +262,17 @@ function clearDashboard() {
 }
 
 function renderFactOnlyMetrics() {
-  $("#totalQty").textContent = formatNumber(factEndingQtyTotal, 0);
+  $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
   $("#totalValue").textContent = "¥0";
 }
 
 function renderMetrics(rows) {
-  $("#totalQty").textContent = formatNumber(factEndingQtyTotal, 0);
+  $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
   $("#totalValue").textContent = formatMoney(sum(rows, "inventoryValue"));
+}
+
+function formatQuantityWithYi(value) {
+  return `${formatNumber(value, 0)}（${formatNumber(Number(value || 0) / 100000000, 2)}亿）`;
 }
 
 function sumFactEndingQty(factRows) {
