@@ -1,5 +1,21 @@
 const $ = (selector) => document.querySelector(selector);
 const EPSILON = 0.000001;
+const DEPARTMENT_ORDER = [
+  "海外事业一部",
+  "海外事业二部",
+  "国内事业部",
+  "全球招商部",
+  "瑞朗德销售部",
+  "瑞朗德工厂",
+  "电子车间",
+  "宁波工厂",
+  "试制中心",
+  "售后配件仓",
+  "委外仓",
+  "系统集成仓",
+  "封样仓",
+  "供应商仓（后续划分事业部）"
+];
 let currentComparison = {
   inventoryQtyTotal: 0,
   detailQtyTotal: 0,
@@ -11,6 +27,9 @@ let currentComparison = {
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", runComparison);
   $("#diffTypeFilter").addEventListener("change", renderCurrentDiffTable);
+  $("#departmentFilter").addEventListener("change", renderCurrentDiffTable);
+  $("#productLineFilter").addEventListener("change", renderCurrentDiffTable);
+  $("#seriesFilter").addEventListener("change", renderCurrentDiffTable);
   $("#downloadBtn").addEventListener("click", downloadCurrentDiffTable);
   await loadSharedLibrary({ statusEl: $("#compareStatus") });
   await runComparison();
@@ -20,6 +39,8 @@ async function runComparison() {
   const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
   const inventoryRecord = records["fact-inventory"];
   const detailRecord = records["fact-2"];
+  const productRecord = records["dim-product"];
+  const warehouseMaterialRecord = records["dim-warehouse-material"];
 
   renderSourcePanel(inventoryRecord, detailRecord);
 
@@ -37,9 +58,11 @@ async function runComparison() {
   const keyOptions = detectKeyOptions(inventoryRows, detailRows);
   const inventoryMap = summarizeInventoryRows(inventoryRows, keyOptions);
   const detailMap = summarizeDetailRows(detailRows, keyOptions);
-  currentComparison = compareMaps(inventoryMap, detailMap);
+  const productMap = mapProductsByMaterialCode(productRecord?.rows || []);
+  const departmentMap = mapDepartmentsByJoinKey(warehouseMaterialRecord?.rows || []);
+  currentComparison = compareMaps(inventoryMap, detailMap, productMap, departmentMap);
 
-  renderMetrics(currentComparison);
+  populateDimensionFilters(currentComparison);
   renderMatchBasis(keyOptions, inventoryRecord, detailRecord);
   renderCurrentDiffTable();
   $("#compareStatus").textContent = `对比完成：${new Date().toLocaleString("zh-CN", { hour12: false })}`;
@@ -104,19 +127,26 @@ function summarizeDetailRows(rows, keyOptions) {
   return map;
 }
 
-function compareMaps(inventoryMap, detailMap) {
+function compareMaps(inventoryMap, detailMap, productMap, departmentMap) {
   const keys = new Set([...inventoryMap.keys(), ...detailMap.keys()]);
   const rows = [...keys].map((key) => {
     const inventory = inventoryMap.get(key) || {};
     const detail = detailMap.get(key) || {};
     const inventoryPrice = averagePrice(inventory.inventoryPriceAmount, inventory.inventoryPriceWeight);
     const detailPrice = averagePrice(detail.detailPriceAmount, detail.detailPriceWeight);
+    const materialCode = inventory.materialCode || detail.materialCode || "";
+    const organization = inventory.organization || detail.organization || "";
+    const warehouse = inventory.warehouse || detail.warehouse || "";
+    const product = productMap.get(materialCode) || {};
     return {
       key,
-      organization: inventory.organization || detail.organization || "",
-      warehouse: inventory.warehouse || detail.warehouse || "",
-      materialCode: inventory.materialCode || detail.materialCode || "",
+      organization,
+      warehouse,
+      materialCode,
       materialName: inventory.materialName || detail.materialName || "",
+      department: departmentMap.get(makeDepartmentLookupKey(organization, warehouse, materialCode)) || "未分事业部",
+      productLine: product.productLine || "",
+      series: product.series || "",
       inventoryQty: inventory.inventoryQty || 0,
       detailQty: detail.detailQty || 0,
       qtyDiff: (inventory.inventoryQty || 0) - (detail.detailQty || 0),
@@ -142,6 +172,40 @@ function compareMaps(inventoryMap, detailMap) {
     qtyDiffRows,
     priceDiffRows
   };
+}
+
+function mapProductsByMaterialCode(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const materialCode = normalizeMaterialCode(firstText([firstValue(row, ["物料编码"]), nthValue(row, 1)]));
+    if (!materialCode || map.has(materialCode)) continue;
+    map.set(materialCode, {
+      productLine: firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
+      series: firstText([firstValue(row, ["销售系列", "系列"]), nthValue(row, 8)])
+    });
+  }
+  return map;
+}
+
+function mapDepartmentsByJoinKey(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const organization = normalizeText(nthValue(row, 1));
+    const warehouse = normalizeText(nthValue(row, 2));
+    const materialCode = normalizeMaterialCode(nthValue(row, 3));
+    const department = normalizeText(nthValue(row, 7));
+    const key = makeDepartmentLookupKey(organization, warehouse, materialCode);
+    if (key && department && !map.has(key)) map.set(key, department);
+  }
+  return map;
+}
+
+function makeDepartmentLookupKey(organization, warehouse, materialCode) {
+  return [
+    normalizeText(organization),
+    normalizeText(warehouse),
+    normalizeMaterialCode(materialCode)
+  ].join("");
 }
 
 function ensureItem(map, key, defaults) {
@@ -249,12 +313,58 @@ function normalizeKeyPart(value) {
   return normalizeText(value).replace(/\s+/g, "");
 }
 
-function renderMetrics(result) {
+function firstText(candidates) {
+  for (const candidate of candidates) {
+    const text = normalizeText(candidate);
+    if (text) return text;
+  }
+  return "";
+}
+
+function populateDimensionFilters(result) {
+  const rows = [...result.qtyDiffRows, ...result.priceDiffRows];
+  fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniqueValues(rows, "department"), DEPARTMENT_ORDER));
+  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
+  fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(rows, "series"));
+}
+
+function fillSelect(select, allLabel, values) {
+  const current = select.value || "";
+  select.innerHTML = [`<option value="">${allLabel}</option>`, ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)].join("");
+  select.value = values.includes(current) ? current : "";
+}
+
+function uniqueValues(rows, key) {
+  return [...new Set(rows.map((row) => normalizeText(row[key])).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function sortByPreferredOrder(values, preferredOrder) {
+  const rank = new Map(preferredOrder.map((value, index) => [value, index]));
+  return [...values].sort((a, b) => {
+    const aRank = rank.has(a) ? rank.get(a) : Number.MAX_SAFE_INTEGER;
+    const bRank = rank.has(b) ? rank.get(b) : Number.MAX_SAFE_INTEGER;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.localeCompare(b, "zh-CN");
+  });
+}
+
+function filterRows(rows) {
+  return rows.filter((row) => matchSelect(row.department, $("#departmentFilter").value)
+    && matchSelect(row.productLine, $("#productLineFilter").value)
+    && matchSelect(row.series, $("#seriesFilter").value));
+}
+
+function matchSelect(value, selected) {
+  return !selected || value === selected;
+}
+
+function renderMetrics(result, qtyRows = result.qtyDiffRows, priceRows = result.priceDiffRows) {
   $("#inventoryQtyTotal").textContent = formatNumberWithYi(result.inventoryQtyTotal);
   $("#detailQtyTotal").textContent = formatNumberWithYi(result.detailQtyTotal);
-  $("#qtyDiffTotal").textContent = formatNumber(result.qtyDiffTotal, 3);
-  $("#qtyDiffCount").textContent = formatNumber(result.qtyDiffRows.length, 0);
-  $("#priceDiffCount").textContent = formatNumber(result.priceDiffRows.length, 0);
+  $("#qtyDiffTotal").textContent = formatNumber(qtyRows.reduce((sum, row) => sum + row.qtyDiff, 0), 3);
+  $("#qtyDiffCount").textContent = formatNumber(qtyRows.length, 0);
+  $("#priceDiffCount").textContent = formatNumber(priceRows.length, 0);
 }
 
 function formatNumberWithYi(value) {
@@ -293,10 +403,14 @@ function sourceLine(title, id, record) {
 function renderCurrentDiffTable() {
   const type = $("#diffTypeFilter").value || "qty";
   if (type === "price") {
-    renderPriceTable(currentComparison.priceDiffRows);
+    const rows = filterRows(currentComparison.priceDiffRows);
+    renderMetrics(currentComparison, filterRows(currentComparison.qtyDiffRows), rows);
+    renderPriceTable(rows);
     return;
   }
-  renderQtyTable(currentComparison.qtyDiffRows);
+  const rows = filterRows(currentComparison.qtyDiffRows);
+  renderMetrics(currentComparison, rows, filterRows(currentComparison.priceDiffRows));
+  renderQtyTable(rows);
 }
 
 function renderQtyTable(rows) {
@@ -307,6 +421,9 @@ function renderQtyTable(rows) {
       <th>仓库</th>
       <th>物料编码</th>
       <th>物料名称</th>
+      <th>事业部</th>
+      <th>销售产品线</th>
+      <th>销售系列</th>
       <th>关账后库存结存数量</th>
       <th>收发明细0430结余库存数量</th>
       <th>差异</th>
@@ -317,11 +434,14 @@ function renderQtyTable(rows) {
       <td>${escapeHtml(row.warehouse)}</td>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
+      <td>${escapeHtml(row.department)}</td>
+      <td>${escapeHtml(row.productLine)}</td>
+      <td>${escapeHtml(row.series)}</td>
       <td class="num">${formatNumber(row.inventoryQty, 3)}</td>
       <td class="num">${formatNumber(row.detailQty, 3)}</td>
       <td class="num">${formatNumber(row.qtyDiff, 3)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="7" class="empty">暂无数量差异</td></tr>`;
+  `).join("") : `<tr><td colspan="10" class="empty">暂无数量差异</td></tr>`;
 }
 
 function renderPriceTable(rows) {
@@ -332,6 +452,9 @@ function renderPriceTable(rows) {
       <th>仓库</th>
       <th>物料编码</th>
       <th>物料名称</th>
+      <th>事业部</th>
+      <th>销售产品线</th>
+      <th>销售系列</th>
       <th>关账后库存真实成本-货品</th>
       <th>收发明细P列结算价(含税)</th>
       <th>差异</th>
@@ -342,22 +465,25 @@ function renderPriceTable(rows) {
       <td>${escapeHtml(row.warehouse)}</td>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
+      <td>${escapeHtml(row.department)}</td>
+      <td>${escapeHtml(row.productLine)}</td>
+      <td>${escapeHtml(row.series)}</td>
       <td class="num">${formatNumber(row.inventoryPrice, 4)}</td>
       <td class="num">${formatNumber(row.detailPrice, 4)}</td>
       <td class="num">${formatNumber(row.priceDiff, 4)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="7" class="empty">暂无价格差异</td></tr>`;
+  `).join("") : `<tr><td colspan="10" class="empty">暂无价格差异</td></tr>`;
 }
 
 function downloadCurrentDiffTable() {
   const type = $("#diffTypeFilter").value || "qty";
-  const rows = type === "price" ? currentComparison.priceDiffRows : currentComparison.qtyDiffRows;
+  const rows = filterRows(type === "price" ? currentComparison.priceDiffRows : currentComparison.qtyDiffRows);
   const headers = type === "price"
-    ? ["使用组织", "仓库", "物料编码", "物料名称", "关账后库存真实成本-货品", "收发明细P列结算价(含税)", "差异"]
-    : ["使用组织", "仓库", "物料编码", "物料名称", "关账后库存结存数量", "收发明细0430结余库存数量", "差异"];
+    ? ["使用组织", "仓库", "物料编码", "物料名称", "事业部", "销售产品线", "销售系列", "关账后库存真实成本-货品", "收发明细P列结算价(含税)", "差异"]
+    : ["使用组织", "仓库", "物料编码", "物料名称", "事业部", "销售产品线", "销售系列", "关账后库存结存数量", "收发明细0430结余库存数量", "差异"];
   const csvRows = [headers, ...rows.map((row) => type === "price"
-    ? [row.organization, row.warehouse, row.materialCode, row.materialName, row.inventoryPrice, row.detailPrice, row.priceDiff]
-    : [row.organization, row.warehouse, row.materialCode, row.materialName, row.inventoryQty, row.detailQty, row.qtyDiff]
+    ? [row.organization, row.warehouse, row.materialCode, row.materialName, row.department, row.productLine, row.series, row.inventoryPrice, row.detailPrice, row.priceDiff]
+    : [row.organization, row.warehouse, row.materialCode, row.materialName, row.department, row.productLine, row.series, row.inventoryQty, row.detailQty, row.qtyDiff]
   )];
   const csv = "\ufeff" + csvRows.map((row) => row.map(csvCell).join(",")).join("\r\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
