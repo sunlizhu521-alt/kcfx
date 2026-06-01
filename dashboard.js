@@ -353,10 +353,7 @@ function getFinancialPrice(row) {
 }
 
 function getFinancialPriceCell(row) {
-  for (const [header, value] of Object.entries(row)) {
-    if (isFinancialPriceHeader(header)) return value;
-  }
-  return "";
+  return nthValue(row, 8);
 }
 
 function isFinancialPriceHeader(header) {
