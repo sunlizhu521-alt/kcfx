@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板</title>
-  <link rel="stylesheet" href="styles.css?v=20260531j">
+  <link rel="stylesheet" href="styles.css?v=20260601a">
 </head>
 <body>
   <div class="app-shell">
@@ -51,18 +51,22 @@
       <section class="dashboard-grid">
         <div class="panel">
           <h2 id="departmentChartTitle">事业部库存资产排行（万元）</h2>
+          <p class="chart-note">九大产品线和其他/成品结算价齐全，其他/配件结算价不齐全。</p>
           <div id="departmentChart" class="chart-bars"></div>
         </div>
         <div class="panel">
           <h2 id="productLineChartTitle">销售产品线库存资产排行（万元）</h2>
+          <p class="chart-note">九大产品线和其他/成品结算价齐全，其他/配件结算价不齐全。</p>
           <div id="productLineChart" class="chart-bars"></div>
         </div>
         <div class="panel">
           <h2 id="warehouseTypeChartTitle">仓库类型资金占用（万元）</h2>
+          <p class="chart-note">销售成品仓结算价齐全，生产材料仓结算价不齐全。</p>
           <div id="warehouseTypeChart" class="chart-bars"></div>
         </div>
         <div class="panel">
           <h2 id="seriesChartTitle">产品系列 Top 10（万元）</h2>
+          <p class="chart-note">九大产品线和其他/成品结算价齐全，其他/配件结算价不齐全。</p>
           <div id="seriesChart" class="chart-bars"></div>
         </div>
       </section>
@@ -94,6 +98,6 @@
 
   <script src="storage.js?v=20260601c"></script>
   <script src="shared-library.js?v=20260601a"></script>
-  <script src="dashboard.js?v=20260601q"></script>
+  <script src="dashboard.js?v=20260601r"></script>
 </body>
 </html>

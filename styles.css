@@ -276,6 +276,13 @@ select {
   font-size: 17px;
 }
 
+.chart-note {
+  margin: -4px 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .chart-bars {
   display: grid;
   gap: 9px;

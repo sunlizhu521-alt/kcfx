@@ -199,7 +199,7 @@ function renderDashboard() {
   renderPriceBasisStatus(priceBasis, filteredRows);
   renderMetrics(filteredRows);
   renderBars("departmentChart", groupSum(filteredRows, "department", "inventoryValue"), "wan");
-  renderBars("productLineChart", groupSum(filteredRows, "productLine", "inventoryValue"), "wan");
+  renderBars("productLineChart", groupSum(filteredRows.filter((row) => row.productLine !== "健康办公"), "productLine", "inventoryValue"), "wan");
   renderBars("warehouseTypeChart", groupSum(filteredRows.filter((row) => row.warehouseType), "warehouseType", "inventoryValue"), "wan");
   renderBars("seriesChart", groupSum(filteredRows, "series", "inventoryValue", 10), "wan");
   renderDetail(filteredRows);
