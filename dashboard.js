@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function refreshDashboard() {
   const allRecords = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
-  const records = Object.fromEntries(Object.entries(allRecords).filter(([, record]) => record.appliedAt));
+  const records = allRecords;
   const factRecord = allRecords["fact-inventory"];
   factEndingQtyTotal = sumFactEndingQty(factRecord?.rows || []);
   const financialTotals = sumFactFinancialTotals(factRecord?.rows || []);
@@ -36,12 +36,7 @@ async function refreshDashboard() {
   factFinancialValueTotal = financialTotals.value;
   const missing = DASHBOARD_REQUIRED_SLOTS.map((id) => SLOT_BY_ID[id]).filter((slot) => !records[slot.id]);
   if (missing.length) {
-    const pending = missing.filter((slot) => allRecords[slot.id] && !allRecords[slot.id].appliedAt);
-    const absent = missing.filter((slot) => !allRecords[slot.id]);
-    const parts = [];
-    if (absent.length) parts.push(`缺少文件：${absent.map((slot) => slot.title).join("、")}`);
-    if (pending.length) parts.push(`待应用文件：${pending.map((slot) => slot.title).join("、")}`);
-    const message = `${parts.join("；")}。请到文件库上传并点击“应用刷新”。`;
+    const message = `缺少文件：${missing.map((slot) => slot.title).join("、")}。请到文件库上传或替换文件。`;
     $("#sharedStatus").textContent = "看板数据未就绪";
     $("#detailRows").innerHTML = `<tr><td colspan="12" class="empty">${escapeHtml(message)}</td></tr>`;
     clearDashboard();
@@ -242,7 +237,7 @@ function renderDataSourcePanel(records) {
     const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
     const appliedAt = record.appliedAt ? new Date(record.appliedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
     const path = `IndexedDB: kcfx-dashboard/files/${id}；GitHub: data/shared-library.json#records.${id}`;
-    return `<div><strong>${escapeHtml(slot.title)}</strong>：${escapeHtml(record.fileName || "-")}；来源：${escapeHtml(source)}；保存：${escapeHtml(savedAt)}；应用：${escapeHtml(appliedAt)}；<code>${escapeHtml(path)}</code></div>`;
+    return `<div><strong>${escapeHtml(slot.title)}</strong>：${escapeHtml(record.fileName || "-")}；来源：${escapeHtml(source)}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>${escapeHtml(path)}</code></div>`;
   });
   $("#dataSourcePanel").innerHTML = items.join("");
 }
