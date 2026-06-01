@@ -272,14 +272,16 @@ function renderMetrics(rows) {
 }
 
 function sumFactEndingQty(factRows) {
-  return factRows.reduce((total, row) => total + getEndingQty(row), 0);
+  return factRows.reduce((total, row) => {
+    if (!normalizeMaterialCode(firstText(row, [firstValue(row, ["物料编码"]), nthValue(row, 3)]))) return total;
+    return total + getEndingQty(row);
+  }, 0);
 }
 
 function getEndingQty(row) {
   return firstNumber(row, [
-    firstValue(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量", "库存数量", "期末数量"]),
+    firstValue(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量"]),
     firstValueByHeaderIncludes(row, ["结存", "数量"]),
-    firstValueByHeaderIncludes(row, ["库存", "数量"]),
     nthValue(row, 7)
   ]);
 }

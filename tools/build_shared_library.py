@@ -141,9 +141,8 @@ def first_header_includes(row, words):
 
 def ending_qty(row):
     candidates = [
-        first_value(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量", "库存数量", "期末数量"]),
+        first_value(row, ["(结存)数量（库存）", "(结存)数量(库存)", "结存数量（库存）", "结存数量"]),
         first_header_includes(row, ["结存", "数量"]),
-        first_header_includes(row, ["库存", "数量"]),
     ]
     values = list(row.values())
     if len(values) >= 7:
@@ -153,6 +152,10 @@ def ending_qty(row):
         if value != 0 or norm(candidate) == "0":
             return value
     return 0.0
+
+
+def material_code(row):
+    return norm(first_value(row, ["物料编码"]))
 
 
 def main():
@@ -170,8 +173,8 @@ def main():
             for key, value in records.items()
         },
         "factHeaderFirst20": headers["fact-inventory"],
-        "factEndingQtyTotal": sum(ending_qty(row) for row in fact_rows),
-        "factNonZeroQtyRows": sum(1 for row in fact_rows if ending_qty(row) != 0),
+        "factEndingQtyTotal": sum(ending_qty(row) for row in fact_rows if material_code(row)),
+        "factNonZeroQtyRows": sum(1 for row in fact_rows if material_code(row) and ending_qty(row) != 0),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
