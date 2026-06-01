@@ -1,8 +1,17 @@
 const $ = (selector) => document.querySelector(selector);
 const EPSILON = 0.000001;
+let currentComparison = {
+  inventoryQtyTotal: 0,
+  detailQtyTotal: 0,
+  qtyDiffTotal: 0,
+  qtyDiffRows: [],
+  priceDiffRows: []
+};
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", runComparison);
+  $("#diffTypeFilter").addEventListener("change", renderCurrentDiffTable);
+  $("#downloadBtn").addEventListener("click", downloadCurrentDiffTable);
   await loadSharedLibrary({ statusEl: $("#compareStatus") });
   await runComparison();
 });
@@ -16,10 +25,10 @@ async function runComparison() {
 
   if (!inventoryRecord || !detailRecord) {
     $("#compareStatus").textContent = "缺少关账后库存事实表或收发明细汇总表，请先到备货事实表库上传并应用刷新。";
-    renderMetrics({ inventoryQtyTotal: 0, detailQtyTotal: 0, qtyDiffTotal: 0, qtyDiffRows: [], priceDiffRows: [] });
+    currentComparison = { inventoryQtyTotal: 0, detailQtyTotal: 0, qtyDiffTotal: 0, qtyDiffRows: [], priceDiffRows: [] };
+    renderMetrics(currentComparison);
     $("#matchBasis").textContent = "等待两张事实表应用后生成对比。";
-    renderQtyRows([]);
-    renderPriceRows([]);
+    renderCurrentDiffTable();
     return;
   }
 
@@ -28,12 +37,11 @@ async function runComparison() {
   const keyOptions = detectKeyOptions(inventoryRows, detailRows);
   const inventoryMap = summarizeInventoryRows(inventoryRows, keyOptions);
   const detailMap = summarizeDetailRows(detailRows, keyOptions);
-  const comparison = compareMaps(inventoryMap, detailMap);
+  currentComparison = compareMaps(inventoryMap, detailMap);
 
-  renderMetrics(comparison);
+  renderMetrics(currentComparison);
   renderMatchBasis(keyOptions, inventoryRecord, detailRecord);
-  renderQtyRows(comparison.qtyDiffRows);
-  renderPriceRows(comparison.priceDiffRows);
+  renderCurrentDiffTable();
   $("#compareStatus").textContent = `对比完成：${new Date().toLocaleString("zh-CN", { hour12: false })}`;
 }
 
@@ -277,9 +285,28 @@ function sourceLine(title, id, record) {
   return `<div><strong>${escapeHtml(title)}</strong>：${escapeHtml(record.fileName || "-")}；行数：${formatNumber((record.rows || []).length, 0)}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>${escapeHtml(path)}</code></div>`;
 }
 
-function renderQtyRows(rows) {
-  const tbody = $("#qtyDiffRows");
-  tbody.innerHTML = rows.length ? rows.map((row) => `
+function renderCurrentDiffTable() {
+  const type = $("#diffTypeFilter").value || "qty";
+  if (type === "price") {
+    renderPriceTable(currentComparison.priceDiffRows);
+    return;
+  }
+  renderQtyTable(currentComparison.qtyDiffRows);
+}
+
+function renderQtyTable(rows) {
+  $("#diffTableTitle").textContent = "数量差异：结存数量 vs 0430结余库存数量";
+  $("#diffTableHead").innerHTML = `
+    <tr>
+      <th>使用组织</th>
+      <th>仓库</th>
+      <th>物料编码</th>
+      <th>物料名称</th>
+      <th>关账后库存结存数量</th>
+      <th>收发明细0430结余库存数量</th>
+      <th>差异</th>
+    </tr>`;
+  $("#diffTableRows").innerHTML = rows.length ? rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.organization)}</td>
       <td>${escapeHtml(row.warehouse)}</td>
@@ -292,9 +319,19 @@ function renderQtyRows(rows) {
   `).join("") : `<tr><td colspan="7" class="empty">暂无数量差异</td></tr>`;
 }
 
-function renderPriceRows(rows) {
-  const tbody = $("#priceDiffRows");
-  tbody.innerHTML = rows.length ? rows.map((row) => `
+function renderPriceTable(rows) {
+  $("#diffTableTitle").textContent = "价格差异：真实成本-货品 vs P列结算价(含税)";
+  $("#diffTableHead").innerHTML = `
+    <tr>
+      <th>使用组织</th>
+      <th>仓库</th>
+      <th>物料编码</th>
+      <th>物料名称</th>
+      <th>关账后库存真实成本-货品</th>
+      <th>收发明细P列结算价(含税)</th>
+      <th>差异</th>
+    </tr>`;
+  $("#diffTableRows").innerHTML = rows.length ? rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.organization)}</td>
       <td>${escapeHtml(row.warehouse)}</td>
@@ -305,6 +342,39 @@ function renderPriceRows(rows) {
       <td class="num">${formatNumber(row.priceDiff, 4)}</td>
     </tr>
   `).join("") : `<tr><td colspan="7" class="empty">暂无价格差异</td></tr>`;
+}
+
+function downloadCurrentDiffTable() {
+  const type = $("#diffTypeFilter").value || "qty";
+  const rows = type === "price" ? currentComparison.priceDiffRows : currentComparison.qtyDiffRows;
+  const headers = type === "price"
+    ? ["使用组织", "仓库", "物料编码", "物料名称", "关账后库存真实成本-货品", "收发明细P列结算价(含税)", "差异"]
+    : ["使用组织", "仓库", "物料编码", "物料名称", "关账后库存结存数量", "收发明细0430结余库存数量", "差异"];
+  const csvRows = [headers, ...rows.map((row) => type === "price"
+    ? [row.organization, row.warehouse, row.materialCode, row.materialName, row.inventoryPrice, row.detailPrice, row.priceDiff]
+    : [row.organization, row.warehouse, row.materialCode, row.materialName, row.inventoryQty, row.detailQty, row.qtyDiff]
+  )];
+  const csv = "\ufeff" + csvRows.map((row) => row.map(csvCell).join(",")).join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${type === "price" ? "价格差异" : "数量差异"}_${downloadTimestamp()}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function downloadTimestamp() {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 }
 
 function escapeHtml(value) {

@@ -304,14 +304,29 @@ select {
 }
 
 .comparison-summary {
-  min-height: 0;
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: -4px 0 14px;
+  padding: 9px 12px;
+  border: 1px solid #c8d6e2;
+  border-radius: 8px;
+  background: #f8fbfd;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-.comparison-summary p {
-  margin: 0;
+.comparison-summary strong {
+  flex: 0 0 auto;
+  color: var(--ink);
+}
+
+.comparison-summary span {
+  min-width: 0;
   color: var(--muted);
-  line-height: 1.7;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .dashboard-grid {

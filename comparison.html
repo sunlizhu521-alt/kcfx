@@ -32,7 +32,12 @@
       </header>
 
       <section class="toolbar">
+        <select id="diffTypeFilter">
+          <option value="qty">数量差异</option>
+          <option value="price">价格差异</option>
+        </select>
         <button id="refreshBtn" type="button">应用刷新</button>
+        <button id="downloadBtn" class="secondary" type="button">下载当前明细</button>
       </section>
 
       <div id="sourcePanel" class="data-source-panel"></div>
@@ -45,47 +50,17 @@
         <div class="metric-card"><span>价格差异行</span><strong id="priceDiffCount">0</strong></div>
       </section>
 
-      <section class="panel comparison-summary">
-        <h2>匹配口径</h2>
-        <p id="matchBasis">正在识别字段...</p>
+      <section class="comparison-summary">
+        <strong>匹配口径</strong>
+        <span id="matchBasis">正在识别字段...</span>
       </section>
 
       <section class="error-section">
-        <div class="table-title">数量差异：结存数量 vs 0430结余库存数量</div>
+        <div class="table-title" id="diffTableTitle">数量差异：结存数量 vs 0430结余库存数量</div>
         <div class="table-panel comparison-table">
           <table>
-            <thead>
-              <tr>
-                <th>使用组织</th>
-                <th>仓库</th>
-                <th>物料编码</th>
-                <th>物料名称</th>
-                <th>关账后库存结存数量</th>
-                <th>收发明细0430结余库存数量</th>
-                <th>差异</th>
-              </tr>
-            </thead>
-            <tbody id="qtyDiffRows"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="error-section">
-        <div class="table-title">价格差异：真实成本-货品 vs P列结算价(含税)</div>
-        <div class="table-panel comparison-table">
-          <table>
-            <thead>
-              <tr>
-                <th>使用组织</th>
-                <th>仓库</th>
-                <th>物料编码</th>
-                <th>物料名称</th>
-                <th>关账后库存真实成本-货品</th>
-                <th>收发明细P列结算价(含税)</th>
-                <th>差异</th>
-              </tr>
-            </thead>
-            <tbody id="priceDiffRows"></tbody>
+            <thead id="diffTableHead"></thead>
+            <tbody id="diffTableRows"></tbody>
           </table>
         </div>
       </section>
@@ -94,6 +69,6 @@
 
   <script src="storage.js?v=20260602a"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="comparison.js?v=20260602a"></script>
+  <script src="comparison.js?v=20260602b"></script>
 </body>
 </html>
