@@ -82,8 +82,8 @@ const FACT_SLOTS = [
   {
     id: "fact-2",
     type: "fact",
-    title: "事实表 2",
-    expectedName: "事实表 2",
+    title: "收发明细汇总表",
+    expectedName: "收发明细汇总表",
     sheetHint: "",
     description: "预留事实表槽位。"
   },
