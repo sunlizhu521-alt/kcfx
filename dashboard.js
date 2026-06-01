@@ -6,7 +6,7 @@ let factReferenceDiagnostics = {};
 let factEndingQtyTotal = 0;
 let factFinancialQtyTotal = 0;
 let factFinancialValueTotal = 0;
-const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse"];
+const DASHBOARD_REQUIRED_SLOTS = ["fact-inventory", "dim-product", "dim-warehouse", "dim-warehouse-material"];
 const FINANCIAL_PRICE_HEADERS = [
   "真实成本单价",
   "期末库存真实成本",
@@ -96,6 +96,7 @@ function buildWideRows(records) {
   const factRows = records["fact-inventory"].rows || [];
   const productRows = records["dim-product"].rows || [];
   const warehouseRows = records["dim-warehouse"].rows || [];
+  const warehouseMaterialRows = records["dim-warehouse-material"].rows || [];
   const productByCode = new Map();
   const productHeaders = Object.keys(productRows[0] || {});
   const factHeaders = [...new Set(factRows.flatMap((row) => Object.keys(row)))];
@@ -144,7 +145,10 @@ function buildWideRows(records) {
         warehouseLocation: firstText(row, [firstValue(row, ["二级仓库分类", "仓库位置", "位置"]), nthValue(row, 8)])
       });
     }
-    const departmentKey = makeWarehouseDepartmentKeyFromDimension(row);
+  }
+
+  for (const row of warehouseMaterialRows) {
+    const departmentKey = makeWarehouseMaterialDepartmentKey(row);
     if (departmentKey && !departmentByWarehouseKey.has(departmentKey)) {
       departmentByWarehouseKey.set(departmentKey, {
         department: normalizeText(nthValue(row, 7))
@@ -196,11 +200,12 @@ function buildWideRows(records) {
 function populateFilters(records) {
   const productRows = records["dim-product"].rows || [];
   const warehouseRows = records["dim-warehouse"].rows || [];
+  const warehouseMaterialRows = records["dim-warehouse-material"].rows || [];
   fillStaticSelect($("#priceBasisFilter"), [
     ["settlement", "结算价维度"],
     ["financial", "财务维度"]
   ]);
-  fillSelect($("#departmentFilter"), "全部事业部", uniquePhysicalColumnValues(warehouseRows, 7));
+  fillSelect($("#departmentFilter"), "\u5168\u90e8\u4e8b\u4e1a\u90e8", uniquePhysicalColumnValues(warehouseMaterialRows, 7));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
   fillSelect($("#seriesFilter"), "全部销售系列", uniqueColumnValues(productRows, ["销售系列"]));
   fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
@@ -242,7 +247,7 @@ function makeWarehouseDepartmentKeyFromFact(row) {
   ].join("");
 }
 
-function makeWarehouseDepartmentKeyFromDimension(row) {
+function makeWarehouseMaterialDepartmentKey(row) {
   return [
     normalizeText(nthValue(row, 1)),
     normalizeText(nthValue(row, 2)),
