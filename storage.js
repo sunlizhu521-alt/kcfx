@@ -76,7 +76,7 @@ const FACT_SLOTS = [
     title: "关账后库存事实表",
     expectedName: "财务同步的表",
     sheetHint: "",
-    skipRows: 3,
+    skipRows: 0,
     description: "数据由财务提供，保持数量的一致性，财务提供的表只取数量和真实成本单价。"
   },
   {

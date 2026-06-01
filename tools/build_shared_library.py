@@ -16,7 +16,7 @@ FILES = {
 }
 
 SLOTS = {
-    "fact-inventory": {"type": "fact", "title": "关账后库存事实表", "expectedName": "财务同步的表", "sheetHint": "", "skipRows": 3},
+    "fact-inventory": {"type": "fact", "title": "关账后库存事实表", "expectedName": "财务同步的表", "sheetHint": "", "skipRows": 0},
     "dim-product": {"type": "dimension", "title": "商品分类维表", "expectedName": "Dim-YL医疗器械商品分类-2026年整理版", "sheetHint": "Dim-YL医疗器械商品分类", "skipRows": 0},
     "dim-warehouse": {"type": "dimension", "title": "仓库、金蝶、旺店通、领星", "expectedName": "Dim-仓库_金蝶、旺店通、领星-2026年整理版", "sheetHint": "Dim-仓库汇总整理", "skipRows": 0},
     "dim-warehouse-material": {"type": "dimension", "title": "仓库物料事业部对照表", "expectedName": "Dim-仓库与物料对照表-2026年整理版", "sheetHint": "", "skipRows": 0},
