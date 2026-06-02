@@ -31,12 +31,14 @@ let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", clearFilters);
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
-  ["departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter", "searchInput"].forEach((id) => {
-    $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderSummary);
-  });
+  document.addEventListener("click", closeMultiFilters);
+  $("#searchInput").addEventListener("input", renderSummary);
   $("#productLineFilter").addEventListener("change", () => {
     populateSeriesFilter(summaryRows);
     renderSummary();
+  });
+  ["departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
+    $(`#${id}`).addEventListener("change", renderSummary);
   });
   await refreshSummary();
 });
@@ -161,6 +163,7 @@ function populateFilters(rows, records = null) {
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
   populateSeriesFilter(rows);
+  fillSelect($("#ageFilter"), "全部库龄", AGE_BUCKETS);
   fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(rows, "warehouseLocation"));
 }
 
@@ -552,20 +555,76 @@ function firstOptionalNumber(candidates) {
 
 function fillSelect(select, allLabel, values) {
   const current = getSelectValues(select);
-  select.innerHTML = [`<option value="">${allLabel}</option>`, ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)].join("");
-  for (const option of select.options) {
-    option.selected = current.includes(option.value);
-  }
+  select.dataset.allLabel = allLabel;
+  select.innerHTML = `
+    <button class="multi-filter-button" type="button" aria-haspopup="listbox" aria-expanded="false">
+      <span></span>
+    </button>
+    <div class="multi-filter-menu" role="listbox">
+      ${values.map((value) => `
+        <label class="multi-filter-option">
+          <input type="checkbox" value="${escapeHtml(value)}" ${current.includes(value) ? "checked" : ""}>
+          <span>${escapeHtml(value)}</span>
+        </label>
+      `).join("")}
+    </div>
+  `;
+  select.querySelector(".multi-filter-button").addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleMultiFilter(select);
+  });
+  select.querySelector(".multi-filter-menu").addEventListener("click", (event) => event.stopPropagation());
+  select.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      updateMultiFilterLabel(select);
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
+  updateMultiFilterLabel(select);
 }
 
 function clearSelect(select) {
-  for (const option of select.options) option.selected = false;
+  select.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
+    checkbox.checked = false;
+  });
+  updateMultiFilterLabel(select);
 }
 
 function getSelectValues(select) {
-  return [...select.selectedOptions]
-    .map((option) => option.value)
+  return [...select.querySelectorAll("input[type='checkbox']:checked")]
+    .map((input) => input.value)
     .filter(Boolean);
+}
+
+function updateMultiFilterLabel(select) {
+  const buttonText = select.querySelector(".multi-filter-button span");
+  if (!buttonText) return;
+  const values = getSelectValues(select);
+  const allLabel = select.dataset.allLabel || "全部";
+  if (!values.length) {
+    buttonText.textContent = allLabel;
+  } else if (values.length === 1) {
+    buttonText.textContent = values[0];
+  } else {
+    buttonText.textContent = `已选 ${values.length} 项`;
+  }
+}
+
+function toggleMultiFilter(select) {
+  const willOpen = !select.classList.contains("open");
+  closeMultiFilters();
+  select.classList.toggle("open", willOpen);
+  const button = select.querySelector(".multi-filter-button");
+  if (button) button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+}
+
+function closeMultiFilters(event) {
+  if (event?.target?.closest?.(".multi-filter")) return;
+  document.querySelectorAll(".multi-filter.open").forEach((select) => {
+    select.classList.remove("open");
+    const button = select.querySelector(".multi-filter-button");
+    if (button) button.setAttribute("aria-expanded", "false");
+  });
 }
 
 function uniqueValues(rows, key) {
@@ -605,6 +664,7 @@ function matchAgeBucket(row, buckets) {
 }
 
 function getSelectedAgeBucketLabel(bucket) {
+  if (AGE_BUCKETS.includes(bucket)) return bucket;
   if (bucket === "0-30") return "0-30天";
   if (bucket === "31-60") return "31-60天";
   if (bucket === "61-90") return "61-90天";

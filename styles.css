@@ -189,9 +189,89 @@ select {
   min-width: 190px;
 }
 
-.toolbar select[multiple] {
-  height: 36px;
+.multi-filter {
+  position: relative;
+  min-width: 190px;
+}
+
+.multi-filter-button {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #b8c8d6;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #f8fbfd;
+  color: var(--ink);
+  font-weight: 400;
+  text-align: left;
+}
+
+.multi-filter-button::after {
+  content: "▾";
+  color: var(--muted);
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.multi-filter-button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.multi-filter-menu {
+  display: none;
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  width: max(100%, 240px);
+  max-height: 280px;
   overflow-y: auto;
+  border: 1px solid #b8c8d6;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 14px 32px rgba(23, 32, 42, .16);
+  padding: 6px;
+}
+
+.multi-filter.open .multi-filter-menu {
+  display: grid;
+  gap: 2px;
+}
+
+.multi-filter-option {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 4px;
+  padding: 5px 7px;
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.multi-filter-option:hover {
+  background: #edf4f8;
+}
+
+.multi-filter-option input {
+  min-height: 0;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.multi-filter-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dashboard-filters {
