@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
   $("#downloadTurnoverBtn").addEventListener("click", downloadTurnoverSummary);
   $("#downloadProductLineBtn").addEventListener("click", downloadProductLineSummary);
+  $("#downloadUnclassifiedBtn").addEventListener("click", downloadUnclassifiedRows);
   document.addEventListener("click", closeMultiFilters);
   $("#searchInput").addEventListener("input", renderSummary);
   $("#productLineFilter").addEventListener("change", () => {
@@ -221,6 +222,7 @@ function renderSummary() {
   renderSummaryTables(filteredRows, selectedAgeLabels);
   renderAmountCharts(filteredRows, selectedAgeLabels);
   renderQuantityCharts(filteredRows, selectedAgeLabels);
+  renderUnclassifiedRows(filteredRows, selectedAgeLabels);
   const shown = filteredRows.slice(0, 1000);
   $("#summaryRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -235,6 +237,26 @@ function renderSummary() {
       <td>${escapeHtml(row.pmcReason)}</td>
     </tr>
   `).join("") : `<tr><td colspan="9" class="empty">暂无数据</td></tr>`;
+}
+
+function renderUnclassifiedRows(rows, selectedAgeLabels = []) {
+  const body = $("#unclassifiedRows");
+  if (!body) return;
+  const dataRows = getUnclassifiedRows(rows).slice(0, 1000);
+  body.innerHTML = dataRows.length ? dataRows.map((row) => `
+    <tr>
+      <td>${escapeHtml(getUnclassifiedReason(row))}</td>
+      <td>${escapeHtml(row.materialCode)}</td>
+      <td>${escapeHtml(row.materialName)}</td>
+      <td>${escapeHtml(row.warehouse)}</td>
+      <td>${escapeHtml(row.productLine || "未分类")}</td>
+      <td>${escapeHtml(row.warehouseLocation || "未分类")}</td>
+      <td class="num">${formatNumber(visibleQuantity(row, selectedAgeLabels), 3)}</td>
+      <td class="num">${formatMoney(visibleAmount(row, selectedAgeLabels))}</td>
+      <td>${escapeHtml(row.pmcBasis)}</td>
+      <td>${escapeHtml(row.pmcReason)}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="10" class="empty">暂无未分类明细</td></tr>`;
 }
 
 function renderAmountCharts(rows, selectedAgeLabel = "") {
@@ -481,6 +503,38 @@ function downloadProductLineSummary() {
     map.set(name, item);
   }
   downloadSummaryRows("产品线库存", [...map.values()].sort((a, b) => b.amount - a.amount));
+}
+
+function downloadUnclassifiedRows() {
+  const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
+  const headers = ["缺失项", "物料编码", "物料名称", "仓库", "销售产品线", "仓库位置", "0430结余库存数量", "结算价金额", "判断依据（PMC口径）", "问题原因（PMC口径）"];
+  const lines = [headers.join(",")];
+  getUnclassifiedRows(filteredRows).forEach((row) => {
+    lines.push([
+      getUnclassifiedReason(row),
+      row.materialCode,
+      row.materialName,
+      row.warehouse,
+      row.productLine || "未分类",
+      row.warehouseLocation || "未分类",
+      visibleQuantity(row, selectedAgeLabels),
+      visibleAmount(row, selectedAgeLabels),
+      row.pmcBasis,
+      row.pmcReason
+    ].map(csvCell).join(","));
+  });
+  downloadCsv(`未分类明细表_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.csv`, lines);
+}
+
+function getUnclassifiedRows(rows) {
+  return rows.filter((row) => !normalizeText(row.productLine) || !normalizeText(row.warehouseLocation));
+}
+
+function getUnclassifiedReason(row) {
+  const reasons = [];
+  if (!normalizeText(row.productLine)) reasons.push("产品线未分类");
+  if (!normalizeText(row.warehouseLocation)) reasons.push("仓库位置未分类");
+  return reasons.join("、");
 }
 
 function downloadSummaryRows(title, rows) {
