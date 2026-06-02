@@ -189,6 +189,8 @@ function renderSummary() {
   });
   $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 3);
   $("#amountTotal").textContent = formatMoneyWithYi(sumVisibleAmount(filteredRows, selectedAgeLabels));
+  renderAgeShareCards(filteredRows, selectedAgeLabels);
+  renderSummaryTables(filteredRows, selectedAgeLabels);
   renderAmountCharts(filteredRows, selectedAgeLabels);
   renderQuantityCharts(filteredRows, selectedAgeLabels);
   const shown = filteredRows.slice(0, 1000);
@@ -219,6 +221,76 @@ function renderQuantityCharts(rows, selectedAgeLabel = "") {
   renderQuantityBars("ageQtyChart", groupAgeQuantitySum(rows, selectedAgeLabel));
   renderQuantityBars("productLineQtyChart", groupComputedSum(rows, "productLine", (row) => visibleQuantity(row, selectedAgeLabel), 12));
   renderQuantityBars("warehouseLocationQtyChart", groupComputedSum(rows, "warehouseLocation", (row) => visibleQuantity(row, selectedAgeLabel), 12));
+}
+
+function renderAgeShareCards(rows, selectedAgeLabels = []) {
+  const buckets = selectedAgeLabels.length ? selectedAgeLabels : AGE_BUCKETS;
+  const totalAmount = sumVisibleAmount(rows, selectedAgeLabels);
+  AGE_BUCKETS.forEach((bucket, index) => {
+    const el = $(`#ageShare${index}`);
+    if (!el) return;
+    const amount = buckets.includes(bucket)
+      ? rows.reduce((total, row) => total + (Number(row.ageSettlementAmounts?.[bucket]) || 0), 0)
+      : 0;
+    el.textContent = formatPercent(amount, totalAmount);
+  });
+}
+
+function renderSummaryTables(rows, selectedAgeLabels = []) {
+  renderTurnoverSummaryTable(rows, selectedAgeLabels);
+  renderProductLineSummaryTable(rows, selectedAgeLabels);
+}
+
+function renderTurnoverSummaryTable(rows, selectedAgeLabels = []) {
+  const buckets = selectedAgeLabels.length ? selectedAgeLabels : AGE_BUCKETS;
+  const totalQty = sumVisibleQuantity(rows, selectedAgeLabels);
+  const totalAmount = sumVisibleAmount(rows, selectedAgeLabels);
+  const body = $("#turnoverSummaryRows");
+  if (!body) return;
+  const summaryRows = AGE_BUCKETS.map((bucket) => {
+    const active = buckets.includes(bucket);
+    const qty = active ? rows.reduce((total, row) => total + (Number(row.ageQuantities?.[bucket]) || 0), 0) : 0;
+    const amount = active ? rows.reduce((total, row) => total + (Number(row.ageSettlementAmounts?.[bucket]) || 0), 0) : 0;
+    return { name: bucket, qty, amount };
+  });
+  body.innerHTML = renderCompactSummaryRows(summaryRows, totalQty, totalAmount);
+}
+
+function renderProductLineSummaryTable(rows, selectedAgeLabels = []) {
+  const totalQty = sumVisibleQuantity(rows, selectedAgeLabels);
+  const totalAmount = sumVisibleAmount(rows, selectedAgeLabels);
+  const map = new Map();
+  for (const row of rows) {
+    const name = normalizeText(row.productLine) || "未归类";
+    const item = map.get(name) || { name, qty: 0, amount: 0 };
+    item.qty += visibleQuantity(row, selectedAgeLabels);
+    item.amount += visibleAmount(row, selectedAgeLabels);
+    map.set(name, item);
+  }
+  const body = $("#productLineSummaryRows");
+  if (!body) return;
+  const summaryRows = [...map.values()].sort((a, b) => b.amount - a.amount);
+  body.innerHTML = renderCompactSummaryRows(summaryRows, totalQty, totalAmount);
+}
+
+function renderCompactSummaryRows(rows, totalQty, totalAmount) {
+  const dataRows = rows.filter((row) => (Number(row.qty) || 0) !== 0 || (Number(row.amount) || 0) !== 0);
+  if (!dataRows.length) return `<tr><td colspan="5" class="empty">暂无数据</td></tr>`;
+  const totalRow = {
+    name: "合计",
+    qty: totalQty,
+    amount: totalAmount,
+    isTotal: true
+  };
+  return [...dataRows, totalRow].map((row) => `
+    <tr class="${row.isTotal ? "summary-total-row" : ""}">
+      <td>${escapeHtml(row.name)}</td>
+      <td class="num">${formatNumber(row.qty, 3)}</td>
+      <td class="num">${formatPercent(row.qty, totalQty)}</td>
+      <td class="num">${formatMoney(row.amount)}</td>
+      <td class="num">${formatPercent(row.amount, totalAmount)}</td>
+    </tr>
+  `).join("");
 }
 
 function groupSum(rows, key, valueKey, limit = 12) {
@@ -762,6 +834,13 @@ function formatAdaptiveDecimal(value) {
   if (abs >= 0.01) return formatNumber(numeric, 3);
   if (abs >= 0.001) return formatNumber(numeric, 4);
   return formatNumber(numeric, 6);
+}
+
+function formatPercent(value, total) {
+  const numeric = Number(value) || 0;
+  const denominator = Number(total) || 0;
+  if (!denominator) return "0%";
+  return `${formatAdaptiveDecimal(numeric / denominator * 100)}%`;
 }
 
 function csvCell(value) {

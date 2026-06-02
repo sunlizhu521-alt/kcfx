@@ -438,6 +438,27 @@ select {
   font-size: clamp(18px, 1.35vw, 24px);
 }
 
+.age-share-metrics {
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  overflow-x: auto;
+}
+
+.age-share-metrics .metric-card {
+  min-width: 0;
+  min-height: 78px;
+  padding: 13px 12px;
+}
+
+.age-share-metrics .metric-card span {
+  margin-bottom: 7px;
+  line-height: 1.25;
+}
+
+.age-share-metrics .metric-card strong {
+  font-size: clamp(17px, 1.35vw, 24px);
+  white-space: nowrap;
+}
+
 .comparison-summary {
   display: flex;
   align-items: center;
@@ -529,6 +550,31 @@ select {
 .table-panel {
   overflow: auto;
   max-height: calc(100vh - 250px);
+}
+
+.summary-table-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.mini-table-panel {
+  max-height: 360px;
+}
+
+.mini-table-panel table {
+  min-width: 620px;
+}
+
+.mini-table-panel th,
+.mini-table-panel td {
+  padding: 7px 8px;
+}
+
+.summary-total-row td {
+  background: #f3f8fb;
+  font-weight: 800;
 }
 
 table {
@@ -906,7 +952,16 @@ input[type="file"]:disabled {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
+  .age-share-metrics {
+    grid-template-columns: repeat(5, minmax(140px, 1fr));
+  }
+
   .receipt-chart-grid {
     grid-template-columns: repeat(4, minmax(240px, 1fr));
+  }
+
+  .summary-table-grid {
+    grid-template-columns: repeat(2, minmax(360px, 1fr));
+    overflow-x: auto;
   }
 }

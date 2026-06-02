@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 供应链库存分析</title>
-  <link rel="stylesheet" href="styles.css?v=20260603d">
+  <link rel="stylesheet" href="styles.css?v=20260603e">
 </head>
 <body>
   <div class="app-shell">
@@ -48,6 +48,14 @@
         <div class="metric-card"><span>结算价金额</span><strong id="amountTotal">¥0</strong></div>
       </section>
 
+      <section class="metrics age-share-metrics">
+        <div class="metric-card"><span>0-30天货值占比</span><strong id="ageShare0">0%</strong></div>
+        <div class="metric-card"><span>31-60天货值占比</span><strong id="ageShare1">0%</strong></div>
+        <div class="metric-card"><span>61-90天货值占比</span><strong id="ageShare2">0%</strong></div>
+        <div class="metric-card"><span>91-120天货值占比</span><strong id="ageShare3">0%</strong></div>
+        <div class="metric-card"><span>120天以上货值占比</span><strong id="ageShare4">0%</strong></div>
+      </section>
+
       <section class="dashboard-grid receipt-chart-grid">
         <div class="panel">
           <h2>事业部占用资金情况</h2>
@@ -86,6 +94,39 @@
         </div>
       </section>
 
+      <section class="summary-table-grid">
+        <div class="table-panel mini-table-panel">
+          <div class="table-title">一、周转天数</div>
+          <table>
+            <thead>
+              <tr>
+                <th>周转天数</th>
+                <th>库存数量</th>
+                <th>数量占比</th>
+                <th>货值</th>
+                <th>货值占比</th>
+              </tr>
+            </thead>
+            <tbody id="turnoverSummaryRows"></tbody>
+          </table>
+        </div>
+        <div class="table-panel mini-table-panel">
+          <div class="table-title">二、产品线库存</div>
+          <table>
+            <thead>
+              <tr>
+                <th>产品线库存</th>
+                <th>库存数量</th>
+                <th>数量占比</th>
+                <th>货值</th>
+                <th>货值占比</th>
+              </tr>
+            </thead>
+            <tbody id="productLineSummaryRows"></tbody>
+          </table>
+        </div>
+      </section>
+
       <section class="table-panel">
         <div class="table-title">收发明细汇总表</div>
         <table>
@@ -112,6 +153,6 @@
 
   <script src="storage.js?v=20260602c"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260603e"></script>
+  <script src="receipt-summary.js?v=20260603f"></script>
 </body>
 </html>
