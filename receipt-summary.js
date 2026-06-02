@@ -149,21 +149,22 @@ function populateSeriesFilter(rows) {
 function renderSummary() {
   const query = normalizeKey($("#searchInput").value);
   const ageBucket = $("#ageFilter").value;
+  const selectedAgeLabel = getSelectedAgeBucketLabel(ageBucket);
   filteredRows = summaryRows.filter((row) => {
     const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
       .some((value) => normalizeKey(value).includes(query));
     return hit
-      && matchAgeBucket(row.inventoryDays, ageBucket)
+      && matchAgeBucket(row, ageBucket)
       && matchSelect(row.department, $("#departmentFilter").value)
       && matchSelect(row.productLine, $("#productLineFilter").value)
       && matchSelect(row.series, $("#seriesFilter").value)
       && matchSelect(row.pmcType, $("#pmcTypeFilter").value);
   });
   $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
-  $("#qtyTotal").textContent = formatNumberWithYi(sum(filteredRows, "endingQty"), 3);
-  $("#amountTotal").textContent = formatMoneyWithYi(sum(filteredRows, "settlementAmount"));
-  renderAmountCharts(filteredRows);
-  renderQuantityCharts(filteredRows);
+  $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabel), 3);
+  $("#amountTotal").textContent = formatMoneyWithYi(sumVisibleAmount(filteredRows, selectedAgeLabel));
+  renderAmountCharts(filteredRows, selectedAgeLabel);
+  renderQuantityCharts(filteredRows, selectedAgeLabel);
   const shown = filteredRows.slice(0, 1000);
   $("#summaryRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -181,23 +182,27 @@ function renderSummary() {
   `).join("") : `<tr><td colspan="10" class="empty">暂无数据</td></tr>`;
 }
 
-function renderAmountCharts(rows) {
-  renderBars("departmentAmountChart", groupSum(rows, "department", "ageSettlementAmount", 12));
-  renderBars("ageAmountChart", groupAgeAmountSum(rows));
-  renderBars("productLineAmountChart", groupSum(rows, "productLine", "ageSettlementAmount", 12));
+function renderAmountCharts(rows, selectedAgeLabel = "") {
+  renderBars("departmentAmountChart", groupComputedSum(rows, "department", (row) => visibleAmount(row, selectedAgeLabel), 12));
+  renderBars("ageAmountChart", groupAgeAmountSum(rows, selectedAgeLabel));
+  renderBars("productLineAmountChart", groupComputedSum(rows, "productLine", (row) => visibleAmount(row, selectedAgeLabel), 12));
 }
 
-function renderQuantityCharts(rows) {
-  renderQuantityBars("departmentQtyChart", groupSum(rows, "department", "ageQuantityTotal", 12));
-  renderQuantityBars("ageQtyChart", groupAgeQuantitySum(rows));
-  renderQuantityBars("productLineQtyChart", groupSum(rows, "productLine", "ageQuantityTotal", 12));
+function renderQuantityCharts(rows, selectedAgeLabel = "") {
+  renderQuantityBars("departmentQtyChart", groupComputedSum(rows, "department", (row) => visibleQuantity(row, selectedAgeLabel), 12));
+  renderQuantityBars("ageQtyChart", groupAgeQuantitySum(rows, selectedAgeLabel));
+  renderQuantityBars("productLineQtyChart", groupComputedSum(rows, "productLine", (row) => visibleQuantity(row, selectedAgeLabel), 12));
 }
 
 function groupSum(rows, key, valueKey, limit = 12) {
+  return groupComputedSum(rows, key, (row) => Number(row[valueKey]) || 0, limit);
+}
+
+function groupComputedSum(rows, key, valueGetter, limit = 12) {
   const map = new Map();
   for (const row of rows) {
     const name = normalizeText(row[key]) || "未归类";
-    map.set(name, (map.get(name) || 0) + (Number(row[valueKey]) || 0));
+    map.set(name, (map.get(name) || 0) + (Number(valueGetter(row)) || 0));
   }
   return [...map.entries()]
     .map(([name, value]) => ({ name, value }))
@@ -205,20 +210,22 @@ function groupSum(rows, key, valueKey, limit = 12) {
     .slice(0, limit);
 }
 
-function groupAgeAmountSum(rows) {
-  const map = new Map(AGE_BUCKETS.map((bucket) => [bucket, 0]));
+function groupAgeAmountSum(rows, selectedAgeLabel = "") {
+  const buckets = selectedAgeLabel ? [selectedAgeLabel] : AGE_BUCKETS;
+  const map = new Map(buckets.map((bucket) => [bucket, 0]));
   for (const row of rows) {
-    for (const bucket of AGE_BUCKETS) {
+    for (const bucket of buckets) {
       map.set(bucket, (map.get(bucket) || 0) + (Number(row.ageSettlementAmounts?.[bucket]) || 0));
     }
   }
   return [...map.entries()].map(([name, value]) => ({ name, value }));
 }
 
-function groupAgeQuantitySum(rows) {
-  const map = new Map(AGE_BUCKETS.map((bucket) => [bucket, 0]));
+function groupAgeQuantitySum(rows, selectedAgeLabel = "") {
+  const buckets = selectedAgeLabel ? [selectedAgeLabel] : AGE_BUCKETS;
+  const map = new Map(buckets.map((bucket) => [bucket, 0]));
   for (const row of rows) {
-    for (const bucket of AGE_BUCKETS) {
+    for (const bucket of buckets) {
       map.set(bucket, (map.get(bucket) || 0) + (Number(row.ageQuantities?.[bucket]) || 0));
     }
   }
@@ -555,17 +562,35 @@ function matchSelect(value, selected) {
   return !selected || value === selected;
 }
 
-function matchAgeBucket(value, bucket) {
-  if (!bucket) return true;
-  if (value === null || value === undefined || normalizeText(value) === "") return false;
-  const days = Number(value);
-  if (!Number.isFinite(days)) return false;
-  if (bucket === "0-30") return days >= 0 && days <= 30;
-  if (bucket === "31-60") return days >= 31 && days <= 60;
-  if (bucket === "61-90") return days >= 61 && days <= 90;
-  if (bucket === "91-120") return days >= 91 && days <= 120;
-  if (bucket === "120+") return days > 120;
-  return true;
+function matchAgeBucket(row, bucket) {
+  const label = getSelectedAgeBucketLabel(bucket);
+  if (!label) return true;
+  return (Number(row.ageQuantities?.[label]) || 0) !== 0;
+}
+
+function getSelectedAgeBucketLabel(bucket) {
+  if (bucket === "0-30") return "0-30天";
+  if (bucket === "31-60") return "31-60天";
+  if (bucket === "61-90") return "61-90天";
+  if (bucket === "91-120") return "91-120天";
+  if (bucket === "120+") return "120天以上";
+  return "";
+}
+
+function visibleQuantity(row, selectedAgeLabel = "") {
+  return selectedAgeLabel ? Number(row.ageQuantities?.[selectedAgeLabel]) || 0 : Number(row.endingQty) || 0;
+}
+
+function visibleAmount(row, selectedAgeLabel = "") {
+  return selectedAgeLabel ? Number(row.ageSettlementAmounts?.[selectedAgeLabel]) || 0 : Number(row.settlementAmount) || 0;
+}
+
+function sumVisibleQuantity(rows, selectedAgeLabel = "") {
+  return rows.reduce((total, row) => total + visibleQuantity(row, selectedAgeLabel), 0);
+}
+
+function sumVisibleAmount(rows, selectedAgeLabel = "") {
+  return rows.reduce((total, row) => total + visibleAmount(row, selectedAgeLabel), 0);
 }
 
 function sum(rows, key) {
