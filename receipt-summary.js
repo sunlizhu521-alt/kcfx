@@ -619,11 +619,22 @@ function formatMoneyWithYi(value) {
 }
 
 function formatWan(value) {
-  return `${formatNumber(Number(value || 0) / 10000, 2)}万元`;
+  return `${formatAdaptiveDecimal(Number(value || 0) / 10000)}万元`;
 }
 
 function formatTenThousand(value) {
-  return `${formatNumber(Number(value || 0) / 10000, 2)}万`;
+  return `${formatAdaptiveDecimal(Number(value || 0) / 10000)}万`;
+}
+
+function formatAdaptiveDecimal(value) {
+  const numeric = Number(value || 0);
+  const abs = Math.abs(numeric);
+  if (abs === 0) return formatNumber(0, 1);
+  if (abs >= 1) return formatNumber(numeric, 1);
+  if (abs >= 0.1) return formatNumber(numeric, 2);
+  if (abs >= 0.01) return formatNumber(numeric, 3);
+  if (abs >= 0.001) return formatNumber(numeric, 4);
+  return formatNumber(numeric, 6);
 }
 
 function csvCell(value) {
