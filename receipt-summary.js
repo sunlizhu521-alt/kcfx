@@ -561,6 +561,10 @@ function fillSelect(select, allLabel, values) {
       <span></span>
     </button>
     <div class="multi-filter-menu" role="listbox">
+      <label class="multi-filter-option is-all">
+        <input type="checkbox" value="" data-all="true" ${current.length ? "" : "checked"}>
+        <span>全部</span>
+      </label>
       ${values.map((value) => `
         <label class="multi-filter-option">
           <input type="checkbox" value="${escapeHtml(value)}" ${current.includes(value) ? "checked" : ""}>
@@ -576,6 +580,7 @@ function fillSelect(select, allLabel, values) {
   select.querySelector(".multi-filter-menu").addEventListener("click", (event) => event.stopPropagation());
   select.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
+      syncMultiFilterSelection(select, checkbox);
       updateMultiFilterLabel(select);
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
@@ -585,7 +590,7 @@ function fillSelect(select, allLabel, values) {
 
 function clearSelect(select) {
   select.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
-    checkbox.checked = false;
+    checkbox.checked = checkbox.dataset.all === "true";
   });
   updateMultiFilterLabel(select);
 }
@@ -594,6 +599,23 @@ function getSelectValues(select) {
   return [...select.querySelectorAll("input[type='checkbox']:checked")]
     .map((input) => input.value)
     .filter(Boolean);
+}
+
+function syncMultiFilterSelection(select, changedCheckbox) {
+  const allCheckbox = select.querySelector("input[data-all='true']");
+  const itemCheckboxes = [...select.querySelectorAll("input[type='checkbox']:not([data-all='true'])")];
+  if (changedCheckbox.dataset.all === "true") {
+    if (changedCheckbox.checked) {
+      itemCheckboxes.forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+    } else if (!itemCheckboxes.some((checkbox) => checkbox.checked)) {
+      changedCheckbox.checked = true;
+    }
+    return;
+  }
+  if (changedCheckbox.checked && allCheckbox) allCheckbox.checked = false;
+  if (!itemCheckboxes.some((checkbox) => checkbox.checked) && allCheckbox) allCheckbox.checked = true;
 }
 
 function updateMultiFilterLabel(select) {

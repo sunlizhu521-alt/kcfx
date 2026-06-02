@@ -200,7 +200,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #b8c8d6;
+  border: 1px solid #9fb4c7;
   border-radius: 6px;
   padding: 0 10px;
   background: #f8fbfd;
@@ -210,10 +210,15 @@ select {
 }
 
 .multi-filter-button::after {
-  content: "▾";
+  content: "▼";
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
   margin-left: 8px;
+}
+
+.multi-filter.open .multi-filter-button {
+  border-color: #2d6df6;
+  box-shadow: 0 0 0 2px rgba(45, 109, 246, .12);
 }
 
 .multi-filter-button span {
@@ -229,14 +234,14 @@ select {
   z-index: 20;
   top: calc(100% + 4px);
   left: 0;
-  width: max(100%, 240px);
-  max-height: 280px;
+  width: 100%;
+  max-height: 260px;
   overflow-y: auto;
   border: 1px solid #b8c8d6;
   border-radius: 6px;
   background: #fff;
-  box-shadow: 0 14px 32px rgba(23, 32, 42, .16);
-  padding: 6px;
+  box-shadow: 0 10px 24px rgba(23, 32, 42, .18);
+  padding: 8px 6px;
 }
 
 .multi-filter.open .multi-filter-menu {
@@ -245,15 +250,16 @@ select {
 }
 
 .multi-filter-option {
-  min-height: 30px;
+  min-height: 28px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  border-radius: 4px;
-  padding: 5px 7px;
+  gap: 7px;
+  border-radius: 3px;
+  padding: 4px 7px;
   cursor: pointer;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .multi-filter-option:hover {
@@ -265,6 +271,8 @@ select {
   width: 14px;
   height: 14px;
   margin: 0;
+  flex: 0 0 auto;
+  accent-color: #2f5f97;
 }
 
 .multi-filter-option span {
