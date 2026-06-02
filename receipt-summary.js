@@ -1,41 +1,77 @@
 const $ = (selector) => document.querySelector(selector);
+const DEPARTMENT_ORDER = [
+  "海外事业一部",
+  "海外事业二部",
+  "国内事业部",
+  "全球招商部",
+  "瑞朗德销售部",
+  "瑞朗德工厂",
+  "电子车间",
+  "宁波工厂",
+  "试制中心",
+  "售后配件仓",
+  "委外仓",
+  "系统集成仓",
+  "封样仓",
+  "供应商仓（后续划分事业部）"
+];
 let summaryRows = [];
 let filteredRows = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", refreshSummary);
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
-  $("#searchInput").addEventListener("input", renderSummary);
-  $("#stockFilter").addEventListener("change", renderSummary);
+  ["departmentFilter", "productLineFilter", "seriesFilter", "warehouseTypeFilter", "warehouseLocationFilter", "stockFilter", "searchInput"].forEach((id) => {
+    $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderSummary);
+  });
   await refreshSummary();
 });
 
 async function refreshSummary() {
   await loadSharedLibrary({ statusEl: $("#summaryStatus") });
   const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
-  const factRecord = records["fact-inventory"];
-  renderSourcePanel(factRecord);
-  if (!factRecord) {
+  const detailRecord = records["fact-2"];
+  const productRecord = records["dim-product"];
+  const warehouseRecord = records["dim-warehouse"];
+  const warehouseMaterialRecord = records["dim-warehouse-material"];
+  renderSourcePanel(detailRecord);
+  if (!detailRecord) {
     summaryRows = [];
-    $("#summaryStatus").textContent = "缺少关账后库存事实表，请先到备货事实表库上传并应用。";
+    $("#summaryStatus").textContent = "缺少收发明细汇总表，请先到备货事实表库上传并应用。";
+    populateFilters([]);
     renderSummary();
     return;
   }
-  summaryRows = (factRecord.rows || []).map((row) => {
-    const endingQty = parseNumberCell(nthValue(row, 7)).value;
-    const trueCostPrice = parseNumberCell(nthValue(row, 8)).value;
-    const trueCostAmount = parseNumberCell(nthValue(row, 9)).value;
+
+  const productMap = mapProductsByMaterialCode(productRecord?.rows || []);
+  const warehouseMap = mapWarehousesByName(warehouseRecord?.rows || []);
+  const departmentMap = mapDepartmentsByJoinKey(warehouseMaterialRecord?.rows || []);
+  summaryRows = (detailRecord.rows || []).map((row) => {
+    const materialCode = getDetailMaterialCode(row);
+    const warehouse = getDetailWarehouse(row);
+    const organization = getDetailOrganization(row);
+    const materialName = getDetailMaterialName(row);
+    const endingQty = getDetailEndingQty(row);
+    const settlementPrice = getDetailSettlementPrice(row);
+    const product = productMap.get(materialCode) || {};
+    const warehouseInfo = warehouseMap.get(warehouse) || {};
     return {
-      materialCode: normalizeText(nthValue(row, 1)),
-      materialName: normalizeText(nthValue(row, 5)),
-      warehouse: normalizeText(nthValue(row, 6)),
-      organization: normalizeText(nthValue(row, 12)),
+      materialCode,
+      materialName,
+      department: departmentMap.get(makeDepartmentLookupKey(organization, warehouse, materialCode)) || "",
+      productLine: product.productLine || "",
+      series: product.series || "",
+      warehouseType: warehouseInfo.warehouseType || "",
+      warehouseLocation: warehouseInfo.warehouseLocation || "",
+      warehouse,
+      organization,
       endingQty,
-      trueCostPrice,
-      trueCostAmount
+      settlementPrice,
+      settlementAmount: endingQty * settlementPrice
     };
   });
-  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行：${factRecord.fileName || "-"}`;
+  populateFilters(summaryRows);
+  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行：${detailRecord.fileName || "-"}`;
   renderSummary();
 }
 
@@ -46,46 +82,70 @@ function renderSourcePanel(record) {
   }
   const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
   const appliedAt = record.appliedAt ? new Date(record.appliedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
-  $("#sourcePanel").innerHTML = `<div><strong>关账后库存事实表</strong>：${escapeHtml(record.fileName || "-")}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>IndexedDB: ${KC_DB_NAME}/${KC_STORE}/fact-inventory</code></div>`;
+  $("#sourcePanel").innerHTML = `<div><strong>收发明细汇总表</strong>：${escapeHtml(record.fileName || "-")}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>IndexedDB: ${KC_DB_NAME}/${KC_STORE}/fact-2</code></div>`;
+}
+
+function populateFilters(rows) {
+  fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniqueValues(rows, "department"), DEPARTMENT_ORDER));
+  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
+  fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(rows, "series"));
+  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueValues(rows, "warehouseType"));
+  fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(rows, "warehouseLocation"));
 }
 
 function renderSummary() {
   const query = normalizeKey($("#searchInput").value);
   const stockOnly = $("#stockFilter").value === "stock";
   filteredRows = summaryRows.filter((row) => {
-    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization]
+    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.productLine, row.series, row.warehouseType, row.warehouseLocation]
       .some((value) => normalizeKey(value).includes(query));
-    return hit && (!stockOnly || row.endingQty !== 0);
+    return hit
+      && (!stockOnly || row.endingQty !== 0)
+      && matchSelect(row.department, $("#departmentFilter").value)
+      && matchSelect(row.productLine, $("#productLineFilter").value)
+      && matchSelect(row.series, $("#seriesFilter").value)
+      && matchSelect(row.warehouseType, $("#warehouseTypeFilter").value)
+      && matchSelect(row.warehouseLocation, $("#warehouseLocationFilter").value);
   });
   $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
   $("#qtyTotal").textContent = formatNumber(sum(filteredRows, "endingQty"), 3);
-  $("#amountTotal").textContent = formatMoney(sum(filteredRows, "trueCostAmount"));
+  $("#amountTotal").textContent = formatMoney(sum(filteredRows, "settlementAmount"));
   const shown = filteredRows.slice(0, 1000);
   $("#summaryRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
+      <td>${escapeHtml(row.department)}</td>
+      <td>${escapeHtml(row.productLine)}</td>
+      <td>${escapeHtml(row.series)}</td>
+      <td>${escapeHtml(row.warehouseType)}</td>
+      <td>${escapeHtml(row.warehouseLocation)}</td>
       <td>${escapeHtml(row.warehouse)}</td>
       <td>${escapeHtml(row.organization)}</td>
       <td class="num">${formatNumber(row.endingQty, 3)}</td>
-      <td class="num">${formatNumber(row.trueCostPrice, 6)}</td>
-      <td class="num">${formatMoney(row.trueCostAmount)}</td>
+      <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
+      <td class="num">${formatMoney(row.settlementAmount)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="12" class="empty">暂无数据</td></tr>`;
 }
 
 function downloadCurrentRows() {
-  const headers = ["物料编码", "物料名称", "仓库", "库存组织", "结存数量", "真实成本单价", "真实成本-货品"];
+  const headers = ["物料编码", "物料名称", "事业部", "销售产品线", "销售系列", "仓库类型", "仓库位置", "仓库", "库存组织", "0430结余库存数量", "结算价(含税)", "结算价金额"];
   const lines = [headers.join(",")];
   filteredRows.forEach((row) => {
     lines.push([
       row.materialCode,
       row.materialName,
+      row.department,
+      row.productLine,
+      row.series,
+      row.warehouseType,
+      row.warehouseLocation,
       row.warehouse,
       row.organization,
       row.endingQty,
-      row.trueCostPrice,
-      row.trueCostAmount
+      row.settlementPrice,
+      row.settlementAmount
     ].map(csvCell).join(","));
   });
   const blob = new Blob([`\uFEFF${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
@@ -97,13 +157,124 @@ function downloadCurrentRows() {
   URL.revokeObjectURL(url);
 }
 
-function parseNumberCell(value) {
-  const text = normalizeText(value);
-  if (!text) return { valid: false, value: 0 };
-  const cleaned = text.replace(/[,\s锟ヂュ厓￥¥]/g, "");
-  if (!cleaned || /^#/.test(cleaned)) return { valid: false, value: 0 };
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? { valid: true, value: parsed } : { valid: false, value: 0 };
+function mapProductsByMaterialCode(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const materialCode = normalizeMaterialCode(firstText([firstValue(row, ["物料编码"]), nthValue(row, 1)]));
+    if (!materialCode || map.has(materialCode)) continue;
+    map.set(materialCode, {
+      productLine: firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
+      series: firstText([firstValue(row, ["销售系列", "系列"]), nthValue(row, 8)])
+    });
+  }
+  return map;
+}
+
+function mapWarehousesByName(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const warehouse = normalizeText(nthValue(row, 2));
+    if (!warehouse || map.has(warehouse)) continue;
+    map.set(warehouse, {
+      warehouseType: normalizeText(firstValue(row, ["一级仓库分类"])),
+      warehouseLocation: firstText([firstValue(row, ["二级仓库分类", "仓库位置", "位置"]), nthValue(row, 8)])
+    });
+  }
+  return map;
+}
+
+function mapDepartmentsByJoinKey(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const organization = normalizeText(nthValue(row, 1));
+    const warehouse = normalizeText(nthValue(row, 2));
+    const materialCode = normalizeMaterialCode(nthValue(row, 3));
+    const department = normalizeText(nthValue(row, 7));
+    const key = makeDepartmentLookupKey(organization, warehouse, materialCode);
+    if (key && department && !map.has(key)) map.set(key, department);
+  }
+  return map;
+}
+
+function getDetailMaterialCode(row) {
+  return normalizeMaterialCode(firstValue(row, ["物料编码", "货品编码", "商品编码", "SKU"]) || nthValue(row, 1));
+}
+
+function getDetailWarehouse(row) {
+  return normalizeText(firstValue(row, ["仓库", "仓库名称", "金蝶仓库", "库存仓库"]));
+}
+
+function getDetailOrganization(row) {
+  return normalizeText(firstValue(row, ["使用组织", "库存组织", "组织"]));
+}
+
+function getDetailMaterialName(row) {
+  return normalizeText(firstValue(row, ["物料名称", "货品名称", "商品名称", "金蝶名称"]));
+}
+
+function getDetailEndingQty(row) {
+  return firstNumber([
+    firstValue(row, ["0430结余库存数量", "4月30日结余库存数量", "结余库存数量"]),
+    firstValueByHeaderIncludes(row, ["0430", "结余", "库存", "数量"]),
+    firstValueByHeaderIncludes(row, ["结余", "库存", "数量"])
+  ]);
+}
+
+function getDetailSettlementPrice(row) {
+  return firstNumber([
+    nthValue(row, 16),
+    firstValue(row, ["结算价(含税)", "结算价（含税）", "P列结算价(含税)", "P列结算价（含税）"])
+  ]);
+}
+
+function makeDepartmentLookupKey(organization, warehouse, materialCode) {
+  return [
+    normalizeText(organization),
+    normalizeText(warehouse),
+    normalizeMaterialCode(materialCode)
+  ].join("");
+}
+
+function firstText(candidates) {
+  for (const candidate of candidates) {
+    const text = normalizeText(candidate);
+    if (text) return text;
+  }
+  return "";
+}
+
+function firstNumber(candidates) {
+  for (const candidate of candidates) {
+    const text = normalizeText(candidate);
+    const value = toNumber(candidate);
+    if (value !== 0 || text === "0") return value;
+  }
+  return 0;
+}
+
+function fillSelect(select, allLabel, values) {
+  const current = select.value || "";
+  select.innerHTML = [`<option value="">${allLabel}</option>`, ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)].join("");
+  select.value = values.includes(current) ? current : "";
+}
+
+function uniqueValues(rows, key) {
+  return [...new Set(rows.map((row) => normalizeText(row[key])).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function sortByPreferredOrder(values, preferredOrder) {
+  const rank = new Map(preferredOrder.map((value, index) => [value, index]));
+  return [...values].sort((a, b) => {
+    const aRank = rank.has(a) ? rank.get(a) : Number.MAX_SAFE_INTEGER;
+    const bRank = rank.has(b) ? rank.get(b) : Number.MAX_SAFE_INTEGER;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.localeCompare(b, "zh-CN");
+  });
+}
+
+function matchSelect(value, selected) {
+  return !selected || value === selected;
 }
 
 function sum(rows, key) {

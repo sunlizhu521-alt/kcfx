@@ -27,17 +27,22 @@
       <header class="topbar">
         <div>
           <h1>收发汇总分析</h1>
-          <p>读取关账后库存事实表，按文件库当前引用版本展示库存看板分析用的明细表。</p>
+          <p>读取收发明细汇总表，按文件库当前引用版本展示库存看板分析用的明细表。</p>
         </div>
         <div class="status-pill" id="summaryStatus">正在读取文件库...</div>
       </header>
 
       <section class="toolbar">
-        <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库 / 库存组织">
+        <select id="departmentFilter"></select>
+        <select id="productLineFilter"></select>
+        <select id="seriesFilter"></select>
+        <select id="warehouseTypeFilter"></select>
+        <select id="warehouseLocationFilter"></select>
         <select id="stockFilter">
           <option value="all">全部记录</option>
           <option value="stock">仅看有库存</option>
         </select>
+        <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库 / 库存组织">
         <button id="refreshBtn" type="button">应用刷新</button>
         <button id="downloadBtn" class="secondary" type="button">下载当前表格</button>
       </section>
@@ -46,22 +51,27 @@
 
       <section class="metrics comparison-metrics">
         <div class="metric-card"><span>当前行数</span><strong id="rowCount">0</strong></div>
-        <div class="metric-card"><span>结存库存总量</span><strong id="qtyTotal">0</strong></div>
-        <div class="metric-card"><span>真实成本-货品</span><strong id="amountTotal">¥0</strong></div>
+        <div class="metric-card"><span>0430结余库存数量</span><strong id="qtyTotal">0</strong></div>
+        <div class="metric-card"><span>结算价金额</span><strong id="amountTotal">¥0</strong></div>
       </section>
 
       <section class="table-panel">
-        <div class="table-title">关账后库存收发汇总明细</div>
+        <div class="table-title">收发明细汇总表</div>
         <table>
           <thead>
             <tr>
               <th>物料编码</th>
               <th>物料名称</th>
+              <th>事业部</th>
+              <th>销售产品线</th>
+              <th>销售系列</th>
+              <th>仓库类型</th>
+              <th>仓库位置</th>
               <th>仓库</th>
               <th>库存组织</th>
-              <th>结存数量</th>
-              <th>真实成本单价</th>
-              <th>真实成本-货品</th>
+              <th>0430结余库存数量</th>
+              <th>结算价(含税)</th>
+              <th>结算价金额</th>
             </tr>
           </thead>
           <tbody id="summaryRows"></tbody>
@@ -72,6 +82,6 @@
 
   <script src="storage.js?v=20260602c"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260602a"></script>
+  <script src="receipt-summary.js?v=20260602b"></script>
 </body>
 </html>
