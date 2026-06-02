@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板</title>
-  <link rel="stylesheet" href="styles.css?v=20260601f">
+  <link rel="stylesheet" href="styles.css?v=20260602c">
 </head>
 <body>
   <div class="app-shell">
@@ -41,6 +41,13 @@
         <select id="warehouseLocationFilter"></select>
         <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库 / 事业部">
         <button id="refreshBtn" type="button">一键清除筛选</button>
+      </section>
+
+      <section class="metrics dashboard-metrics">
+        <div class="metric-card"><span>结存库存总量</span><strong id="totalQty">0</strong></div>
+        <div class="metric-card"><span>库存资产估值</span><strong id="totalValue">¥0</strong></div>
+        <div class="metric-card"><span>库存资金（万元）-财务维度</span><strong id="financialFundWan">0</strong></div>
+        <div class="metric-card"><span>库存资金（万元）-结算价维度</span><strong id="settlementFundWan">0</strong></div>
       </section>
 
       <section class="dashboard-grid">
@@ -91,13 +98,6 @@
 
       <div id="diagnosticPanel" class="diagnostic-panel"></div>
       <div id="dataSourcePanel" class="data-source-panel"></div>
-
-      <section class="metrics">
-        <div class="metric-card"><span>结存库存总量</span><strong id="totalQty">0</strong></div>
-        <div class="metric-card"><span>库存资产估值</span><strong id="totalValue">¥0</strong></div>
-        <div class="metric-card"><span>库存资金（万元）-财务维度</span><strong id="financialFundWan">0</strong></div>
-        <div class="metric-card"><span>库存资金（万元）-结算价维度</span><strong id="settlementFundWan">0</strong></div>
-      </section>
     </main>
   </div>
 

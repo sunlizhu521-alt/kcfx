@@ -283,6 +283,20 @@ select {
   font-size: 28px;
 }
 
+.dashboard-metrics {
+  grid-template-columns: repeat(4, minmax(210px, 1fr));
+}
+
+.dashboard-metrics .metric-card {
+  min-width: 0;
+}
+
+.dashboard-metrics .metric-card strong {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  font-size: clamp(18px, 1.35vw, 24px);
+}
+
 .error-metrics {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -777,6 +791,12 @@ input[type="file"]:disabled {
 
   .comparison-metrics {
     grid-template-columns: repeat(6, minmax(150px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .dashboard-metrics {
+    grid-template-columns: repeat(4, minmax(210px, 1fr));
     overflow-x: auto;
     padding-bottom: 4px;
   }
