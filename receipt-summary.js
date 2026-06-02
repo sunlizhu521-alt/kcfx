@@ -26,6 +26,7 @@ const AGE_BUCKET_DEFINITIONS = [
 ];
 let summaryRows = [];
 let filteredRows = [];
+let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", clearFilters);
@@ -59,6 +60,7 @@ async function refreshSummary() {
   const warehouseMap = mapWarehousesByName(warehouseRecord?.rows || []);
   const productMap = mapProductsByMaterialCode(productRecord?.rows || []);
   const warehouseMaterialMaps = mapWarehouseMaterialDimensions(warehouseMaterialRecord?.rows || []);
+  departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
   summaryRows = (detailRecord.rows || []).map((row) => {
     const materialCode = getDetailMaterialCode(row);
     const warehouse = getDetailWarehouse(row);
@@ -72,7 +74,8 @@ async function refreshSummary() {
       Object.entries(ageQuantities).map(([label, qty]) => [label, qty * settlementPrice])
     );
     const warehouseInfo = warehouseMap.get(warehouse) || {};
-    const department = lookupDepartment(warehouseMaterialMaps, organization, warehouse, materialCode);
+    const department = lookupDepartment(warehouseMaterialMaps, row);
+    recordDepartmentMatch(department, row);
     const product = productMap.get(materialCode) || {};
     return {
       materialCode,
@@ -95,8 +98,8 @@ async function refreshSummary() {
     };
   });
   populateFilters(summaryRows, records);
-  const matchedDepartments = summaryRows.filter((row) => row.department).length;
-  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行，事业部匹配 ${formatNumber(matchedDepartments, 0)} 行：${detailRecord.fileName || "-"}`;
+  const diagnostic = departmentMatchDiagnostics.sample ? `，未匹配样例 ${departmentMatchDiagnostics.sample}` : "";
+  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行，事业部匹配 ${formatNumber(departmentMatchDiagnostics.matched, 0)} 行${diagnostic}：${detailRecord.fileName || "-"}`;
   renderSummary();
 }
 
@@ -330,26 +333,16 @@ function mapWarehousesByName(rows) {
 
 function mapWarehouseMaterialDimensions(rows) {
   const departmentByFactKey = new Map();
-  const departmentByLegacyKey = new Map();
   for (const row of rows) {
-    const factStyleKey = normalizeKey(nthValue(row, 6));
-    const organization = normalizeText(firstText([firstValue(row, ["使用组织", "库存组织", "组织"]), nthValue(row, 1)]));
-    const warehouse = normalizeText(firstText([firstValue(row, ["仓库名称", "仓库", "金蝶仓库"]), nthValue(row, 2)]));
-    const materialCode = normalizeMaterialCode(firstText([firstValue(row, ["物料编码", "货品编码", "商品编码", "SKU"]), nthValue(row, 3), nthValue(row, 1)]));
+    const factStyleKey = normalizeDepartmentKey(nthValue(row, 6));
     const department = getWarehouseMaterialDepartment(row);
-    const legacyKey = makeDepartmentLookupKey(organization, warehouse, materialCode);
     if (factStyleKey && department && !departmentByFactKey.has(factStyleKey)) departmentByFactKey.set(factStyleKey, department);
-    if (legacyKey && department && !departmentByLegacyKey.has(legacyKey)) departmentByLegacyKey.set(legacyKey, department);
   }
-  return { departmentByFactKey, departmentByLegacyKey };
+  return { departmentByFactKey };
 }
 
-function lookupDepartment(maps, organization, warehouse, materialCode) {
-  const factKey = makeReceiptDepartmentLookupKey(organization, warehouse, materialCode);
-  const legacyKey = makeDepartmentLookupKey(organization, warehouse, materialCode);
-  return maps.departmentByFactKey.get(factKey)
-    || maps.departmentByLegacyKey.get(legacyKey)
-    || "";
+function lookupDepartment(maps, row) {
+  return maps.departmentByFactKey.get(makeReceiptDepartmentLookupKey(row)) || "";
 }
 
 function getDetailMaterialCode(row) {
@@ -415,31 +408,35 @@ function getDetailSettlementPrice(row) {
 }
 
 function getWarehouseMaterialDepartment(row) {
-  const colF = normalizeText(nthValue(row, 6));
-  const named = normalizeText(firstValue(row, ["事业部"]));
-  if (colF && !looksLikeCombinedKey(colF)) return colF;
-  return named || normalizeText(nthValue(row, 7));
+  return normalizeText(nthValue(row, 7) || firstValue(row, ["事业部"]));
 }
 
-function makeDepartmentLookupKey(organization, warehouse, materialCode) {
-  return [
-    normalizeText(organization),
-    normalizeText(warehouse),
-    normalizeMaterialCode(materialCode)
-  ].join("");
-}
-
-function makeReceiptDepartmentLookupKey(organization, warehouse, materialCode) {
-  return normalizeKey([
-    normalizeText(organization),
-    normalizeText(warehouse),
-    normalizeMaterialCode(materialCode)
+function makeReceiptDepartmentLookupKey(row) {
+  return normalizeDepartmentKey([
+    nthValue(row, 4),
+    nthValue(row, 3),
+    nthValue(row, 1)
   ].join(""));
 }
 
-function looksLikeCombinedKey(value) {
+function normalizeDepartmentKey(value) {
+  return normalizeMaterialCode(value).replace(/&/g, "").toLowerCase();
+}
+
+function recordDepartmentMatch(department, row) {
+  if (department) {
+    departmentMatchDiagnostics.matched += 1;
+    return;
+  }
+  departmentMatchDiagnostics.unmatched += 1;
+  if (!departmentMatchDiagnostics.sample) {
+    departmentMatchDiagnostics.sample = `D=${escapeStatusText(nthValue(row, 4))} / C=${escapeStatusText(nthValue(row, 3))} / A=${escapeStatusText(nthValue(row, 1))}`;
+  }
+}
+
+function escapeStatusText(value) {
   const text = normalizeText(value);
-  return /\d{4,}/.test(text) && text.length > 18;
+  return text.length > 24 ? `${text.slice(0, 24)}...` : text || "-";
 }
 
 function firstText(candidates) {
