@@ -31,8 +31,12 @@ let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", clearFilters);
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
-  ["departmentFilter", "ageFilter", "pmcTypeFilter", "searchInput"].forEach((id) => {
+  ["departmentFilter", "seriesFilter", "ageFilter", "pmcTypeFilter", "searchInput"].forEach((id) => {
     $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderSummary);
+  });
+  $("#productLineFilter").addEventListener("change", () => {
+    populateSeriesFilter(summaryRows);
+    renderSummary();
   });
   await refreshSummary();
 });
@@ -109,6 +113,9 @@ async function refreshSummary() {
 
 function clearFilters() {
   $("#departmentFilter").value = "";
+  $("#productLineFilter").value = "";
+  populateSeriesFilter(summaryRows);
+  $("#seriesFilter").value = "";
   $("#ageFilter").value = "";
   $("#pmcTypeFilter").value = "";
   $("#searchInput").value = "";
@@ -128,18 +135,28 @@ function renderSourcePanel(record) {
 function populateFilters(rows, records = null) {
   const warehouseMaterialRows = records?.["dim-warehouse-material"]?.rows || [];
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
+  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
+  populateSeriesFilter(rows);
   fillSelect($("#pmcTypeFilter"), "全部库存类型判断（PMC口径）", uniqueValues(rows, "pmcType"));
+}
+
+function populateSeriesFilter(rows) {
+  const productLine = $("#productLineFilter").value;
+  const scopedRows = rows.filter((row) => matchSelect(row.productLine, productLine));
+  fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(scopedRows, "series"));
 }
 
 function renderSummary() {
   const query = normalizeKey($("#searchInput").value);
   const ageBucket = $("#ageFilter").value;
   filteredRows = summaryRows.filter((row) => {
-    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.pmcType, row.pmcBasis, row.pmcReason]
+    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
       .some((value) => normalizeKey(value).includes(query));
     return hit
       && matchAgeBucket(row.inventoryDays, ageBucket)
       && matchSelect(row.department, $("#departmentFilter").value)
+      && matchSelect(row.productLine, $("#productLineFilter").value)
+      && matchSelect(row.series, $("#seriesFilter").value)
       && matchSelect(row.pmcType, $("#pmcTypeFilter").value);
   });
   $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
