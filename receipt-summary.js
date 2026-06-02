@@ -148,6 +148,7 @@ function renderSummary() {
   $("#qtyTotal").textContent = formatNumberWithYi(sum(filteredRows, "endingQty"), 3);
   $("#amountTotal").textContent = formatMoneyWithYi(sum(filteredRows, "settlementAmount"));
   renderAmountCharts(filteredRows);
+  renderQuantityCharts(filteredRows);
   const shown = filteredRows.slice(0, 1000);
   $("#summaryRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -167,9 +168,15 @@ function renderSummary() {
 }
 
 function renderAmountCharts(rows) {
-  renderBars("departmentAmountChart", groupSum(rows, "department", "settlementAmount", 12));
-  renderBars("ageAmountChart", groupAgeSum(rows));
-  renderBars("productLineAmountChart", groupSum(rows, "productLine", "settlementAmount", 12));
+  renderBars("departmentAmountChart", groupSum(rows, "department", "settlementAmount", 12), "wan");
+  renderBars("ageAmountChart", groupAgeSum(rows, "settlementAmount"), "wan");
+  renderBars("productLineAmountChart", groupSum(rows, "productLine", "settlementAmount", 12), "wan");
+}
+
+function renderQuantityCharts(rows) {
+  renderBars("departmentQtyChart", groupSum(rows, "department", "endingQty", 12), "quantity");
+  renderBars("ageQtyChart", groupAgeSum(rows, "endingQty"), "quantity");
+  renderBars("productLineQtyChart", groupSum(rows, "productLine", "endingQty", 12), "quantity");
 }
 
 function groupSum(rows, key, valueKey, limit = 12) {
@@ -184,11 +191,11 @@ function groupSum(rows, key, valueKey, limit = 12) {
     .slice(0, limit);
 }
 
-function groupAgeSum(rows) {
+function groupAgeSum(rows, valueKey) {
   const map = new Map(AGE_BUCKETS.map((bucket) => [bucket, 0]));
   for (const row of rows) {
     const name = getAgeBucketLabel(row.inventoryDays);
-    map.set(name, (map.get(name) || 0) + (Number(row.settlementAmount) || 0));
+    map.set(name, (map.get(name) || 0) + (Number(row[valueKey]) || 0));
   }
   return [...map.entries()].map(([name, value]) => ({ name, value }));
 }
@@ -204,7 +211,7 @@ function getAgeBucketLabel(value) {
   return "120天以上";
 }
 
-function renderBars(id, rows) {
+function renderBars(id, rows, mode = "wan") {
   const container = $(`#${id}`);
   if (!container) return;
   if (!rows.length) {
@@ -215,7 +222,7 @@ function renderBars(id, rows) {
   container.innerHTML = rows.map((row, index) => {
     const value = Number(row.value) || 0;
     const width = Math.max(2, value / max * 100);
-    const formattedValue = formatWan(value);
+    const formattedValue = mode === "quantity" ? formatNumber(value, 3) : formatWan(value);
     return `
       <div class="bar-row" title="${escapeHtml(row.name)} ${escapeHtml(formattedValue)}">
         <div class="bar-label">${escapeHtml(row.name)}</div>
