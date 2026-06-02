@@ -38,11 +38,15 @@
         <select id="seriesFilter"></select>
         <select id="warehouseTypeFilter"></select>
         <select id="warehouseLocationFilter"></select>
-        <select id="stockFilter">
-          <option value="all">全部记录</option>
-          <option value="stock">仅看有库存</option>
+        <select id="ageFilter">
+          <option value="">全部</option>
+          <option value="0-30">0-30天</option>
+          <option value="31-60">31-60天</option>
+          <option value="61-90">61-90天</option>
+          <option value="91-120">91-120天</option>
+          <option value="120+">120天以上</option>
         </select>
-        <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库 / 库存组织">
+        <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库">
         <button id="refreshBtn" type="button">应用刷新</button>
         <button id="downloadBtn" class="secondary" type="button">下载当前表格</button>
       </section>
@@ -62,13 +66,12 @@
             <tr>
               <th>物料编码</th>
               <th>物料名称</th>
-              <th>事业部</th>
               <th>销售产品线</th>
               <th>销售系列</th>
               <th>仓库类型</th>
               <th>仓库位置</th>
               <th>仓库</th>
-              <th>库存组织</th>
+              <th>库存天数</th>
               <th>0430结余库存数量</th>
               <th>结算价(含税)</th>
               <th>结算价金额</th>
@@ -82,6 +85,6 @@
 
   <script src="storage.js?v=20260602c"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260602b"></script>
+  <script src="receipt-summary.js?v=20260602c"></script>
 </body>
 </html>
