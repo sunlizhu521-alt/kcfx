@@ -429,9 +429,10 @@ function matchSelect(value, selected) {
 }
 
 function clearDashboard() {
-  ["totalQty", "totalValue"].forEach((id) => {
-    $(`#${id}`).textContent = id === "totalValue" ? "¥0" : "0";
-  });
+  $("#totalQty").textContent = "0";
+  $("#totalValue").textContent = "¥0";
+  $("#financialFundWan").textContent = "0";
+  $("#settlementFundWan").textContent = "0";
   ["departmentChart", "productLineChart", "warehouseTypeChart", "seriesChart"].forEach((id) => {
     $(`#${id}`).innerHTML = `<div class="empty">暂无数据</div>`;
   });
@@ -440,9 +441,13 @@ function clearDashboard() {
 function renderFactOnlyMetrics() {
   $("#totalQty").textContent = formatQuantityWithYi(factEndingQtyTotal);
   $("#totalValue").textContent = formatMoneyWithYi(0);
+  $("#financialFundWan").textContent = formatWanNumber(factFinancialValueTotal);
+  $("#settlementFundWan").textContent = "0";
 }
 
 function renderMetrics(rows, priceBasis) {
+  $("#financialFundWan").textContent = formatWanNumber(sum(rows, "financialAmount"));
+  $("#settlementFundWan").textContent = formatWanNumber(sumSettlementValue(rows));
   if (priceBasis === "financial") {
     $("#totalQty").textContent = formatQuantityWithYi(factFinancialQtyTotal);
     $("#totalValue").textContent = formatMoneyWithYi(factFinancialValueTotal);
@@ -458,6 +463,14 @@ function formatQuantityWithYi(value) {
 
 function formatMoneyWithYi(value) {
   return `${formatMoney(value)}（${formatNumber(Number(value || 0) / 100000000, 2)}亿）`;
+}
+
+function formatWanNumber(value) {
+  return formatNumber(Number(value || 0) / 10000, 2);
+}
+
+function sumSettlementValue(rows) {
+  return rows.reduce((total, row) => total + (Number(row.endingQty) || 0) * (Number(row.settlementPrice) || 0), 0);
 }
 
 function sumFactEndingQty(factRows) {
