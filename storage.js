@@ -1,6 +1,8 @@
-const KC_DB_NAME = "kcfx-dashboard";
+const KC_DB_NAME = "kcfx-inventory-analysis-file-library";
+const KC_LEGACY_DB_NAMES = ["kcfx-dashboard"];
 const KC_DB_VERSION = 1;
 const KC_STORE = "files";
+let kcfxMigrationPromise = null;
 
 const DIMENSION_SLOTS = [
   {
@@ -108,9 +110,9 @@ const FACT_SLOTS = [
 const ALL_SLOTS = [...FACT_SLOTS, ...DIMENSION_SLOTS];
 const SLOT_BY_ID = Object.fromEntries(ALL_SLOTS.map((slot) => [slot.id, slot]));
 
-function openKcfxDb() {
+function openIndexedDbByName(dbName) {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(KC_DB_NAME, KC_DB_VERSION);
+    const request = indexedDB.open(dbName, KC_DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(KC_STORE)) {
@@ -119,6 +121,71 @@ function openKcfxDb() {
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
+  });
+}
+
+async function openKcfxDb() {
+  const db = await openIndexedDbByName(KC_DB_NAME);
+  await migrateLegacyFileLibraries(db);
+  return db;
+}
+
+async function migrateLegacyFileLibraries(targetDb) {
+  if (!kcfxMigrationPromise) {
+    kcfxMigrationPromise = migrateLegacyFileLibrariesOnce(targetDb).catch(() => {});
+  }
+  return kcfxMigrationPromise;
+}
+
+async function migrateLegacyFileLibrariesOnce(targetDb) {
+  for (const legacyName of KC_LEGACY_DB_NAMES) {
+    if (legacyName === KC_DB_NAME) continue;
+    const legacyDb = await openIndexedDbByName(legacyName).catch(() => null);
+    if (!legacyDb) continue;
+    try {
+      if (!legacyDb.objectStoreNames.contains(KC_STORE)) continue;
+      const legacyRecords = await readAllFromDb(legacyDb);
+      for (const legacyRecord of legacyRecords) {
+        if (!legacyRecord?.id || !SLOT_BY_ID[legacyRecord.id]) continue;
+        const localRecord = await readRecordFromDb(targetDb, legacyRecord.id);
+        if (recordIsNewer(legacyRecord, localRecord)) {
+          await writeRecordToDb(targetDb, {
+            ...legacyRecord,
+            migratedFromDb: legacyName,
+            migratedAt: new Date().toISOString()
+          });
+        }
+      }
+    } finally {
+      legacyDb.close();
+    }
+  }
+}
+
+function readAllFromDb(db) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(KC_STORE, "readonly");
+    const request = tx.objectStore(KC_STORE).getAll();
+    request.onsuccess = () => resolve(request.result || []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function readRecordFromDb(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(KC_STORE, "readonly");
+    const request = tx.objectStore(KC_STORE).get(id);
+    request.onsuccess = () => resolve(request.result || null);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function writeRecordToDb(db, record) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(KC_STORE, "readwrite");
+    tx.objectStore(KC_STORE).put(record);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 

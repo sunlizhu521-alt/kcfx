@@ -239,7 +239,7 @@ async function clearSlot(slotId) {
 function recordReferencePath(record) {
   const source = record.libraryPath ? "库存分析看板文件库 + 浏览器本地库" : record.sharedSavedAt ? "GitHub共享包 + 浏览器本地库" : "浏览器本地库";
   const githubPath = record.libraryPath || `data/kcfx-library/${record.type === "fact" ? "fact" : "dimensions"}/${record.id}.json`;
-  return `${source} / IndexedDB: kcfx-dashboard/files/${record.id} / GitHub: ${githubPath}`;
+  return `${source} / IndexedDB: ${KC_DB_NAME}/${KC_STORE}/${record.id} / GitHub: ${githubPath}`;
 }
 
 function renderParseDiagnostics(record) {

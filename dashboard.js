@@ -333,7 +333,7 @@ function renderDataSourcePanel(records) {
     const source = record.libraryPath ? "库存分析看板文件库 + 浏览器本地库" : record.sharedSavedAt ? "GitHub共享包 + 浏览器本地库" : "浏览器本地库";
     const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
     const appliedAt = record.appliedAt ? new Date(record.appliedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
-    const path = `IndexedDB: kcfx-dashboard/files/${id}；GitHub: ${record.libraryPath || `data/kcfx-library/${slot.type === "fact" ? "fact" : "dimensions"}/${id}.json`}`;
+    const path = `IndexedDB: ${KC_DB_NAME}/${KC_STORE}/${id}；GitHub: ${record.libraryPath || `data/kcfx-library/${slot.type === "fact" ? "fact" : "dimensions"}/${id}.json`}`;
     return `<div><strong>${escapeHtml(slot.title)}</strong>：${escapeHtml(record.fileName || "-")}；来源：${escapeHtml(source)}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>${escapeHtml(path)}</code></div>`;
   });
   $("#dataSourcePanel").innerHTML = items.join("");

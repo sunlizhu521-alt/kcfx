@@ -438,7 +438,7 @@ function sourceLine(title, id, record) {
   if (!record) return `<div><strong>${escapeHtml(title)}</strong>：未应用</div>`;
   const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
   const appliedAt = record.appliedAt ? new Date(record.appliedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
-  const path = `IndexedDB: kcfx-dashboard/files/${id}`;
+  const path = `IndexedDB: ${KC_DB_NAME}/${KC_STORE}/${id}`;
   return `<div><strong>${escapeHtml(title)}</strong>：${escapeHtml(record.fileName || "-")}；行数：${formatNumber((record.rows || []).length, 0)}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>${escapeHtml(path)}</code></div>`;
 }
 
