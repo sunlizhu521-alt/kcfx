@@ -48,6 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function refreshSummary() {
   await loadSharedLibrary({ statusEl: $("#summaryStatus") });
   const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
+  const inventoryRecord = records["fact-inventory"];
   const detailRecord = records["fact-2"];
   const productRecord = records["dim-product"];
   const warehouseRecord = records["dim-warehouse"];
@@ -61,6 +62,7 @@ async function refreshSummary() {
     return;
   }
 
+  renderClosedInventoryMetrics(inventoryRecord);
   const warehouseMap = mapWarehousesByName(warehouseRecord?.rows || []);
   const productMap = mapProductsByMaterialCode(productRecord?.rows || []);
   const warehouseMaterialMaps = mapWarehouseMaterialDimensions(warehouseMaterialRecord?.rows || []);
@@ -110,8 +112,7 @@ async function refreshSummary() {
   populateFilters(summaryRows, records);
   renderSourcePanel(detailRecord, summaryRows);
   const diagnostic = departmentMatchDiagnostics.sample ? `，未匹配样例 ${departmentMatchDiagnostics.sample}` : "";
-  const fileUpdatedAt = formatRecordTime(detailRecord.appliedAt || detailRecord.savedAt);
-  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行，事业部匹配 ${formatNumber(departmentMatchDiagnostics.matched, 0)} 行，读取文件更新时间：${fileUpdatedAt}${diagnostic}：${detailRecord.fileName || "-"}`;
+  $("#summaryStatus").textContent = buildSummaryStatus(summaryRows.length, departmentMatchDiagnostics.matched, diagnostic, records);
   renderSummary();
 }
 
@@ -124,6 +125,31 @@ function clearFilters() {
   clearSelect($("#warehouseLocationFilter"));
   $("#searchInput").value = "";
   renderSummary();
+}
+
+function renderClosedInventoryMetrics(record) {
+  const rows = record?.rows || [];
+  const qty = rows.reduce((total, row) => total + getClosedInventoryQty(row), 0);
+  const value = rows.reduce((total, row) => total + getClosedInventoryValue(row), 0);
+  $("#closedInventoryQtyTotal").textContent = formatNumberWithYi(qty, 3);
+  $("#closedInventoryValueTotal").textContent = formatMoneyWithYi(value);
+}
+
+function buildSummaryStatus(rowCount, matchedCount, diagnostic, records) {
+  const refs = [
+    ["收发明细汇总表", records["fact-2"]],
+    ["关账后库存事实表", records["fact-inventory"]],
+    ["商品分类维表", records["dim-product"]],
+    ["仓库维表", records["dim-warehouse"]],
+    ["仓库物料事业部对照表", records["dim-warehouse-material"]]
+  ].map(([label, record]) => formatStatusRecord(label, record)).filter(Boolean);
+  return `已读取 ${formatNumber(rowCount, 0)} 行，事业部匹配 ${formatNumber(matchedCount, 0)} 行${diagnostic}；引用文件：${refs.join("；")}`;
+}
+
+function formatStatusRecord(label, record) {
+  if (!record) return `${label}：未引用`;
+  const updatedAt = formatRecordTime(record.appliedAt || record.savedAt);
+  return `${label}：${record.fileName || "-"}（${updatedAt}）`;
 }
 
 function renderSourcePanel(record, rows = []) {
@@ -589,6 +615,18 @@ function getDetailSettlementPrice(row) {
     nthValue(row, 16),
     firstValue(row, ["结算价(含税)", "结算价（含税）", "P列结算价(含税)", "P列结算价（含税）"])
   ]);
+}
+
+function getClosedInventoryQty(row) {
+  return firstNumber([nthValue(row, 7)]);
+}
+
+function getClosedInventoryTrueCost(row) {
+  return firstNumber([nthValue(row, 8)]);
+}
+
+function getClosedInventoryValue(row) {
+  return getClosedInventoryQty(row) * getClosedInventoryTrueCost(row);
 }
 
 function getDetailProductLine(row) {
