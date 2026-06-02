@@ -17,6 +17,13 @@ const DEPARTMENT_ORDER = [
 ];
 const COLORS = ["#0f7b79", "#405c9a", "#2f8f5b", "#b87618", "#6c5ce7", "#d35400", "#2980b9", "#7f8c8d"];
 const AGE_BUCKETS = ["0-30天", "31-60天", "61-90天", "91-120天", "120天以上"];
+const AGE_BUCKET_DEFINITIONS = [
+  { label: "0-30天", candidates: ["0-30天数量", "0-30天库存数量", "0-30天结余库存数量", "0-30天库龄数量", "0-30天"] },
+  { label: "31-60天", candidates: ["31-60天数量", "31-60天库存数量", "31-60天结余库存数量", "31-60天库龄数量", "31-60天"] },
+  { label: "61-90天", candidates: ["61-90天数量", "61-90天库存数量", "61-90天结余库存数量", "61-90天库龄数量", "61-90天"] },
+  { label: "91-120天", candidates: ["91-120天数量", "91-120天库存数量", "91-120天结余库存数量", "91-120天库龄数量", "91-120天"] },
+  { label: "120天以上", candidates: ["120天以上数量", "120天以上库存数量", "120天以上结余库存数量", "120天以上库龄数量", "120天及以上数量", "120天及以上库存数量", "120以上数量", "120天以上", "120天及以上", "120以上"] }
+];
 let summaryRows = [];
 let filteredRows = [];
 
@@ -64,6 +71,10 @@ async function refreshSummary() {
     const endingQty = getDetailEndingQty(row);
     const inventoryDays = getDetailInventoryDays(row);
     const settlementPrice = getDetailSettlementPrice(row);
+    const ageQuantities = getAgeQuantities(row);
+    const ageSettlementAmounts = Object.fromEntries(
+      Object.entries(ageQuantities).map(([label, qty]) => [label, qty * settlementPrice])
+    );
     const product = productMap.get(materialCode) || {};
     const warehouseInfo = warehouseMap.get(warehouse) || {};
     return {
@@ -77,6 +88,9 @@ async function refreshSummary() {
       warehouse,
       organization,
       inventoryDays,
+      ageQuantities,
+      ageSettlementAmounts,
+      ageSettlementAmount: sumObjectValues(ageSettlementAmounts),
       endingQty,
       settlementPrice,
       settlementAmount: endingQty * settlementPrice
@@ -168,15 +182,15 @@ function renderSummary() {
 }
 
 function renderAmountCharts(rows) {
-  renderBars("departmentAmountChart", groupSum(rows, "department", "settlementAmount", 12), "wan");
-  renderBars("ageAmountChart", groupAgeSum(rows, "settlementAmount"), "wan");
-  renderBars("productLineAmountChart", groupSum(rows, "productLine", "settlementAmount", 12), "wan");
+  renderBars("departmentAmountChart", groupSum(rows, "department", "ageSettlementAmount", 12));
+  renderBars("ageAmountChart", groupAgeAmountSum(rows));
+  renderBars("productLineAmountChart", groupSum(rows, "productLine", "ageSettlementAmount", 12));
 }
 
 function renderQuantityCharts(rows) {
-  renderBars("departmentQtyChart", groupSum(rows, "department", "endingQty", 12), "quantity");
-  renderBars("ageQtyChart", groupAgeSum(rows, "endingQty"), "quantity");
-  renderBars("productLineQtyChart", groupSum(rows, "productLine", "endingQty", 12), "quantity");
+  renderBars("departmentQtyChart", groupSum(rows, "department", "ageSettlementAmount", 12));
+  renderBars("ageQtyChart", groupAgeAmountSum(rows));
+  renderBars("productLineQtyChart", groupSum(rows, "productLine", "ageSettlementAmount", 12));
 }
 
 function groupSum(rows, key, valueKey, limit = 12) {
@@ -191,11 +205,12 @@ function groupSum(rows, key, valueKey, limit = 12) {
     .slice(0, limit);
 }
 
-function groupAgeSum(rows, valueKey) {
+function groupAgeAmountSum(rows) {
   const map = new Map(AGE_BUCKETS.map((bucket) => [bucket, 0]));
   for (const row of rows) {
-    const name = getAgeBucketLabel(row.inventoryDays);
-    map.set(name, (map.get(name) || 0) + (Number(row[valueKey]) || 0));
+    for (const bucket of AGE_BUCKETS) {
+      map.set(bucket, (map.get(bucket) || 0) + (Number(row.ageSettlementAmounts?.[bucket]) || 0));
+    }
   }
   return [...map.entries()].map(([name, value]) => ({ name, value }));
 }
@@ -211,7 +226,7 @@ function getAgeBucketLabel(value) {
   return "120天以上";
 }
 
-function renderBars(id, rows, mode = "wan") {
+function renderBars(id, rows) {
   const container = $(`#${id}`);
   if (!container) return;
   if (!rows.length) {
@@ -222,7 +237,7 @@ function renderBars(id, rows, mode = "wan") {
   container.innerHTML = rows.map((row, index) => {
     const value = Number(row.value) || 0;
     const width = Math.max(2, value / max * 100);
-    const formattedValue = mode === "quantity" ? formatNumber(value, 3) : formatWan(value);
+    const formattedValue = formatWan(value);
     return `
       <div class="bar-row" title="${escapeHtml(row.name)} ${escapeHtml(formattedValue)}">
         <div class="bar-label">${escapeHtml(row.name)}</div>
@@ -353,6 +368,20 @@ function getDetailInventoryDays(row) {
   ]);
 }
 
+function getAgeQuantities(row) {
+  return Object.fromEntries(AGE_BUCKET_DEFINITIONS.map((definition) => [
+    definition.label,
+    getAgeQuantity(row, definition)
+  ]));
+}
+
+function getAgeQuantity(row, definition) {
+  return firstOptionalNumber([
+    ...definition.candidates.map((name) => firstValue(row, [name])),
+    firstValueByHeaderIncludes(row, [definition.label, "数量"])
+  ]) || 0;
+}
+
 function getDetailSettlementPrice(row) {
   return firstNumber([
     nthValue(row, 16),
@@ -442,6 +471,10 @@ function matchAgeBucket(value, bucket) {
 
 function sum(rows, key) {
   return rows.reduce((total, row) => total + (Number(row[key]) || 0), 0);
+}
+
+function sumObjectValues(object) {
+  return Object.values(object || {}).reduce((total, value) => total + (Number(value) || 0), 0);
 }
 
 function formatOptionalNumber(value, decimals = 0) {
