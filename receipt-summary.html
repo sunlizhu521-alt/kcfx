@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>库存分析看板 收发汇总分析</title>
+  <link rel="stylesheet" href="styles.css?v=20260602a">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>库存分析看板</strong>
+        <span>供应链维护更新</span>
+      </div>
+      <nav class="nav">
+        <a href="index.html">库存分析看板</a>
+        <a href="comparison.html">表格对比分析</a>
+        <a class="active" href="receipt-summary.html">收发汇总分析</a>
+        <a href="fact-library.html">备货事实表库</a>
+        <a href="file-library.html">维度表文件库</a>
+        <a href="errors.html">报错信息提示</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1>收发汇总分析</h1>
+          <p>读取关账后库存事实表，按文件库当前引用版本展示库存看板分析用的明细表。</p>
+        </div>
+        <div class="status-pill" id="summaryStatus">正在读取文件库...</div>
+      </header>
+
+      <section class="toolbar">
+        <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库 / 库存组织">
+        <select id="stockFilter">
+          <option value="all">全部记录</option>
+          <option value="stock">仅看有库存</option>
+        </select>
+        <button id="refreshBtn" type="button">应用刷新</button>
+        <button id="downloadBtn" class="secondary" type="button">下载当前表格</button>
+      </section>
+
+      <div id="sourcePanel" class="data-source-panel"></div>
+
+      <section class="metrics comparison-metrics">
+        <div class="metric-card"><span>当前行数</span><strong id="rowCount">0</strong></div>
+        <div class="metric-card"><span>结存库存总量</span><strong id="qtyTotal">0</strong></div>
+        <div class="metric-card"><span>真实成本-货品</span><strong id="amountTotal">¥0</strong></div>
+      </section>
+
+      <section class="table-panel">
+        <div class="table-title">关账后库存收发汇总明细</div>
+        <table>
+          <thead>
+            <tr>
+              <th>物料编码</th>
+              <th>物料名称</th>
+              <th>仓库</th>
+              <th>库存组织</th>
+              <th>结存数量</th>
+              <th>真实成本单价</th>
+              <th>真实成本-货品</th>
+            </tr>
+          </thead>
+          <tbody id="summaryRows"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="storage.js?v=20260602c"></script>
+  <script src="shared-library.js?v=20260601d"></script>
+  <script src="receipt-summary.js?v=20260602a"></script>
+</body>
+</html>
