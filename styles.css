@@ -265,6 +265,12 @@ select {
   white-space: nowrap;
 }
 
+.source-reminder {
+  margin-top: 6px;
+  color: #7a4d0b;
+  font-weight: 700;
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -335,7 +341,7 @@ select {
 }
 
 .receipt-metrics {
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
 }
 
 .receipt-metrics .metric-card strong {
@@ -809,7 +815,7 @@ input[type="file"]:disabled {
   }
 
   .receipt-metrics {
-    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
   .receipt-chart-grid {

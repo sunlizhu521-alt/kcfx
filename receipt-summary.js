@@ -48,7 +48,7 @@ async function refreshSummary() {
   const productRecord = records["dim-product"];
   const warehouseRecord = records["dim-warehouse"];
   const warehouseMaterialRecord = records["dim-warehouse-material"];
-  renderSourcePanel(detailRecord);
+  renderSourcePanel(detailRecord, []);
   if (!detailRecord) {
     summaryRows = [];
     $("#summaryStatus").textContent = "缺少收发明细汇总表，请先到备货事实表库上传并应用。";
@@ -104,10 +104,10 @@ async function refreshSummary() {
     };
   });
   populateFilters(summaryRows, records);
+  renderSourcePanel(detailRecord, summaryRows);
   const diagnostic = departmentMatchDiagnostics.sample ? `，未匹配样例 ${departmentMatchDiagnostics.sample}` : "";
-  const pmcTypes = uniqueValues(summaryRows, "pmcType");
-  const pmcDiagnostic = pmcTypes.length ? `，AD列解析 ${formatNumber(pmcTypes.length, 0)} 类` : "，AD列暂无可筛选内容";
-  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行，事业部匹配 ${formatNumber(departmentMatchDiagnostics.matched, 0)} 行${pmcDiagnostic}${diagnostic}：${detailRecord.fileName || "-"}`;
+  const fileUpdatedAt = formatRecordTime(detailRecord.appliedAt || detailRecord.savedAt);
+  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行，事业部匹配 ${formatNumber(departmentMatchDiagnostics.matched, 0)} 行，读取文件更新时间：${fileUpdatedAt}${diagnostic}：${detailRecord.fileName || "-"}`;
   renderSummary();
 }
 
@@ -122,14 +122,38 @@ function clearFilters() {
   renderSummary();
 }
 
-function renderSourcePanel(record) {
+function renderSourcePanel(record, rows = []) {
   if (!record) {
     $("#sourcePanel").innerHTML = "";
     return;
   }
   const savedAt = record.savedAt ? new Date(record.savedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
   const appliedAt = record.appliedAt ? new Date(record.appliedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
-  $("#sourcePanel").innerHTML = `<div><strong>收发明细汇总表</strong>：${escapeHtml(record.fileName || "-")}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>IndexedDB: ${KC_DB_NAME}/${KC_STORE}/fact-2</code></div>`;
+  const reminder = buildSourceReminder(rows);
+  $("#sourcePanel").innerHTML = `
+    <div><strong>收发明细汇总表</strong>：${escapeHtml(record.fileName || "-")}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>IndexedDB: ${KC_DB_NAME}/${KC_STORE}/fact-2</code></div>
+    <div class="source-reminder">${escapeHtml(reminder)}</div>
+  `;
+}
+
+function formatRecordTime(value) {
+  return value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "-";
+}
+
+function buildSourceReminder(rows) {
+  if (!rows.length) return "提醒：文件读取后会提示有库存数量没有结算价、有库存没有分到事业部等信息。";
+  const stockRows = rows.filter((row) => Number(row.endingQty) !== 0);
+  const missingSettlement = stockRows.filter((row) => !(Number(row.settlementPrice) > 0)).length;
+  const missingDepartment = stockRows.filter((row) => !normalizeText(row.department)).length;
+  const missingProductLine = stockRows.filter((row) => !normalizeText(row.productLine)).length;
+  const missingWarehouseLocation = stockRows.filter((row) => !normalizeText(row.warehouseLocation)).length;
+  return [
+    `提醒：有库存行 ${formatNumber(stockRows.length, 0)} 行`,
+    `有库存数量没有结算价 ${formatNumber(missingSettlement, 0)} 行`,
+    `有库存没有分到事业部 ${formatNumber(missingDepartment, 0)} 行`,
+    `有库存没有销售产品线 ${formatNumber(missingProductLine, 0)} 行`,
+    `有库存没有仓库位置 ${formatNumber(missingWarehouseLocation, 0)} 行`
+  ].join("；");
 }
 
 function populateFilters(rows, records = null) {
@@ -160,7 +184,6 @@ function renderSummary() {
       && matchSelect(row.series, getSelectValues($("#seriesFilter")))
       && matchSelect(row.warehouseLocation, getSelectValues($("#warehouseLocationFilter")));
   });
-  $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
   $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 3);
   $("#amountTotal").textContent = formatMoneyWithYi(sumVisibleAmount(filteredRows, selectedAgeLabels));
   renderAmountCharts(filteredRows, selectedAgeLabels);
@@ -175,11 +198,10 @@ function renderSummary() {
       <td class="num">${formatNumber(row.endingQty, 3)}</td>
       <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
       <td class="num">${formatMoney(row.settlementAmount)}</td>
-      <td>${escapeHtml(row.pmcType)}</td>
       <td>${escapeHtml(row.pmcBasis)}</td>
       <td>${escapeHtml(row.pmcReason)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="10" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="9" class="empty">暂无数据</td></tr>`;
 }
 
 function renderAmountCharts(rows, selectedAgeLabel = "") {
@@ -290,7 +312,7 @@ function renderQuantityBars(id, rows) {
 }
 
 function downloadCurrentRows() {
-  const headers = ["物料编码", "物料名称", "仓库", "库存天数", "0430结余库存数量", "结算价(含税)", "结算价金额", "库存类型判断（PMC口径）", "判断依据（PMC口径）", "问题原因（PMC口径）"];
+  const headers = ["物料编码", "物料名称", "仓库", "库存天数", "0430结余库存数量", "结算价(含税)", "结算价金额", "判断依据（PMC口径）", "问题原因（PMC口径）"];
   const lines = [headers.join(",")];
   filteredRows.forEach((row) => {
     lines.push([
@@ -301,7 +323,6 @@ function downloadCurrentRows() {
       row.endingQty,
       row.settlementPrice,
       row.settlementAmount,
-      row.pmcType,
       row.pmcBasis,
       row.pmcReason
     ].map(csvCell).join(","));
@@ -310,7 +331,7 @@ function downloadCurrentRows() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `收发汇总分析_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.csv`;
+  link.download = `供应链库存分析_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }

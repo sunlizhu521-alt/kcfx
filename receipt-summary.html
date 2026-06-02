@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>库存分析看板 收发汇总分析</title>
-  <link rel="stylesheet" href="styles.css?v=20260603a">
+  <title>库存分析看板 供应链库存分析</title>
+  <link rel="stylesheet" href="styles.css?v=20260603b">
 </head>
 <body>
   <div class="app-shell">
@@ -14,7 +14,7 @@
         <span>供应链维护更新</span>
       </div>
       <nav class="nav">
-        <a class="active" href="receipt-summary.html">收发汇总分析</a>
+        <a class="active" href="receipt-summary.html">供应链库存分析</a>
         <a href="comparison.html">表格对比分析</a>
         <a href="fact-library.html">备货事实表库</a>
         <a href="file-library.html">维度表文件库</a>
@@ -26,7 +26,7 @@
     <main class="content">
       <header class="topbar">
         <div>
-          <h1>收发汇总分析</h1>
+          <h1>供应链库存分析</h1>
           <p>读取收发明细汇总表，按文件库当前引用版本展示库存看板分析用的明细表。</p>
         </div>
         <div class="status-pill" id="summaryStatus">正在读取文件库...</div>
@@ -51,7 +51,6 @@
       </section>
 
       <section class="metrics comparison-metrics receipt-metrics">
-        <div class="metric-card"><span>当前行数</span><strong id="rowCount">0</strong></div>
         <div class="metric-card"><span>0430结余库存数量</span><strong id="qtyTotal">0</strong></div>
         <div class="metric-card"><span>结算价金额</span><strong id="amountTotal">¥0</strong></div>
       </section>
@@ -106,7 +105,6 @@
               <th>0430结余库存数量</th>
               <th>结算价(含税)</th>
               <th>结算价金额</th>
-              <th>库存类型判断（PMC口径）</th>
               <th>判断依据（PMC口径）</th>
               <th>问题原因（PMC口径）</th>
             </tr>
@@ -121,6 +119,6 @@
 
   <script src="storage.js?v=20260602c"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260603b"></script>
+  <script src="receipt-summary.js?v=20260603c"></script>
 </body>
 </html>
