@@ -315,6 +315,16 @@ select {
   overflow-wrap: anywhere;
 }
 
+.receipt-metrics {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+}
+
+.receipt-metrics .metric-card strong {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  font-size: clamp(18px, 1.35vw, 24px);
+}
+
 .comparison-summary {
   display: flex;
   align-items: center;
@@ -769,5 +779,9 @@ input[type="file"]:disabled {
     grid-template-columns: repeat(6, minmax(150px, 1fr));
     overflow-x: auto;
     padding-bottom: 4px;
+  }
+
+  .receipt-metrics {
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
   }
 }
