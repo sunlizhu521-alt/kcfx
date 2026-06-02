@@ -152,6 +152,14 @@ select {
   color: var(--muted);
 }
 
+.status-line {
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+}
+
 .status-pill {
   max-width: min(760px, 62vw);
   border: 1px solid #d8c28e;
@@ -516,6 +524,24 @@ select {
   font-size: 17px;
 }
 
+.table-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.table-title-row .table-title {
+  margin: 0;
+}
+
+.compact-button {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .chart-total {
   display: inline-block;
   margin-left: 6px;
@@ -590,6 +616,10 @@ select {
 .mini-table-panel th,
 .mini-table-panel td {
   padding: 7px 8px;
+}
+
+.mini-table-panel td.num {
+  text-align: center;
 }
 
 .summary-total-row td {

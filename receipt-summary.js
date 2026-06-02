@@ -31,6 +31,8 @@ let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", clearFilters);
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
+  $("#downloadTurnoverBtn").addEventListener("click", downloadTurnoverSummary);
+  $("#downloadProductLineBtn").addEventListener("click", downloadProductLineSummary);
   document.addEventListener("click", closeMultiFilters);
   $("#searchInput").addEventListener("input", renderSummary);
   $("#productLineFilter").addEventListener("change", () => {
@@ -285,9 +287,9 @@ function renderCompactSummaryRows(rows, totalQty, totalAmount) {
   return [...dataRows, totalRow].map((row) => `
     <tr class="${row.isTotal ? "summary-total-row" : ""}">
       <td>${escapeHtml(row.name)}</td>
-      <td class="num">${formatNumber(row.qty, 3)}</td>
+      <td class="num">${formatAdaptiveDecimal(row.qty / 10000)}</td>
       <td class="num">${formatPercent(row.qty, totalQty)}</td>
-      <td class="num">${formatMoney(row.amount)}</td>
+      <td class="num">${formatAdaptiveDecimal(row.amount / 10000)}</td>
       <td class="num">${formatPercent(row.amount, totalAmount)}</td>
     </tr>
   `).join("");
@@ -424,6 +426,61 @@ function downloadCurrentRows() {
   const link = document.createElement("a");
   link.href = url;
   link.download = `供应链库存分析_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadTurnoverSummary() {
+  const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
+  const buckets = selectedAgeLabels.length ? selectedAgeLabels : AGE_BUCKETS;
+  const rows = AGE_BUCKETS.map((bucket) => {
+    const active = buckets.includes(bucket);
+    return {
+      name: bucket,
+      qty: active ? filteredRows.reduce((total, row) => total + (Number(row.ageQuantities?.[bucket]) || 0), 0) : 0,
+      amount: active ? filteredRows.reduce((total, row) => total + (Number(row.ageSettlementAmounts?.[bucket]) || 0), 0) : 0
+    };
+  });
+  downloadSummaryRows("周转天数", rows);
+}
+
+function downloadProductLineSummary() {
+  const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
+  const map = new Map();
+  for (const row of filteredRows) {
+    const name = normalizeText(row.productLine) || "未归类";
+    const item = map.get(name) || { name, qty: 0, amount: 0 };
+    item.qty += visibleQuantity(row, selectedAgeLabels);
+    item.amount += visibleAmount(row, selectedAgeLabels);
+    map.set(name, item);
+  }
+  downloadSummaryRows("产品线库存", [...map.values()].sort((a, b) => b.amount - a.amount));
+}
+
+function downloadSummaryRows(title, rows) {
+  const dataRows = rows.filter((row) => (Number(row.qty) || 0) !== 0 || (Number(row.amount) || 0) !== 0);
+  const totalQty = dataRows.reduce((total, row) => total + (Number(row.qty) || 0), 0);
+  const totalAmount = dataRows.reduce((total, row) => total + (Number(row.amount) || 0), 0);
+  const headers = [title, "库存数量（万）", "数量占比", "货值（万元）", "货值占比"];
+  const lines = [headers.join(",")];
+  [...dataRows, { name: "合计", qty: totalQty, amount: totalAmount }].forEach((row) => {
+    lines.push([
+      row.name,
+      formatAdaptiveDecimal((Number(row.qty) || 0) / 10000),
+      formatPercent(row.qty, totalQty),
+      formatAdaptiveDecimal((Number(row.amount) || 0) / 10000),
+      formatPercent(row.amount, totalAmount)
+    ].map(csvCell).join(","));
+  });
+  downloadCsv(`${title}_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.csv`, lines);
+}
+
+function downloadCsv(fileName, lines) {
+  const blob = new Blob([`\uFEFF${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
 }
