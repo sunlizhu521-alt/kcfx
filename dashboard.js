@@ -36,7 +36,7 @@ const $ = (selector) => document.querySelector(selector);
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadSharedLibrary({ statusEl: $("#sharedStatus") });
-  $("#refreshBtn").addEventListener("click", refreshDashboard);
+  $("#refreshBtn").addEventListener("click", clearFilters);
   ["priceBasisFilter", "departmentFilter", "productLineFilter", "seriesFilter", "warehouseTypeFilter", "warehouseLocationFilter", "searchInput"].forEach((id) => {
     $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderDashboard);
   });
@@ -66,6 +66,17 @@ async function refreshDashboard() {
   wideRows = buildWideRows(records);
   populateFilters(records);
   renderDataSourcePanel(records);
+  renderDashboard();
+}
+
+function clearFilters() {
+  $("#priceBasisFilter").value = "settlement";
+  $("#departmentFilter").value = "";
+  $("#productLineFilter").value = "";
+  $("#seriesFilter").value = "";
+  $("#warehouseTypeFilter").value = "";
+  $("#warehouseLocationFilter").value = "";
+  $("#searchInput").value = "";
   renderDashboard();
 }
 
@@ -399,7 +410,7 @@ function renderPriceBasisStatus(priceBasis, rows) {
 
 function renderNoSettlementDataHint(rows) {
   return rows.length
-    ? `<div class="empty">当前筛选下结算价金额为 0，请检查商品分类维表“结算价”列是否有值并已应用刷新。</div>`
+    ? `<div class="empty">当前筛选下结算价金额为 0，请检查商品分类维表“结算价”列是否有值并已应用。</div>`
     : `<div class="empty">暂无数据</div>`;
 }
 
