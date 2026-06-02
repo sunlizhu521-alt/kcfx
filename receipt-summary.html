@@ -51,12 +51,25 @@
         <button id="downloadBtn" class="secondary" type="button">下载当前表格</button>
       </section>
 
-      <div id="sourcePanel" class="data-source-panel"></div>
-
       <section class="metrics comparison-metrics">
         <div class="metric-card"><span>当前行数</span><strong id="rowCount">0</strong></div>
         <div class="metric-card"><span>0430结余库存数量</span><strong id="qtyTotal">0</strong></div>
         <div class="metric-card"><span>结算价金额</span><strong id="amountTotal">¥0</strong></div>
+      </section>
+
+      <section class="dashboard-grid receipt-chart-grid">
+        <div class="panel">
+          <h2>事业部占用资金情况</h2>
+          <div id="departmentAmountChart" class="chart-bars"></div>
+        </div>
+        <div class="panel">
+          <h2>各库龄段占用资金情况</h2>
+          <div id="ageAmountChart" class="chart-bars"></div>
+        </div>
+        <div class="panel">
+          <h2>各产品线占用资金情况</h2>
+          <div id="productLineAmountChart" class="chart-bars"></div>
+        </div>
       </section>
 
       <section class="table-panel">
@@ -80,11 +93,13 @@
           <tbody id="summaryRows"></tbody>
         </table>
       </section>
+
+      <div id="sourcePanel" class="data-source-panel"></div>
     </main>
   </div>
 
   <script src="storage.js?v=20260602c"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260602d"></script>
+  <script src="receipt-summary.js?v=20260602e"></script>
 </body>
 </html>

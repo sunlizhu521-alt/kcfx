@@ -15,6 +15,8 @@ const DEPARTMENT_ORDER = [
   "封样仓",
   "供应商仓（后续划分事业部）"
 ];
+const COLORS = ["#0f7b79", "#405c9a", "#2f8f5b", "#b87618", "#6c5ce7", "#d35400", "#2980b9", "#7f8c8d"];
+const AGE_BUCKETS = ["0-30天", "31-60天", "61-90天", "91-120天", "120天以上"];
 let summaryRows = [];
 let filteredRows = [];
 
@@ -145,6 +147,7 @@ function renderSummary() {
   $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
   $("#qtyTotal").textContent = formatNumberWithYi(sum(filteredRows, "endingQty"), 3);
   $("#amountTotal").textContent = formatMoneyWithYi(sum(filteredRows, "settlementAmount"));
+  renderAmountCharts(filteredRows);
   const shown = filteredRows.slice(0, 1000);
   $("#summaryRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -161,6 +164,66 @@ function renderSummary() {
       <td class="num">${formatMoney(row.settlementAmount)}</td>
     </tr>
   `).join("") : `<tr><td colspan="11" class="empty">暂无数据</td></tr>`;
+}
+
+function renderAmountCharts(rows) {
+  renderBars("departmentAmountChart", groupSum(rows, "department", "settlementAmount", 12));
+  renderBars("ageAmountChart", groupAgeSum(rows));
+  renderBars("productLineAmountChart", groupSum(rows, "productLine", "settlementAmount", 12));
+}
+
+function groupSum(rows, key, valueKey, limit = 12) {
+  const map = new Map();
+  for (const row of rows) {
+    const name = normalizeText(row[key]) || "未归类";
+    map.set(name, (map.get(name) || 0) + (Number(row[valueKey]) || 0));
+  }
+  return [...map.entries()]
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function groupAgeSum(rows) {
+  const map = new Map(AGE_BUCKETS.map((bucket) => [bucket, 0]));
+  for (const row of rows) {
+    const name = getAgeBucketLabel(row.inventoryDays);
+    map.set(name, (map.get(name) || 0) + (Number(row.settlementAmount) || 0));
+  }
+  return [...map.entries()].map(([name, value]) => ({ name, value }));
+}
+
+function getAgeBucketLabel(value) {
+  if (value === null || value === undefined || normalizeText(value) === "") return "未归类";
+  const days = Number(value);
+  if (!Number.isFinite(days)) return "未归类";
+  if (days <= 30) return "0-30天";
+  if (days <= 60) return "31-60天";
+  if (days <= 90) return "61-90天";
+  if (days <= 120) return "91-120天";
+  return "120天以上";
+}
+
+function renderBars(id, rows) {
+  const container = $(`#${id}`);
+  if (!container) return;
+  if (!rows.length) {
+    container.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  const max = Math.max(...rows.map((row) => Number(row.value) || 0), 1);
+  container.innerHTML = rows.map((row, index) => {
+    const value = Number(row.value) || 0;
+    const width = Math.max(2, value / max * 100);
+    const formattedValue = formatWan(value);
+    return `
+      <div class="bar-row" title="${escapeHtml(row.name)} ${escapeHtml(formattedValue)}">
+        <div class="bar-label">${escapeHtml(row.name)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${width}%;background:${COLORS[index % COLORS.length]}"></div></div>
+        <div class="bar-value">${escapeHtml(formattedValue)}</div>
+      </div>
+    `;
+  }).join("");
 }
 
 function downloadCurrentRows() {
@@ -387,6 +450,10 @@ function formatNumberWithYi(value, decimals = 3) {
 function formatMoneyWithYi(value) {
   const numeric = Number(value || 0);
   return `${formatMoney(numeric)}（${formatNumber(numeric / 100000000, 2)}亿）`;
+}
+
+function formatWan(value) {
+  return `${formatNumber(Number(value || 0) / 10000, 2)}万元`;
 }
 
 function csvCell(value) {

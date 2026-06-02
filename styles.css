@@ -348,6 +348,10 @@ select {
   margin-bottom: 16px;
 }
 
+.receipt-chart-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
 .panel {
   min-height: 300px;
   padding: 16px;
