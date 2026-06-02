@@ -143,8 +143,8 @@ function renderSummary() {
       && matchSelect(row.warehouseLocation, $("#warehouseLocationFilter").value);
   });
   $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
-  $("#qtyTotal").textContent = formatNumber(sum(filteredRows, "endingQty"), 3);
-  $("#amountTotal").textContent = formatMoney(sum(filteredRows, "settlementAmount"));
+  $("#qtyTotal").textContent = formatNumberWithYi(sum(filteredRows, "endingQty"), 3);
+  $("#amountTotal").textContent = formatMoneyWithYi(sum(filteredRows, "settlementAmount"));
   const shown = filteredRows.slice(0, 1000);
   $("#summaryRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -377,6 +377,16 @@ function sum(rows, key) {
 function formatOptionalNumber(value, decimals = 0) {
   if (value === null || value === undefined || normalizeText(value) === "") return "";
   return formatNumber(value, decimals);
+}
+
+function formatNumberWithYi(value, decimals = 3) {
+  const numeric = Number(value || 0);
+  return `${formatNumber(numeric, decimals)}（${formatNumber(numeric / 100000000, 2)}亿）`;
+}
+
+function formatMoneyWithYi(value) {
+  const numeric = Number(value || 0);
+  return `${formatMoney(numeric)}（${formatNumber(numeric / 100000000, 2)}亿）`;
 }
 
 function csvCell(value) {
