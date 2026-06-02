@@ -865,8 +865,10 @@ function updateMultiFilterLabel(select) {
     buttonText.textContent = allLabel;
   } else if (values.length === 1) {
     buttonText.textContent = values[0];
+  } else if (values.length === 2) {
+    buttonText.textContent = values.join("、");
   } else {
-    buttonText.textContent = `已选 ${values.length} 项`;
+    buttonText.textContent = `已选${values.length}项`;
   }
 }
 

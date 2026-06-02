@@ -199,22 +199,29 @@ select {
 
 .multi-filter {
   position: relative;
-  min-width: 190px;
+  flex: 0 1 200px;
+  min-width: 180px;
+  max-width: 220px;
 }
 
 .multi-filter-button {
   width: 100%;
-  min-height: 36px;
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #9fb4c7;
+  border: 1px solid #b8c4d3;
   border-radius: 6px;
   padding: 0 10px;
-  background: #f8fbfd;
+  background: #fff;
   color: var(--ink);
   font-weight: 400;
   text-align: left;
+  cursor: pointer;
+}
+
+.multi-filter-button:hover {
+  border-color: #1f4e78;
 }
 
 .multi-filter-button::after {
@@ -225,8 +232,8 @@ select {
 }
 
 .multi-filter.open .multi-filter-button {
-  border-color: #2d6df6;
-  box-shadow: 0 0 0 2px rgba(45, 109, 246, .12);
+  border-color: #1f4e78;
+  box-shadow: 0 0 0 2px rgba(31, 78, 120, .12);
 }
 
 .multi-filter-button span {
@@ -239,18 +246,18 @@ select {
 .multi-filter-menu {
   display: none;
   position: absolute;
-  z-index: 20;
-  top: calc(100% + 4px);
+  z-index: 40;
+  top: 38px;
   left: 0;
-  width: max-content;
+  width: 240px;
   min-width: 100%;
-  max-width: none;
+  max-width: 260px;
   overflow: visible;
-  border: 1px solid #b8c8d6;
-  border-radius: 6px;
+  border: 1px solid #b8c4d3;
+  border-radius: 8px;
   background: #fff;
-  box-shadow: 0 10px 24px rgba(23, 32, 42, .18);
-  padding: 5px;
+  box-shadow: 0 10px 26px rgba(20, 33, 61, .18);
+  padding: 8px;
 }
 
 .multi-filter.open .multi-filter-menu {
@@ -263,40 +270,37 @@ select {
 }
 
 .multi-filter-option {
-  min-height: 23px;
-  display: grid;
-  grid-template-columns: 13px max-content;
+  min-height: 28px;
+  display: flex;
   align-items: center;
-  justify-content: start;
-  column-gap: 6px;
-  border-radius: 3px;
-  padding: 2px 6px;
+  gap: 8px;
+  border-radius: 5px;
+  padding: 4px 6px;
   cursor: pointer;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
-  width: fit-content;
-  min-width: 100%;
-  max-width: none;
+  width: 100%;
 }
 
 .multi-filter-option:hover {
-  background: #edf4f8;
+  background: #eef6ff;
 }
 
 .multi-filter-option input {
   min-height: 0;
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   margin: 0;
-  accent-color: #2f5f97;
+  flex: 0 0 auto;
+  accent-color: #1f4e78;
 }
 
 .multi-filter-option span {
-  min-width: max-content;
-  overflow: visible;
-  text-overflow: clip;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.35;
 }
