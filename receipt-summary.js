@@ -30,12 +30,8 @@ let filteredRows = [];
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", clearFilters);
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
-  ["departmentFilter", "seriesFilter", "warehouseLocationFilter", "ageFilter", "searchInput"].forEach((id) => {
+  ["departmentFilter", "productLineFilter", "seriesFilter", "warehouseLocationFilter", "ageFilter", "searchInput"].forEach((id) => {
     $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderSummary);
-  });
-  $("#productLineFilter").addEventListener("change", () => {
-    populateSeriesFilter(summaryRows);
-    renderSummary();
   });
   $("#warehouseTypeFilter").addEventListener("change", () => {
     populateWarehouseLocationFilter(summaryRows);
@@ -48,6 +44,7 @@ async function refreshSummary() {
   await loadSharedLibrary({ statusEl: $("#summaryStatus") });
   const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
   const detailRecord = records["fact-2"];
+  const productRecord = records["dim-product"];
   const warehouseRecord = records["dim-warehouse"];
   const warehouseMaterialRecord = records["dim-warehouse-material"];
   renderSourcePanel(detailRecord);
@@ -60,6 +57,7 @@ async function refreshSummary() {
   }
 
   const warehouseMap = mapWarehousesByName(warehouseRecord?.rows || []);
+  const productMap = mapProductsByMaterialCode(productRecord?.rows || []);
   const warehouseMaterialMaps = mapWarehouseMaterialDimensions(warehouseMaterialRecord?.rows || []);
   summaryRows = (detailRecord.rows || []).map((row) => {
     const materialCode = getDetailMaterialCode(row);
@@ -75,13 +73,13 @@ async function refreshSummary() {
     );
     const warehouseInfo = warehouseMap.get(warehouse) || {};
     const department = lookupDepartment(warehouseMaterialMaps, organization, warehouse, materialCode);
-    const productLine = lookupProductLine(warehouseMaterialMaps, materialCode);
+    const product = productMap.get(materialCode) || {};
     return {
       materialCode,
       materialName,
       department,
-      productLine,
-      series: "",
+      productLine: product.productLine || "",
+      series: product.series || "",
       warehouseType: warehouseInfo.warehouseType || "",
       warehouseLocation: warehouseInfo.warehouseLocation || "",
       warehouse,
@@ -96,7 +94,7 @@ async function refreshSummary() {
       settlementAmount: endingQty * settlementPrice
     };
   });
-  populateFilters(summaryRows);
+  populateFilters(summaryRows, records);
   $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行：${detailRecord.fileName || "-"}`;
   renderSummary();
 }
@@ -105,7 +103,6 @@ function clearFilters() {
   $("#departmentFilter").value = "";
   $("#productLineFilter").value = "";
   $("#warehouseTypeFilter").value = "";
-  populateSeriesFilter(summaryRows);
   populateWarehouseLocationFilter(summaryRows);
   $("#seriesFilter").value = "";
   $("#warehouseLocationFilter").value = "";
@@ -124,18 +121,15 @@ function renderSourcePanel(record) {
   $("#sourcePanel").innerHTML = `<div><strong>收发明细汇总表</strong>：${escapeHtml(record.fileName || "-")}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>IndexedDB: ${KC_DB_NAME}/${KC_STORE}/fact-2</code></div>`;
 }
 
-function populateFilters(rows) {
-  fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniqueValues(rows, "department"), DEPARTMENT_ORDER));
-  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
-  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueValues(rows, "warehouseType"));
-  populateSeriesFilter(rows);
+function populateFilters(rows, records = null) {
+  const productRows = records?.["dim-product"]?.rows || [];
+  const warehouseRows = records?.["dim-warehouse"]?.rows || [];
+  const warehouseMaterialRows = records?.["dim-warehouse-material"]?.rows || [];
+  fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
+  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
+  fillSelect($("#seriesFilter"), "全部销售系列", uniqueColumnValues(productRows, ["销售系列"]));
+  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
   populateWarehouseLocationFilter(rows);
-}
-
-function populateSeriesFilter(rows) {
-  const productLine = $("#productLineFilter").value;
-  const scopedRows = rows.filter((row) => matchSelect(row.productLine, productLine));
-  fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(scopedRows, "series"));
 }
 
 function populateWarehouseLocationFilter(rows) {
@@ -307,6 +301,19 @@ function downloadCurrentRows() {
   URL.revokeObjectURL(url);
 }
 
+function mapProductsByMaterialCode(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const materialCode = normalizeMaterialCode(firstText([firstValue(row, ["物料编码"]), nthValue(row, 1)]));
+    if (!materialCode || map.has(materialCode)) continue;
+    map.set(materialCode, {
+      productLine: firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
+      series: firstText([firstValue(row, ["销售系列", "系列"]), nthValue(row, 8)])
+    });
+  }
+  return map;
+}
+
 function mapWarehousesByName(rows) {
   const map = new Map();
   for (const row of rows) {
@@ -323,20 +330,17 @@ function mapWarehousesByName(rows) {
 function mapWarehouseMaterialDimensions(rows) {
   const departmentByFactKey = new Map();
   const departmentByLegacyKey = new Map();
-  const productLineByMaterial = new Map();
   for (const row of rows) {
     const factStyleKey = normalizeKey(nthValue(row, 6));
     const organization = normalizeText(firstText([firstValue(row, ["使用组织", "库存组织", "组织"]), nthValue(row, 1)]));
     const warehouse = normalizeText(firstText([firstValue(row, ["仓库名称", "仓库", "金蝶仓库"]), nthValue(row, 2)]));
     const materialCode = normalizeMaterialCode(firstText([firstValue(row, ["物料编码", "货品编码", "商品编码", "SKU"]), nthValue(row, 3), nthValue(row, 1)]));
     const department = getWarehouseMaterialDepartment(row);
-    const productLine = getWarehouseMaterialProductLine(row);
     const legacyKey = makeDepartmentLookupKey(organization, warehouse, materialCode);
     if (factStyleKey && department && !departmentByFactKey.has(factStyleKey)) departmentByFactKey.set(factStyleKey, department);
     if (legacyKey && department && !departmentByLegacyKey.has(legacyKey)) departmentByLegacyKey.set(legacyKey, department);
-    if (materialCode && productLine && !productLineByMaterial.has(materialCode)) productLineByMaterial.set(materialCode, productLine);
   }
-  return { departmentByFactKey, departmentByLegacyKey, productLineByMaterial };
+  return { departmentByFactKey, departmentByLegacyKey };
 }
 
 function lookupDepartment(maps, organization, warehouse, materialCode) {
@@ -345,10 +349,6 @@ function lookupDepartment(maps, organization, warehouse, materialCode) {
   return maps.departmentByFactKey.get(factKey)
     || maps.departmentByLegacyKey.get(legacyKey)
     || "";
-}
-
-function lookupProductLine(maps, materialCode) {
-  return maps.productLineByMaterial.get(normalizeMaterialCode(materialCode)) || "";
 }
 
 function getDetailMaterialCode(row) {
@@ -420,13 +420,6 @@ function getWarehouseMaterialDepartment(row) {
   return named || normalizeText(nthValue(row, 7));
 }
 
-function getWarehouseMaterialProductLine(row) {
-  const named = normalizeText(firstValue(row, ["销售产品线", "产品线"]));
-  if (named) return named;
-  const colA = normalizeText(nthValue(row, 1));
-  return looksLikeOrganization(colA) || looksLikeMaterialCode(colA) ? "" : colA;
-}
-
 function makeDepartmentLookupKey(organization, warehouse, materialCode) {
   return [
     normalizeText(organization),
@@ -446,14 +439,6 @@ function makeReceiptDepartmentLookupKey(organization, warehouse, materialCode) {
 function looksLikeCombinedKey(value) {
   const text = normalizeText(value);
   return /\d{4,}/.test(text) && text.length > 18;
-}
-
-function looksLikeOrganization(value) {
-  return /公司|集团|有限公司|组织/.test(normalizeText(value));
-}
-
-function looksLikeMaterialCode(value) {
-  return /^[A-Za-z0-9._-]{5,}$/.test(normalizeText(value));
 }
 
 function firstText(candidates) {
@@ -491,6 +476,16 @@ function fillSelect(select, allLabel, values) {
 
 function uniqueValues(rows, key) {
   return [...new Set(rows.map((row) => normalizeText(row[key])).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function uniqueColumnValues(rows, columnNames) {
+  return [...new Set(rows.map((row) => normalizeText(firstValue(row, columnNames))).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"));
+}
+
+function uniquePhysicalColumnValues(rows, oneBasedIndex) {
+  return [...new Set(rows.map((row) => normalizeText(nthValue(row, oneBasedIndex))).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "zh-CN"));
 }
 
