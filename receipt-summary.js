@@ -210,17 +210,17 @@ function renderSummary() {
 }
 
 function renderAmountCharts(rows, selectedAgeLabel = "") {
-  renderBars("departmentAmountChart", groupComputedSum(rows, "department", (row) => visibleAmount(row, selectedAgeLabel), 12));
-  renderBars("ageAmountChart", groupAgeAmountSum(rows, selectedAgeLabel));
-  renderBars("productLineAmountChart", groupComputedSum(rows, "productLine", (row) => visibleAmount(row, selectedAgeLabel), 12));
-  renderBars("warehouseLocationAmountChart", groupComputedSum(rows, "warehouseLocation", (row) => visibleAmount(row, selectedAgeLabel), 12));
+  renderBars("departmentAmountChart", groupComputedSum(rows, "department", (row) => visibleAmount(row, selectedAgeLabel), 12), "departmentAmountTotal");
+  renderBars("ageAmountChart", groupAgeAmountSum(rows, selectedAgeLabel), "ageAmountTotal");
+  renderBars("productLineAmountChart", groupComputedSum(rows, "productLine", (row) => visibleAmount(row, selectedAgeLabel), 12), "productLineAmountTotal");
+  renderBars("warehouseLocationAmountChart", groupComputedSum(rows, "warehouseLocation", (row) => visibleAmount(row, selectedAgeLabel), 12), "warehouseLocationAmountTotal");
 }
 
 function renderQuantityCharts(rows, selectedAgeLabel = "") {
-  renderQuantityBars("departmentQtyChart", groupComputedSum(rows, "department", (row) => visibleQuantity(row, selectedAgeLabel), 12));
-  renderQuantityBars("ageQtyChart", groupAgeQuantitySum(rows, selectedAgeLabel));
-  renderQuantityBars("productLineQtyChart", groupComputedSum(rows, "productLine", (row) => visibleQuantity(row, selectedAgeLabel), 12));
-  renderQuantityBars("warehouseLocationQtyChart", groupComputedSum(rows, "warehouseLocation", (row) => visibleQuantity(row, selectedAgeLabel), 12));
+  renderQuantityBars("departmentQtyChart", groupComputedSum(rows, "department", (row) => visibleQuantity(row, selectedAgeLabel), 12), "departmentQtyTotal");
+  renderQuantityBars("ageQtyChart", groupAgeQuantitySum(rows, selectedAgeLabel), "ageQtyTotal");
+  renderQuantityBars("productLineQtyChart", groupComputedSum(rows, "productLine", (row) => visibleQuantity(row, selectedAgeLabel), 12), "productLineQtyTotal");
+  renderQuantityBars("warehouseLocationQtyChart", groupComputedSum(rows, "warehouseLocation", (row) => visibleQuantity(row, selectedAgeLabel), 12), "warehouseLocationQtyTotal");
 }
 
 function renderAgeShareCards(rows, selectedAgeLabels = []) {
@@ -342,9 +342,11 @@ function getAgeBucketLabel(value) {
   return "120天以上";
 }
 
-function renderBars(id, rows) {
+function renderBars(id, rows, totalId = "") {
   const container = $(`#${id}`);
   if (!container) return;
+  const total = sumChartRows(rows);
+  updateChartTotal(totalId, total, formatWan);
   if (!rows.length) {
     container.innerHTML = `<div class="empty">暂无数据</div>`;
     return;
@@ -354,19 +356,22 @@ function renderBars(id, rows) {
     const value = Number(row.value) || 0;
     const width = Math.max(2, value / max * 100);
     const formattedValue = formatWan(value);
+    const valueText = `${formattedValue}（${formatPercent(value, total)}）`;
     return `
-      <div class="bar-row" title="${escapeHtml(row.name)} ${escapeHtml(formattedValue)}">
+      <div class="bar-row" title="${escapeHtml(row.name)} ${escapeHtml(valueText)}">
         <div class="bar-label">${escapeHtml(row.name)}</div>
         <div class="bar-track"><div class="bar-fill" style="width:${width}%;background:${COLORS[index % COLORS.length]}"></div></div>
-        <div class="bar-value">${escapeHtml(formattedValue)}</div>
+        <div class="bar-value">${escapeHtml(valueText)}</div>
       </div>
     `;
   }).join("");
 }
 
-function renderQuantityBars(id, rows) {
+function renderQuantityBars(id, rows, totalId = "") {
   const container = $(`#${id}`);
   if (!container) return;
+  const total = sumChartRows(rows);
+  updateChartTotal(totalId, total, formatTenThousand);
   if (!rows.length) {
     container.innerHTML = `<div class="empty">暂无数据</div>`;
     return;
@@ -376,14 +381,26 @@ function renderQuantityBars(id, rows) {
     const value = Number(row.value) || 0;
     const width = Math.max(2, value / max * 100);
     const formattedValue = formatTenThousand(value);
+    const valueText = `${formattedValue}（${formatPercent(value, total)}）`;
     return `
-      <div class="bar-row" title="${escapeHtml(row.name)} ${escapeHtml(formattedValue)}">
+      <div class="bar-row" title="${escapeHtml(row.name)} ${escapeHtml(valueText)}">
         <div class="bar-label">${escapeHtml(row.name)}</div>
         <div class="bar-track"><div class="bar-fill" style="width:${width}%;background:${COLORS[index % COLORS.length]}"></div></div>
-        <div class="bar-value">${escapeHtml(formattedValue)}</div>
+        <div class="bar-value">${escapeHtml(valueText)}</div>
       </div>
     `;
   }).join("");
+}
+
+function sumChartRows(rows) {
+  return rows.reduce((total, row) => total + (Number(row.value) || 0), 0);
+}
+
+function updateChartTotal(id, total, formatter) {
+  if (!id) return;
+  const el = $(`#${id}`);
+  if (!el) return;
+  el.textContent = `合计 ${formatter(total)}`;
 }
 
 function downloadCurrentRows() {

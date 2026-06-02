@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 供应链库存分析</title>
-  <link rel="stylesheet" href="styles.css?v=20260603f">
+  <link rel="stylesheet" href="styles.css?v=20260603g">
 </head>
 <body>
   <div class="app-shell">
@@ -58,38 +58,38 @@
 
       <section class="dashboard-grid receipt-chart-grid">
         <div class="panel">
-          <h2>事业部占用资金情况</h2>
+          <h2>事业部占用资金情况 <span id="departmentAmountTotal" class="chart-total"></span></h2>
           <div id="departmentAmountChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>各库龄段占用资金情况</h2>
+          <h2>各库龄段占用资金情况 <span id="ageAmountTotal" class="chart-total"></span></h2>
           <div id="ageAmountChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>各产品线占用资金情况</h2>
+          <h2>各产品线占用资金情况 <span id="productLineAmountTotal" class="chart-total"></span></h2>
           <div id="productLineAmountChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>仓库位置资金占用情况</h2>
+          <h2>仓库位置资金占用情况 <span id="warehouseLocationAmountTotal" class="chart-total"></span></h2>
           <div id="warehouseLocationAmountChart" class="chart-bars"></div>
         </div>
       </section>
 
       <section class="dashboard-grid receipt-chart-grid">
         <div class="panel">
-          <h2>事业部占用数量情况（万）</h2>
+          <h2>事业部占用数量情况（万） <span id="departmentQtyTotal" class="chart-total"></span></h2>
           <div id="departmentQtyChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>各库龄段占用数量情况（万）</h2>
+          <h2>各库龄段占用数量情况（万） <span id="ageQtyTotal" class="chart-total"></span></h2>
           <div id="ageQtyChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>各产品线占用数量情况（万）</h2>
+          <h2>各产品线占用数量情况（万） <span id="productLineQtyTotal" class="chart-total"></span></h2>
           <div id="productLineQtyChart" class="chart-bars"></div>
         </div>
         <div class="panel">
-          <h2>仓库位置数量情况（万）</h2>
+          <h2>仓库位置数量情况（万） <span id="warehouseLocationQtyTotal" class="chart-total"></span></h2>
           <div id="warehouseLocationQtyChart" class="chart-bars"></div>
         </div>
       </section>
@@ -153,6 +153,6 @@
 
   <script src="storage.js?v=20260602c"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260603f"></script>
+  <script src="receipt-summary.js?v=20260603g"></script>
 </body>
 </html>

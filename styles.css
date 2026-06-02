@@ -236,18 +236,18 @@ select {
   left: 0;
   width: max-content;
   min-width: 100%;
-  max-width: min(520px, calc(100vw - 280px));
+  max-width: min(360px, calc(100vw - 280px));
   overflow: visible;
   border: 1px solid #b8c8d6;
   border-radius: 6px;
   background: #fff;
   box-shadow: 0 10px 24px rgba(23, 32, 42, .18);
-  padding: 8px 6px;
+  padding: 5px;
 }
 
 .multi-filter.open .multi-filter-menu {
   display: grid;
-  gap: 2px;
+  gap: 1px;
 }
 
 .toolbar .multi-filter:nth-of-type(n+4) .multi-filter-menu {
@@ -256,15 +256,15 @@ select {
 }
 
 .multi-filter-option {
-  min-height: 28px;
+  min-height: 23px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   border-radius: 3px;
-  padding: 4px 7px;
+  padding: 2px 6px;
   cursor: pointer;
   color: var(--ink);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -275,8 +275,8 @@ select {
 
 .multi-filter-option input {
   min-height: 0;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   margin: 0;
   flex: 0 0 auto;
   accent-color: #2f5f97;
@@ -516,6 +516,15 @@ select {
   font-size: 17px;
 }
 
+.chart-total {
+  display: inline-block;
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .chart-note {
   margin: -4px 0 12px;
   color: var(--muted);
@@ -530,9 +539,13 @@ select {
 
 .bar-row {
   display: grid;
-  grid-template-columns: minmax(92px, 170px) minmax(0, 1fr) 112px;
-  gap: 10px;
+  grid-template-columns: minmax(82px, 140px) minmax(0, 1fr) 142px;
+  gap: 8px;
   align-items: center;
+}
+
+.bar-value {
+  font-size: 12px;
 }
 
 .bar-label,
