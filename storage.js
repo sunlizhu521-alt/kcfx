@@ -392,8 +392,10 @@ function buildParseDiagnostics(parsed) {
     headerFirst12: headers.slice(0, 12),
     gHeader: headers[6] || "",
     hHeader: headers[7] || "",
+    adHeader: headers[29] || "",
     gSamples: rows.slice(0, 3).map((row) => nthValue(row, 7)),
-    hSamples: rows.slice(0, 3).map((row) => nthValue(row, 8))
+    hSamples: rows.slice(0, 3).map((row) => nthValue(row, 8)),
+    adSamples: rows.slice(0, 3).map((row) => nthValue(row, 30))
   };
 }
 

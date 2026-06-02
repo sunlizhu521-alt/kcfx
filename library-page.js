@@ -248,13 +248,15 @@ function renderParseDiagnostics(record) {
   const headerText = (diagnostics.headerFirst12 || []).filter(Boolean).join(" / ");
   const gSamples = (diagnostics.gSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
   const hSamples = (diagnostics.hSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
+  const adSamples = (diagnostics.adSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
   return `
     <div class="slot-info parse-info">
       <span>解析诊断</span>
-      <strong>Sheet：${escapeHtml(diagnostics.sheetName || "-")}；G列：${escapeHtml(diagnostics.gHeader || "-")}；H列：${escapeHtml(diagnostics.hHeader || "-")}</strong>
+      <strong>Sheet：${escapeHtml(diagnostics.sheetName || "-")}；G列：${escapeHtml(diagnostics.gHeader || "-")}；H列：${escapeHtml(diagnostics.hHeader || "-")}；AD列：${escapeHtml(diagnostics.adHeader || "-")}</strong>
       <em>前12字段：${escapeHtml(headerText || "-")}</em>
       <em>G列样例：${escapeHtml(gSamples || "-")}</em>
       <em>H列样例：${escapeHtml(hSamples || "-")}</em>
+      <em>AD列样例：${escapeHtml(adSamples || "-")}</em>
     </div>
   `;
 }

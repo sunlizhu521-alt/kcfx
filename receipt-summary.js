@@ -31,12 +31,8 @@ let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", clearFilters);
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
-  ["departmentFilter", "productLineFilter", "seriesFilter", "warehouseLocationFilter", "ageFilter", "searchInput"].forEach((id) => {
+  ["departmentFilter", "ageFilter", "pmcTypeFilter", "searchInput"].forEach((id) => {
     $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderSummary);
-  });
-  $("#warehouseTypeFilter").addEventListener("change", () => {
-    populateWarehouseLocationFilter(summaryRows);
-    renderSummary();
   });
   await refreshSummary();
 });
@@ -69,6 +65,9 @@ async function refreshSummary() {
     const endingQty = getDetailEndingQty(row);
     const inventoryDays = getDetailInventoryDays(row);
     const settlementPrice = getDetailSettlementPrice(row);
+    const pmcType = getPmcInventoryType(row);
+    const pmcBasis = getPmcBasis(row);
+    const pmcReason = getPmcReason(row);
     const ageQuantities = getAgeQuantities(row);
     const ageSettlementAmounts = Object.fromEntries(
       Object.entries(ageQuantities).map(([label, qty]) => [label, qty * settlementPrice])
@@ -88,6 +87,9 @@ async function refreshSummary() {
       warehouse,
       organization,
       inventoryDays,
+      pmcType,
+      pmcBasis,
+      pmcReason,
       ageQuantities,
       ageSettlementAmounts,
       ageQuantityTotal: sumObjectValues(ageQuantities),
@@ -99,18 +101,16 @@ async function refreshSummary() {
   });
   populateFilters(summaryRows, records);
   const diagnostic = departmentMatchDiagnostics.sample ? `，未匹配样例 ${departmentMatchDiagnostics.sample}` : "";
-  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行，事业部匹配 ${formatNumber(departmentMatchDiagnostics.matched, 0)} 行${diagnostic}：${detailRecord.fileName || "-"}`;
+  const pmcTypes = uniqueValues(summaryRows, "pmcType");
+  const pmcDiagnostic = pmcTypes.length ? `，AD列解析 ${formatNumber(pmcTypes.length, 0)} 类` : "，AD列暂无可筛选内容";
+  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行，事业部匹配 ${formatNumber(departmentMatchDiagnostics.matched, 0)} 行${pmcDiagnostic}${diagnostic}：${detailRecord.fileName || "-"}`;
   renderSummary();
 }
 
 function clearFilters() {
   $("#departmentFilter").value = "";
-  $("#productLineFilter").value = "";
-  $("#warehouseTypeFilter").value = "";
-  populateWarehouseLocationFilter(summaryRows);
-  $("#seriesFilter").value = "";
-  $("#warehouseLocationFilter").value = "";
   $("#ageFilter").value = "";
+  $("#pmcTypeFilter").value = "";
   $("#searchInput").value = "";
   renderSummary();
 }
@@ -126,35 +126,21 @@ function renderSourcePanel(record) {
 }
 
 function populateFilters(rows, records = null) {
-  const productRows = records?.["dim-product"]?.rows || [];
-  const warehouseRows = records?.["dim-warehouse"]?.rows || [];
   const warehouseMaterialRows = records?.["dim-warehouse-material"]?.rows || [];
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
-  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
-  fillSelect($("#seriesFilter"), "全部销售系列", uniqueColumnValues(productRows, ["销售系列"]));
-  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
-  populateWarehouseLocationFilter(rows);
-}
-
-function populateWarehouseLocationFilter(rows) {
-  const warehouseType = $("#warehouseTypeFilter").value;
-  const scopedRows = rows.filter((row) => matchSelect(row.warehouseType, warehouseType));
-  fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(scopedRows, "warehouseLocation"));
+  fillSelect($("#pmcTypeFilter"), "全部库存类型判断（PMC口径）", uniqueValues(rows, "pmcType"));
 }
 
 function renderSummary() {
   const query = normalizeKey($("#searchInput").value);
   const ageBucket = $("#ageFilter").value;
   filteredRows = summaryRows.filter((row) => {
-    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.productLine, row.series, row.warehouseType, row.warehouseLocation]
+    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.pmcType, row.pmcBasis, row.pmcReason]
       .some((value) => normalizeKey(value).includes(query));
     return hit
       && matchAgeBucket(row.inventoryDays, ageBucket)
       && matchSelect(row.department, $("#departmentFilter").value)
-      && matchSelect(row.productLine, $("#productLineFilter").value)
-      && matchSelect(row.series, $("#seriesFilter").value)
-      && matchSelect(row.warehouseType, $("#warehouseTypeFilter").value)
-      && matchSelect(row.warehouseLocation, $("#warehouseLocationFilter").value);
+      && matchSelect(row.pmcType, $("#pmcTypeFilter").value);
   });
   $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
   $("#qtyTotal").textContent = formatNumberWithYi(sum(filteredRows, "endingQty"), 3);
@@ -166,17 +152,16 @@ function renderSummary() {
     <tr>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
-      <td>${escapeHtml(row.productLine)}</td>
-      <td>${escapeHtml(row.series)}</td>
-      <td>${escapeHtml(row.warehouseType)}</td>
-      <td>${escapeHtml(row.warehouseLocation)}</td>
       <td>${escapeHtml(row.warehouse)}</td>
       <td class="num">${formatOptionalNumber(row.inventoryDays, 0)}</td>
       <td class="num">${formatNumber(row.endingQty, 3)}</td>
       <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
       <td class="num">${formatMoney(row.settlementAmount)}</td>
+      <td>${escapeHtml(row.pmcType)}</td>
+      <td>${escapeHtml(row.pmcBasis)}</td>
+      <td>${escapeHtml(row.pmcReason)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="11" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="10" class="empty">暂无数据</td></tr>`;
 }
 
 function renderAmountCharts(rows) {
@@ -279,21 +264,20 @@ function renderQuantityBars(id, rows) {
 }
 
 function downloadCurrentRows() {
-  const headers = ["物料编码", "物料名称", "销售产品线", "销售系列", "仓库类型", "仓库位置", "仓库", "库存天数", "0430结余库存数量", "结算价(含税)", "结算价金额"];
+  const headers = ["物料编码", "物料名称", "仓库", "库存天数", "0430结余库存数量", "结算价(含税)", "结算价金额", "库存类型判断（PMC口径）", "判断依据（PMC口径）", "问题原因（PMC口径）"];
   const lines = [headers.join(",")];
   filteredRows.forEach((row) => {
     lines.push([
       row.materialCode,
       row.materialName,
-      row.productLine,
-      row.series,
-      row.warehouseType,
-      row.warehouseLocation,
       row.warehouse,
       row.inventoryDays,
       row.endingQty,
       row.settlementPrice,
-      row.settlementAmount
+      row.settlementAmount,
+      row.pmcType,
+      row.pmcBasis,
+      row.pmcReason
     ].map(csvCell).join(","));
   });
   const blob = new Blob([`\uFEFF${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
@@ -409,6 +393,27 @@ function getDetailSettlementPrice(row) {
     nthValue(row, 16),
     firstValue(row, ["结算价(含税)", "结算价（含税）", "P列结算价(含税)", "P列结算价（含税）"])
   ]);
+}
+
+function getPmcInventoryType(row) {
+  return normalizeText(firstText([
+    nthValue(row, 30),
+    firstValue(row, ["库存类型判断（PMC口径）", "库存类型判断(PMC口径)", "库存类型判断", "AD列"])
+  ]));
+}
+
+function getPmcBasis(row) {
+  return normalizeText(firstText([
+    nthValue(row, 31),
+    firstValue(row, ["判断依据（PMC口径）", "判断依据(PMC口径)", "判断依据"])
+  ]));
+}
+
+function getPmcReason(row) {
+  return normalizeText(firstText([
+    nthValue(row, 32),
+    firstValue(row, ["问题原因（PMC口径）", "问题原因(PMC口径)", "问题原因"])
+  ]));
 }
 
 function getWarehouseMaterialDepartment(row) {
