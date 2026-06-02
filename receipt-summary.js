@@ -112,12 +112,12 @@ async function refreshSummary() {
 }
 
 function clearFilters() {
-  $("#departmentFilter").value = "";
-  $("#productLineFilter").value = "";
+  clearSelect($("#departmentFilter"));
+  clearSelect($("#productLineFilter"));
   populateSeriesFilter(summaryRows);
-  $("#seriesFilter").value = "";
-  $("#ageFilter").value = "";
-  $("#warehouseLocationFilter").value = "";
+  clearSelect($("#seriesFilter"));
+  clearSelect($("#ageFilter"));
+  clearSelect($("#warehouseLocationFilter"));
   $("#searchInput").value = "";
   renderSummary();
 }
@@ -141,30 +141,30 @@ function populateFilters(rows, records = null) {
 }
 
 function populateSeriesFilter(rows) {
-  const productLine = $("#productLineFilter").value;
-  const scopedRows = rows.filter((row) => matchSelect(row.productLine, productLine));
+  const productLines = getSelectValues($("#productLineFilter"));
+  const scopedRows = rows.filter((row) => matchSelect(row.productLine, productLines));
   fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(scopedRows, "series"));
 }
 
 function renderSummary() {
   const query = normalizeKey($("#searchInput").value);
-  const ageBucket = $("#ageFilter").value;
-  const selectedAgeLabel = getSelectedAgeBucketLabel(ageBucket);
+  const ageBuckets = getSelectValues($("#ageFilter"));
+  const selectedAgeLabels = getSelectedAgeBucketLabels(ageBuckets);
   filteredRows = summaryRows.filter((row) => {
     const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
       .some((value) => normalizeKey(value).includes(query));
     return hit
-      && matchAgeBucket(row, ageBucket)
-      && matchSelect(row.department, $("#departmentFilter").value)
-      && matchSelect(row.productLine, $("#productLineFilter").value)
-      && matchSelect(row.series, $("#seriesFilter").value)
-      && matchSelect(row.warehouseLocation, $("#warehouseLocationFilter").value);
+      && matchAgeBucket(row, ageBuckets)
+      && matchSelect(row.department, getSelectValues($("#departmentFilter")))
+      && matchSelect(row.productLine, getSelectValues($("#productLineFilter")))
+      && matchSelect(row.series, getSelectValues($("#seriesFilter")))
+      && matchSelect(row.warehouseLocation, getSelectValues($("#warehouseLocationFilter")));
   });
   $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
-  $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabel), 3);
-  $("#amountTotal").textContent = formatMoneyWithYi(sumVisibleAmount(filteredRows, selectedAgeLabel));
-  renderAmountCharts(filteredRows, selectedAgeLabel);
-  renderQuantityCharts(filteredRows, selectedAgeLabel);
+  $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 3);
+  $("#amountTotal").textContent = formatMoneyWithYi(sumVisibleAmount(filteredRows, selectedAgeLabels));
+  renderAmountCharts(filteredRows, selectedAgeLabels);
+  renderQuantityCharts(filteredRows, selectedAgeLabels);
   const shown = filteredRows.slice(0, 1000);
   $("#summaryRows").innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -212,8 +212,8 @@ function groupComputedSum(rows, key, valueGetter, limit = 12) {
     .slice(0, limit);
 }
 
-function groupAgeAmountSum(rows, selectedAgeLabel = "") {
-  const buckets = selectedAgeLabel ? [selectedAgeLabel] : AGE_BUCKETS;
+function groupAgeAmountSum(rows, selectedAgeLabels = []) {
+  const buckets = selectedAgeLabels.length ? selectedAgeLabels : AGE_BUCKETS;
   const map = new Map(buckets.map((bucket) => [bucket, 0]));
   for (const row of rows) {
     for (const bucket of buckets) {
@@ -223,8 +223,8 @@ function groupAgeAmountSum(rows, selectedAgeLabel = "") {
   return [...map.entries()].map(([name, value]) => ({ name, value }));
 }
 
-function groupAgeQuantitySum(rows, selectedAgeLabel = "") {
-  const buckets = selectedAgeLabel ? [selectedAgeLabel] : AGE_BUCKETS;
+function groupAgeQuantitySum(rows, selectedAgeLabels = []) {
+  const buckets = selectedAgeLabels.length ? selectedAgeLabels : AGE_BUCKETS;
   const map = new Map(buckets.map((bucket) => [bucket, 0]));
   for (const row of rows) {
     for (const bucket of buckets) {
@@ -530,9 +530,21 @@ function firstOptionalNumber(candidates) {
 }
 
 function fillSelect(select, allLabel, values) {
-  const current = select.value || "";
+  const current = getSelectValues(select);
   select.innerHTML = [`<option value="">${allLabel}</option>`, ...values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)].join("");
-  select.value = values.includes(current) ? current : "";
+  for (const option of select.options) {
+    option.selected = current.includes(option.value);
+  }
+}
+
+function clearSelect(select) {
+  for (const option of select.options) option.selected = false;
+}
+
+function getSelectValues(select) {
+  return [...select.selectedOptions]
+    .map((option) => option.value)
+    .filter(Boolean);
 }
 
 function uniqueValues(rows, key) {
@@ -561,13 +573,14 @@ function sortByPreferredOrder(values, preferredOrder) {
 }
 
 function matchSelect(value, selected) {
-  return !selected || value === selected;
+  const values = Array.isArray(selected) ? selected : [selected].filter(Boolean);
+  return !values.length || values.includes(value);
 }
 
-function matchAgeBucket(row, bucket) {
-  const label = getSelectedAgeBucketLabel(bucket);
-  if (!label) return true;
-  return (Number(row.ageQuantities?.[label]) || 0) !== 0;
+function matchAgeBucket(row, buckets) {
+  const labels = getSelectedAgeBucketLabels(buckets);
+  if (!labels.length) return true;
+  return labels.some((label) => (Number(row.ageQuantities?.[label]) || 0) !== 0);
 }
 
 function getSelectedAgeBucketLabel(bucket) {
@@ -579,12 +592,23 @@ function getSelectedAgeBucketLabel(bucket) {
   return "";
 }
 
-function visibleQuantity(row, selectedAgeLabel = "") {
-  return selectedAgeLabel ? Number(row.ageQuantities?.[selectedAgeLabel]) || 0 : Number(row.endingQty) || 0;
+function getSelectedAgeBucketLabels(buckets) {
+  const values = Array.isArray(buckets) ? buckets : [buckets].filter(Boolean);
+  return [...new Set(values.map(getSelectedAgeBucketLabel).filter(Boolean))];
 }
 
-function visibleAmount(row, selectedAgeLabel = "") {
-  return selectedAgeLabel ? Number(row.ageSettlementAmounts?.[selectedAgeLabel]) || 0 : Number(row.settlementAmount) || 0;
+function visibleQuantity(row, selectedAgeLabels = []) {
+  const labels = Array.isArray(selectedAgeLabels) ? selectedAgeLabels : getSelectedAgeBucketLabels(selectedAgeLabels);
+  return labels.length
+    ? labels.reduce((total, label) => total + (Number(row.ageQuantities?.[label]) || 0), 0)
+    : Number(row.endingQty) || 0;
+}
+
+function visibleAmount(row, selectedAgeLabels = []) {
+  const labels = Array.isArray(selectedAgeLabels) ? selectedAgeLabels : getSelectedAgeBucketLabels(selectedAgeLabels);
+  return labels.length
+    ? labels.reduce((total, label) => total + (Number(row.ageSettlementAmounts?.[label]) || 0), 0)
+    : Number(row.settlementAmount) || 0;
 }
 
 function sumVisibleQuantity(rows, selectedAgeLabel = "") {

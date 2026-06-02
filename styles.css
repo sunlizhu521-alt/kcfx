@@ -189,6 +189,11 @@ select {
   min-width: 190px;
 }
 
+.toolbar select[multiple] {
+  height: 36px;
+  overflow-y: auto;
+}
+
 .dashboard-filters {
   flex-wrap: nowrap;
   overflow-x: auto;
