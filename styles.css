@@ -254,8 +254,7 @@ select {
 }
 
 .multi-filter.open .multi-filter-menu {
-  display: grid;
-  gap: 1px;
+  display: block;
 }
 
 .toolbar .multi-filter:nth-of-type(n+4) .multi-filter-menu {
@@ -267,6 +266,7 @@ select {
   min-height: 23px;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 5px;
   border-radius: 3px;
   padding: 2px 6px;
@@ -275,6 +275,8 @@ select {
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+  width: max-content;
+  max-width: 100%;
 }
 
 .multi-filter-option:hover {
@@ -291,6 +293,7 @@ select {
 }
 
 .multi-filter-option span {
+  flex: 0 0 auto;
   min-width: 0;
   overflow: visible;
   text-overflow: clip;
