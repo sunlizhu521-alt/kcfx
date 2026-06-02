@@ -95,7 +95,8 @@ async function refreshSummary() {
     };
   });
   populateFilters(summaryRows, records);
-  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行：${detailRecord.fileName || "-"}`;
+  const matchedDepartments = summaryRows.filter((row) => row.department).length;
+  $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行，事业部匹配 ${formatNumber(matchedDepartments, 0)} 行：${detailRecord.fileName || "-"}`;
   renderSummary();
 }
 
@@ -429,11 +430,11 @@ function makeDepartmentLookupKey(organization, warehouse, materialCode) {
 }
 
 function makeReceiptDepartmentLookupKey(organization, warehouse, materialCode) {
-  return [
+  return normalizeKey([
     normalizeText(organization),
     normalizeText(warehouse),
     normalizeMaterialCode(materialCode)
-  ].join("");
+  ].join(""));
 }
 
 function looksLikeCombinedKey(value) {
