@@ -77,15 +77,15 @@ async function refreshSummary() {
       Object.entries(ageQuantities).map(([label, qty]) => [label, qty * settlementPrice])
     );
     const warehouseInfo = warehouseMap.get(warehouse) || {};
-    const department = lookupDepartment(warehouseMaterialMaps, row);
+    const department = lookupDepartment(warehouseMaterialMaps, row) || getDetailDepartment(row);
     recordDepartmentMatch(department, row);
     const product = productMap.get(materialCode) || {};
     return {
       materialCode,
       materialName,
       department,
-      productLine: product.productLine || "",
-      series: product.series || "",
+      productLine: getDetailProductLine(row) || product.productLine || "",
+      series: getDetailSeries(row) || product.series || "",
       warehouseType: warehouseInfo.warehouseType || "",
       warehouseLocation: warehouseInfo.warehouseLocation || "",
       warehouse,
@@ -410,6 +410,27 @@ function getDetailSettlementPrice(row) {
     nthValue(row, 16),
     firstValue(row, ["结算价(含税)", "结算价（含税）", "P列结算价(含税)", "P列结算价（含税）"])
   ]);
+}
+
+function getDetailProductLine(row) {
+  return normalizeText(firstText([
+    nthValue(row, 11),
+    firstValue(row, ["销售产品线", "产品线"])
+  ]));
+}
+
+function getDetailSeries(row) {
+  return normalizeText(firstText([
+    nthValue(row, 12),
+    firstValue(row, ["销售系列", "系列"])
+  ]));
+}
+
+function getDetailDepartment(row) {
+  return normalizeText(firstText([
+    nthValue(row, 21),
+    firstValue(row, ["事业部"])
+  ]));
 }
 
 function getPmcInventoryType(row) {

@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "project": "kcfx",
   "name": "库存分析看板文件库",
-  "savedAt": "2026-06-01T07:50:43.730Z",
+  "savedAt": "2026-06-02T06:12:58.937672Z",
   "records": {
     "fact-inventory": {
       "id": "fact-inventory",
@@ -80,6 +80,17 @@
       "size": 11974,
       "savedAt": "2026-05-24T21:24:38.802437Z",
       "appliedAt": "2026-05-24T21:24:38.802437Z"
+    },
+    "fact-2": {
+      "id": "fact-2",
+      "type": "fact",
+      "title": "收发明细汇总表",
+      "fileName": "Fac-库龄汇总.xlsx",
+      "path": "data/kcfx-library/fact/fact-2.json",
+      "rows": 9225,
+      "size": 5935701,
+      "savedAt": "2026-06-02T03:21:09.312472Z",
+      "appliedAt": "2026-06-02T03:21:09.312472Z"
     }
   }
 }
