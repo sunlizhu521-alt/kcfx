@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 收发汇总分析</title>
-  <link rel="stylesheet" href="styles.css?v=20260602b">
+  <link rel="stylesheet" href="styles.css?v=20260602d">
 </head>
 <body>
   <div class="app-shell">
@@ -44,7 +44,7 @@
           <option value="91-120">91-120天</option>
           <option value="120+">120天以上</option>
         </select>
-        <select id="pmcTypeFilter"></select>
+        <select id="warehouseLocationFilter"></select>
         <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库">
         <button id="refreshBtn" type="button">清除所有筛选</button>
         <button id="downloadBtn" class="secondary" type="button">下载当前表格</button>
@@ -69,6 +69,10 @@
           <h2>各产品线占用资金情况</h2>
           <div id="productLineAmountChart" class="chart-bars"></div>
         </div>
+        <div class="panel">
+          <h2>仓库位置资金占用情况</h2>
+          <div id="warehouseLocationAmountChart" class="chart-bars"></div>
+        </div>
       </section>
 
       <section class="dashboard-grid receipt-chart-grid">
@@ -83,6 +87,10 @@
         <div class="panel">
           <h2>各产品线占用数量情况（万）</h2>
           <div id="productLineQtyChart" class="chart-bars"></div>
+        </div>
+        <div class="panel">
+          <h2>仓库位置数量情况（万）</h2>
+          <div id="warehouseLocationQtyChart" class="chart-bars"></div>
         </div>
       </section>
 
@@ -113,6 +121,6 @@
 
   <script src="storage.js?v=20260602c"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260602p"></script>
+  <script src="receipt-summary.js?v=20260602q"></script>
 </body>
 </html>

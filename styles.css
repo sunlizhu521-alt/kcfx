@@ -373,7 +373,9 @@ select {
 }
 
 .receipt-chart-grid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
 
 .panel {
@@ -803,5 +805,9 @@ input[type="file"]:disabled {
 
   .receipt-metrics {
     grid-template-columns: repeat(3, minmax(220px, 1fr));
+  }
+
+  .receipt-chart-grid {
+    grid-template-columns: repeat(4, minmax(240px, 1fr));
   }
 }

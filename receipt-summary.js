@@ -31,7 +31,7 @@ let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", clearFilters);
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
-  ["departmentFilter", "seriesFilter", "ageFilter", "pmcTypeFilter", "searchInput"].forEach((id) => {
+  ["departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter", "searchInput"].forEach((id) => {
     $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderSummary);
   });
   $("#productLineFilter").addEventListener("change", () => {
@@ -117,7 +117,7 @@ function clearFilters() {
   populateSeriesFilter(summaryRows);
   $("#seriesFilter").value = "";
   $("#ageFilter").value = "";
-  $("#pmcTypeFilter").value = "";
+  $("#warehouseLocationFilter").value = "";
   $("#searchInput").value = "";
   renderSummary();
 }
@@ -137,7 +137,7 @@ function populateFilters(rows, records = null) {
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
   populateSeriesFilter(rows);
-  fillSelect($("#pmcTypeFilter"), "全部库存类型判断（PMC口径）", uniqueValues(rows, "pmcType"));
+  fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(rows, "warehouseLocation"));
 }
 
 function populateSeriesFilter(rows) {
@@ -158,7 +158,7 @@ function renderSummary() {
       && matchSelect(row.department, $("#departmentFilter").value)
       && matchSelect(row.productLine, $("#productLineFilter").value)
       && matchSelect(row.series, $("#seriesFilter").value)
-      && matchSelect(row.pmcType, $("#pmcTypeFilter").value);
+      && matchSelect(row.warehouseLocation, $("#warehouseLocationFilter").value);
   });
   $("#rowCount").textContent = formatNumber(filteredRows.length, 0);
   $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabel), 3);
@@ -186,12 +186,14 @@ function renderAmountCharts(rows, selectedAgeLabel = "") {
   renderBars("departmentAmountChart", groupComputedSum(rows, "department", (row) => visibleAmount(row, selectedAgeLabel), 12));
   renderBars("ageAmountChart", groupAgeAmountSum(rows, selectedAgeLabel));
   renderBars("productLineAmountChart", groupComputedSum(rows, "productLine", (row) => visibleAmount(row, selectedAgeLabel), 12));
+  renderBars("warehouseLocationAmountChart", groupComputedSum(rows, "warehouseLocation", (row) => visibleAmount(row, selectedAgeLabel), 12));
 }
 
 function renderQuantityCharts(rows, selectedAgeLabel = "") {
   renderQuantityBars("departmentQtyChart", groupComputedSum(rows, "department", (row) => visibleQuantity(row, selectedAgeLabel), 12));
   renderQuantityBars("ageQtyChart", groupAgeQuantitySum(rows, selectedAgeLabel));
   renderQuantityBars("productLineQtyChart", groupComputedSum(rows, "productLine", (row) => visibleQuantity(row, selectedAgeLabel), 12));
+  renderQuantityBars("warehouseLocationQtyChart", groupComputedSum(rows, "warehouseLocation", (row) => visibleQuantity(row, selectedAgeLabel), 12));
 }
 
 function groupSum(rows, key, valueKey, limit = 12) {
