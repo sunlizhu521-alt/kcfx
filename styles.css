@@ -234,9 +234,10 @@ select {
   z-index: 20;
   top: calc(100% + 4px);
   left: 0;
-  width: 100%;
-  max-height: 260px;
-  overflow-y: auto;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(520px, calc(100vw - 280px));
+  overflow: visible;
   border: 1px solid #b8c8d6;
   border-radius: 6px;
   background: #fff;
@@ -247,6 +248,11 @@ select {
 .multi-filter.open .multi-filter-menu {
   display: grid;
   gap: 2px;
+}
+
+.toolbar .multi-filter:nth-of-type(n+4) .multi-filter-menu {
+  right: 0;
+  left: auto;
 }
 
 .multi-filter-option {
@@ -260,6 +266,7 @@ select {
   color: var(--ink);
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .multi-filter-option:hover {
@@ -277,8 +284,8 @@ select {
 
 .multi-filter-option span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
