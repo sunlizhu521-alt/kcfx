@@ -19,7 +19,7 @@ let summaryRows = [];
 let filteredRows = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
-  $("#refreshBtn").addEventListener("click", refreshSummary);
+  $("#refreshBtn").addEventListener("click", clearFilters);
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
   ["departmentFilter", "seriesFilter", "warehouseLocationFilter", "ageFilter", "searchInput"].forEach((id) => {
     $(`#${id}`).addEventListener(id === "searchInput" ? "input" : "change", renderSummary);
@@ -82,6 +82,19 @@ async function refreshSummary() {
   });
   populateFilters(summaryRows);
   $("#summaryStatus").textContent = `已读取 ${formatNumber(summaryRows.length, 0)} 行：${detailRecord.fileName || "-"}`;
+  renderSummary();
+}
+
+function clearFilters() {
+  $("#departmentFilter").value = "";
+  $("#productLineFilter").value = "";
+  $("#warehouseTypeFilter").value = "";
+  populateSeriesFilter(summaryRows);
+  populateWarehouseLocationFilter(summaryRows);
+  $("#seriesFilter").value = "";
+  $("#warehouseLocationFilter").value = "";
+  $("#ageFilter").value = "";
+  $("#searchInput").value = "";
   renderSummary();
 }
 
