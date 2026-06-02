@@ -342,7 +342,11 @@ function mapWarehouseMaterialDimensions(rows) {
 }
 
 function lookupDepartment(maps, row) {
-  return maps.departmentByFactKey.get(makeReceiptDepartmentLookupKey(row)) || "";
+  for (const key of makeReceiptDepartmentLookupKeys(row)) {
+    const department = maps.departmentByFactKey.get(key);
+    if (department) return department;
+  }
+  return "";
 }
 
 function getDetailMaterialCode(row) {
@@ -411,12 +415,19 @@ function getWarehouseMaterialDepartment(row) {
   return normalizeText(nthValue(row, 7) || firstValue(row, ["事业部"]));
 }
 
-function makeReceiptDepartmentLookupKey(row) {
-  return normalizeDepartmentKey([
-    nthValue(row, 4),
-    nthValue(row, 3),
-    nthValue(row, 1)
-  ].join(""));
+function makeReceiptDepartmentLookupKeys(row) {
+  return [...new Set([
+    // Excel口径：D列 & C列 & A列
+    [nthValue(row, 4), nthValue(row, 3), nthValue(row, 1)].join(""),
+    // 表头口径：库存组织 & 仓库名称 & 物料编码
+    [
+      firstValue(row, ["库存组织", "使用组织", "组织"]),
+      firstValue(row, ["仓库名称", "仓库", "金蝶仓库", "库存仓库"]),
+      firstValue(row, ["物料编码", "货品编码", "商品编码", "SKU"])
+    ].join(""),
+    // 兜底：如果解析后C/D列顺序被浏览器对象顺序影响，尝试 C列 & D列 & A列
+    [nthValue(row, 3), nthValue(row, 4), nthValue(row, 1)].join("")
+  ].map(normalizeDepartmentKey).filter(Boolean))];
 }
 
 function normalizeDepartmentKey(value) {
@@ -430,7 +441,7 @@ function recordDepartmentMatch(department, row) {
   }
   departmentMatchDiagnostics.unmatched += 1;
   if (!departmentMatchDiagnostics.sample) {
-    departmentMatchDiagnostics.sample = `D=${escapeStatusText(nthValue(row, 4))} / C=${escapeStatusText(nthValue(row, 3))} / A=${escapeStatusText(nthValue(row, 1))}`;
+    departmentMatchDiagnostics.sample = `D&C&A=${escapeStatusText([nthValue(row, 4), nthValue(row, 3), nthValue(row, 1)].join("&"))}`;
   }
 }
 
