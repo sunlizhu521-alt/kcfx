@@ -242,9 +242,9 @@ select {
   z-index: 20;
   top: calc(100% + 4px);
   left: 0;
-  width: max-content;
-  min-width: 100%;
-  max-width: min(360px, calc(100vw - 280px));
+  width: 100%;
+  min-width: 230px;
+  max-width: 280px;
   overflow: visible;
   border: 1px solid #b8c8d6;
   border-radius: 6px;
@@ -274,9 +274,9 @@ select {
   color: var(--ink);
   font-size: 13px;
   font-weight: 700;
-  white-space: nowrap;
-  width: max-content;
-  max-width: 100%;
+  white-space: normal;
+  width: 100%;
+  max-width: none;
 }
 
 .multi-filter-option:hover {
@@ -293,11 +293,12 @@ select {
 }
 
 .multi-filter-option span {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: visible;
   text-overflow: clip;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.35;
 }
 
 .dashboard-filters {
