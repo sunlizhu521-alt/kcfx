@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#downloadBtn").addEventListener("click", downloadCurrentRows);
   $("#downloadTurnoverBtn").addEventListener("click", downloadTurnoverSummary);
   $("#downloadProductLineBtn").addEventListener("click", downloadProductLineSummary);
+  $("#downloadSeriesBtn").addEventListener("click", downloadSeriesSummary);
   $("#downloadUnclassifiedBtn").addEventListener("click", downloadUnclassifiedRows);
   document.addEventListener("click", closeMultiFilters);
   $("#searchInput").addEventListener("input", renderSummary);
@@ -289,6 +290,7 @@ function renderAgeShareCards(rows, selectedAgeLabels = []) {
 function renderSummaryTables(rows, selectedAgeLabels = []) {
   renderTurnoverSummaryTable(rows, selectedAgeLabels);
   renderProductLineSummaryTable(rows, selectedAgeLabels);
+  renderSeriesSummaryTable(rows, selectedAgeLabels);
 }
 
 function renderTurnoverSummaryTable(rows, selectedAgeLabels = []) {
@@ -307,20 +309,33 @@ function renderTurnoverSummaryTable(rows, selectedAgeLabels = []) {
 }
 
 function renderProductLineSummaryTable(rows, selectedAgeLabels = []) {
+  const body = $("#productLineSummaryRows");
+  if (!body) return;
   const totalQty = sumVisibleQuantity(rows, selectedAgeLabels);
   const totalAmount = sumVisibleAmount(rows, selectedAgeLabels);
+  const summaryRows = groupSummaryByKey(rows, "productLine", selectedAgeLabels);
+  body.innerHTML = renderCompactSummaryRows(summaryRows, totalQty, totalAmount);
+}
+
+function renderSeriesSummaryTable(rows, selectedAgeLabels = []) {
+  const body = $("#seriesSummaryRows");
+  if (!body) return;
+  const totalQty = sumVisibleQuantity(rows, selectedAgeLabels);
+  const totalAmount = sumVisibleAmount(rows, selectedAgeLabels);
+  const summaryRows = groupSummaryByKey(rows, "series", selectedAgeLabels);
+  body.innerHTML = renderCompactSummaryRows(summaryRows, totalQty, totalAmount);
+}
+
+function groupSummaryByKey(rows, key, selectedAgeLabels = []) {
   const map = new Map();
   for (const row of rows) {
-    const name = normalizeText(row.productLine) || "未归类";
+    const name = normalizeText(row[key]) || "未归类";
     const item = map.get(name) || { name, qty: 0, amount: 0 };
     item.qty += visibleQuantity(row, selectedAgeLabels);
     item.amount += visibleAmount(row, selectedAgeLabels);
     map.set(name, item);
   }
-  const body = $("#productLineSummaryRows");
-  if (!body) return;
-  const summaryRows = [...map.values()].sort((a, b) => b.amount - a.amount);
-  body.innerHTML = renderCompactSummaryRows(summaryRows, totalQty, totalAmount);
+  return [...map.values()].sort((a, b) => b.amount - a.amount);
 }
 
 function renderCompactSummaryRows(rows, totalQty, totalAmount) {
@@ -494,15 +509,12 @@ function downloadTurnoverSummary() {
 
 function downloadProductLineSummary() {
   const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
-  const map = new Map();
-  for (const row of filteredRows) {
-    const name = normalizeText(row.productLine) || "未归类";
-    const item = map.get(name) || { name, qty: 0, amount: 0 };
-    item.qty += visibleQuantity(row, selectedAgeLabels);
-    item.amount += visibleAmount(row, selectedAgeLabels);
-    map.set(name, item);
-  }
-  downloadSummaryRows("产品线库存", [...map.values()].sort((a, b) => b.amount - a.amount));
+  downloadSummaryRows("产品线库存", groupSummaryByKey(filteredRows, "productLine", selectedAgeLabels));
+}
+
+function downloadSeriesSummary() {
+  const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
+  downloadSummaryRows("产品系列", groupSummaryByKey(filteredRows, "series", selectedAgeLabels));
 }
 
 function downloadUnclassifiedRows() {

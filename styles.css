@@ -610,22 +610,27 @@ select {
 
 .summary-table-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 16px;
 }
 
 .mini-table-panel {
+  min-width: 0;
   max-height: 360px;
+  overflow-x: hidden;
 }
 
 .mini-table-panel table {
-  min-width: 620px;
+  min-width: 0;
+  table-layout: fixed;
 }
 
 .mini-table-panel th,
 .mini-table-panel td {
-  padding: 7px 8px;
+  padding: 6px 5px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .mini-table-panel td.num {
@@ -1021,7 +1026,6 @@ input[type="file"]:disabled {
   }
 
   .summary-table-grid {
-    grid-template-columns: repeat(2, minmax(360px, 1fr));
-    overflow-x: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
