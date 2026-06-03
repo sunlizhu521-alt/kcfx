@@ -1212,6 +1212,10 @@ input[type="file"]:disabled {
 .receipt-page .age-share-metrics .metric-card:nth-child(5) { background: linear-gradient(145deg, #ffffff, #f8efff); }
 .receipt-page .age-share-metrics .metric-card:nth-child(6) { background: linear-gradient(145deg, #ffffff, #edfaff); }
 
+.receipt-page .age-share-metrics .metric-card strong {
+  font-size: clamp(15px, .98vw, 19px);
+}
+
 .receipt-page .metric-card span {
   color: #60748a;
   font-size: 12px;

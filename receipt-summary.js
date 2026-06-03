@@ -137,7 +137,7 @@ function renderClosedInventoryMetrics(record) {
   const qty = rows.reduce((total, row) => total + getClosedInventoryQty(row), 0);
   const value = rows.reduce((total, row) => total + getClosedInventoryValue(row), 0);
   closedInventoryValue = value;
-  $("#closedInventoryQtyTotal").textContent = formatNumberWithYi(qty, 3);
+  $("#closedInventoryQtyTotal").textContent = formatNumberWithYi(qty, 2);
   $("#closedInventoryValueTotal").textContent = formatMoneyWithYi(value);
 }
 
@@ -224,7 +224,7 @@ function renderSummary() {
       && matchSelect(row.warehouseLocation, getSelectValues($("#warehouseLocationFilter")));
   });
   const visibleAmount = sumVisibleAmount(filteredRows, selectedAgeLabels);
-  $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 3);
+  $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 2);
   $("#amountTotal").textContent = formatMoneyWithYi(visibleAmount);
   $("#valueGapTotal").textContent = formatMoneyWithYi(visibleAmount - closedInventoryValue);
   renderAgeShareCards(filteredRows, selectedAgeLabels);
@@ -995,13 +995,13 @@ function formatOptionalNumber(value, decimals = 0) {
   return formatNumber(value, decimals);
 }
 
-function formatNumberWithYi(value, decimals = 3) {
+function formatNumberWithYi(value, decimals = 2) {
   const numeric = Number(value || 0);
   const yiValue = numeric / 100000000;
   const unitText = Math.abs(yiValue) >= 0.01
-    ? `${formatNumber(yiValue, 2)}亿`
-    : `${formatAdaptiveDecimal(numeric / 10000)}万`;
-  return `${formatNumber(numeric, decimals)}（${unitText}）`;
+    ? `${formatFixedNumber(yiValue, 2)}亿`
+    : `${formatFixedNumber(numeric / 10000, 2)}万`;
+  return `${formatFixedNumber(numeric, decimals)}（${unitText}）`;
 }
 
 function formatMoneyWithYi(value) {
@@ -1012,9 +1012,23 @@ function formatMoneyWithYi(value) {
 function formatYiWithPercent(value, total) {
   const numeric = Number(value) || 0;
   const amountText = Math.abs(numeric) < 1000000
-    ? `${formatAdaptiveDecimal(numeric / 10000)}万元`
-    : `${formatAdaptiveDecimal(numeric / 100000000)}亿`;
-  return `${amountText}（${formatPercent(numeric, total)}）`;
+    ? `${formatFixedNumber(numeric / 10000, 2)}万元`
+    : `${formatFixedNumber(numeric / 100000000, 2)}亿`;
+  return `${amountText}（${formatPercentFixed(numeric, total)}）`;
+}
+
+function formatPercentFixed(value, total) {
+  const numeric = Number(value) || 0;
+  const denominator = Number(total) || 0;
+  if (!denominator) return "0.00%";
+  return `${formatFixedNumber(numeric / denominator * 100, 2)}%`;
+}
+
+function formatFixedNumber(value, decimals = 2) {
+  return Number(value || 0).toLocaleString("zh-CN", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
 }
 
 function formatWan(value) {
