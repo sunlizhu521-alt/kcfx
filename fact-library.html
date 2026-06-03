@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>库存分析看板 备货事实表库</title>
+  <title>库存分析看板 事实表文件库</title>
   <link rel="stylesheet" href="styles.css?v=20260601f">
 </head>
 <body data-library-type="fact">
@@ -16,7 +16,7 @@
       <nav class="nav">
         <a href="receipt-summary.html">供应链库存分析</a>
         <a href="comparison.html">表格对比分析</a>
-        <a class="active" href="fact-library.html">备货事实表库</a>
+        <a class="active" href="fact-library.html">事实表文件库</a>
         <a href="file-library.html">维度表文件库</a>
         <a href="errors.html">报错信息提示</a>
         <a href="index.html">库存分析看板-模板</a>
@@ -26,7 +26,7 @@
     <main class="content">
       <header class="topbar">
         <div>
-          <h1>备货事实表库</h1>
+          <h1>事实表文件库</h1>
           <p>上传关账后的物料收发汇总事实表。看板会读取第 1 行作为表头。</p>
         </div>
         <button id="applyAllBtn" class="secondary" type="button">一键全部应用刷新</button>
@@ -36,7 +36,7 @@
         <div class="summary-head">
           <div>
             <span id="libraryEyebrow" class="summary-eyebrow">FACT FILES</span>
-            <h2 id="libraryTitle">月度备货事实表库</h2>
+            <h2 id="libraryTitle">月度事实表文件库</h2>
           </div>
           <span id="savedBadge" class="saved-badge">事实表已保存</span>
         </div>
@@ -73,6 +73,6 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="storage.js?v=20260602d"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="library-page.js?v=20260602b"></script>
+  <script src="library-page.js?v=20260602c"></script>
 </body>
 </html>

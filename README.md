@@ -7,7 +7,7 @@
 ```text
 kcfx/
 ├── index.html              # 库存分析看板
-├── fact-library.html       # 备货事实表库
+├── fact-library.html       # 事实表文件库
 ├── file-library.html       # 维度表文件库
 ├── storage.js              # IndexedDB 与 Excel 解析
 ├── shared-library.js       # 共享数据包同步与导出
@@ -20,7 +20,7 @@ kcfx/
 
 ## 文件库
 
-### 备货事实表库
+### 事实表文件库
 
 - `关账后库存事实表`
 - 典型文件：`4月底物料收发汇总表`

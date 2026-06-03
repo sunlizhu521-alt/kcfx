@@ -60,7 +60,7 @@ async function refreshSummary() {
   renderSourcePanel(detailRecord, []);
   if (!detailRecord) {
     summaryRows = [];
-    $("#summaryStatus").textContent = "缺少收发明细汇总表，请先到备货事实表库上传并应用。";
+    $("#summaryStatus").textContent = "缺少收发明细汇总表，请先到事实表文件库上传并应用。";
     populateFilters([]);
     renderSummary();
     return;

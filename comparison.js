@@ -58,7 +58,7 @@ async function runComparison() {
   renderSourcePanel(inventoryRecord, detailRecord);
 
   if (!inventoryRecord || !detailRecord) {
-    $("#compareStatus").textContent = "缺少关账后库存事实表或收发明细汇总表，请先到备货事实表库上传并应用刷新。";
+    $("#compareStatus").textContent = "缺少关账后库存事实表或收发明细汇总表，请先到事实表文件库上传并应用刷新。";
     currentComparison = { inventoryQtyTotal: 0, detailQtyTotal: 0, qtyDiffTotal: 0, inventoryValueTotal: 0, detailValueTotal: 0, valueDiffTotal: 0, allRows: [], qtyDiffRows: [], priceDiffRows: [] };
     renderMetrics(currentComparison);
     $("#matchBasis").textContent = "等待两张事实表应用后生成对比。";
