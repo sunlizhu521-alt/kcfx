@@ -1329,6 +1329,117 @@ input[type="file"]:disabled {
   color: #173b2a;
 }
 
+.trend-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.trend-panel {
+  min-height: 380px;
+  overflow: hidden;
+}
+
+.vertical-trend-chart {
+  min-height: 310px;
+}
+
+.trend-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -2px 0 12px;
+  color: #52667b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trend-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trend-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.trend-bars-vertical {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+  height: 270px;
+}
+
+.trend-category {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 38px;
+  min-width: 0;
+  height: 100%;
+}
+
+.trend-bar-group {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(5px, 1fr));
+  gap: 3px;
+  align-items: end;
+  min-height: 0;
+  padding: 22px 3px 0;
+  border-bottom: 1px solid #d8e3ee;
+}
+
+.trend-bar-wrap {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+  min-width: 0;
+}
+
+.trend-bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 5px 5px 0 0;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .12), 0 5px 12px rgba(31, 45, 61, .14);
+}
+
+.trend-bar-value {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: #51677e;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.trend-category-label {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 7px;
+  color: #26384d;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+@media (max-width: 1280px) {
+  .trend-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .receipt-page .data-source-panel {
   background: rgba(255, 255, 255, .72);
 }

@@ -95,6 +95,7 @@ const FACT_SLOTS = [
     title: "收发汇总表1月",
     expectedName: "收发汇总表1月",
     sheetHint: "",
+    skipRows: 3,
     description: "预留事实表槽位。"
   },
   {
@@ -103,6 +104,7 @@ const FACT_SLOTS = [
     title: "收发汇总表2月",
     expectedName: "收发汇总表2月",
     sheetHint: "",
+    skipRows: 3,
     description: "预留事实表槽位。"
   },
   {
@@ -111,6 +113,7 @@ const FACT_SLOTS = [
     title: "收发汇总表3月",
     expectedName: "收发汇总表3月",
     sheetHint: "",
+    skipRows: 3,
     description: "预留事实表槽位。"
   },
   {
@@ -119,6 +122,7 @@ const FACT_SLOTS = [
     title: "收发汇总表4月",
     expectedName: "收发汇总表4月",
     sheetHint: "",
+    skipRows: 3,
     description: "预留事实表槽位。"
   },
   {

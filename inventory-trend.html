@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 库存趋势变化</title>
-  <link rel="stylesheet" href="styles.css?v=20260603y">
+  <link rel="stylesheet" href="styles.css?v=20260603z">
 </head>
 <body class="receipt-page">
   <div class="app-shell">
@@ -32,83 +32,27 @@
         </div>
       </header>
 
-      <section class="toolbar">
-        <div id="warehouseTypeFilter" class="multi-filter"></div>
-        <div id="departmentFilter" class="multi-filter"></div>
-        <div id="productLineFilter" class="multi-filter"></div>
-        <div id="seriesFilter" class="multi-filter"></div>
-        <div id="ageFilter" class="multi-filter"></div>
-        <div id="warehouseLocationFilter" class="multi-filter"></div>
-        <input id="searchInput" placeholder="物料编码 / 物料名称 / 仓库">
-        <button id="refreshBtn" type="button">清除所有筛选</button>
-      </section>
-
-      <section class="metrics comparison-metrics receipt-metrics">
-        <div class="metric-card"><span>账后库存数量-财务口径-不变动</span><strong id="closedInventoryQtyTotal">0</strong></div>
-        <div class="metric-card"><span>库存资产估值-财务口径-不变动</span><strong id="closedInventoryValueTotal">¥0</strong></div>
-        <div class="metric-card"><span>库存资产估值-2026年结算价与财务口径-不变动差异</span><strong id="valueGapTotal">¥0</strong></div>
-        <div class="metric-card"><span>库存数量-取财务口径</span><strong id="qtyTotal">0</strong></div>
-        <div class="metric-card"><span>库存资产估值-2026年结算价</span><strong id="amountTotal">¥0</strong></div>
-      </section>
-
-      <section class="metrics age-share-metrics">
-        <div class="metric-card"><span>生产材料仓</span><strong id="warehouseTypeShare0">0亿（0%）</strong></div>
-        <div class="metric-card"><span>生产成品仓</span><strong id="warehouseTypeShare1">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售成品仓</span><strong id="warehouseTypeShare2">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售退货仓</span><strong id="warehouseTypeShare3">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售拆检仓</span><strong id="warehouseTypeShare4">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售配件仓</span><strong id="warehouseTypeShare5">0亿（0%）</strong></div>
-      </section>
-
-      <section class="dashboard-grid receipt-chart-grid">
-        <div class="panel">
-          <h2>事业部占用资金情况 <span id="departmentAmountTotal" class="chart-total"></span></h2>
-          <div id="departmentAmountChart" class="chart-bars"></div>
+      <section class="trend-chart-grid">
+        <div class="panel trend-panel">
+          <h2>事业部数量趋势 <span id="departmentTrendTotal" class="chart-total"></span></h2>
+          <div id="departmentTrendChart" class="vertical-trend-chart"></div>
         </div>
-        <div class="panel">
-          <h2>各库龄段占用资金情况 <span id="ageAmountTotal" class="chart-total"></span></h2>
-          <div id="ageAmountChart" class="chart-bars"></div>
+        <div class="panel trend-panel">
+          <h2>各产品数量趋势 <span id="productTrendTotal" class="chart-total"></span></h2>
+          <div id="productTrendChart" class="vertical-trend-chart"></div>
         </div>
-        <div class="panel">
-          <h2>各产品线占用资金情况 <span id="productLineAmountTotal" class="chart-total"></span></h2>
-          <div id="productLineAmountChart" class="chart-bars"></div>
+        <div class="panel trend-panel">
+          <h2>仓库位置数量趋势 <span id="warehouseLocationTrendTotal" class="chart-total"></span></h2>
+          <div id="warehouseLocationTrendChart" class="vertical-trend-chart"></div>
         </div>
-        <div class="panel">
-          <h2>仓库位置资金占用情况 <span id="warehouseLocationAmountTotal" class="chart-total"></span></h2>
-          <div id="warehouseLocationAmountChart" class="chart-bars"></div>
-        </div>
-      </section>
-
-      <section class="table-panel">
-        <div class="table-title-row">
-          <div class="table-title">各产品线、仓库位置中未分类的明细表</div>
-          <button id="downloadUnclassifiedBtn" class="secondary compact-button" type="button">下载</button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>缺失项</th>
-              <th>物料编码</th>
-              <th>物料名称</th>
-              <th>仓库</th>
-              <th>销售产品线</th>
-              <th>仓库位置</th>
-              <th>0430结余库存数量</th>
-              <th>结算价金额</th>
-              <th>判断依据（PMC口径）</th>
-              <th>问题原因（PMC口径）</th>
-            </tr>
-          </thead>
-          <tbody id="unclassifiedRows"></tbody>
-        </table>
       </section>
 
       <div id="sourcePanel" class="data-source-panel"></div>
     </main>
   </div>
 
-  <script src="storage.js?v=20260602f"></script>
+  <script src="storage.js?v=20260602g"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260603x"></script>
+  <script src="inventory-trend.js?v=20260603b"></script>
 </body>
 </html>
