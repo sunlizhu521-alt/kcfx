@@ -997,7 +997,11 @@ function formatOptionalNumber(value, decimals = 0) {
 
 function formatNumberWithYi(value, decimals = 3) {
   const numeric = Number(value || 0);
-  return `${formatNumber(numeric, decimals)}（${formatNumber(numeric / 100000000, 2)}亿）`;
+  const yiValue = numeric / 100000000;
+  const unitText = Math.abs(yiValue) >= 0.01
+    ? `${formatNumber(yiValue, 2)}亿`
+    : `${formatAdaptiveDecimal(numeric / 10000)}万`;
+  return `${formatNumber(numeric, decimals)}（${unitText}）`;
 }
 
 function formatMoneyWithYi(value) {
