@@ -1,8 +1,8 @@
 {
   "id": "fact-2",
   "type": "fact",
-  "title": "收发明细汇总表",
-  "expectedName": "收发明细汇总表",
+  "title": "库存分析月份表",
+  "expectedName": "库存分析月份表",
   "fileName": "Fac-库龄汇总.xlsx",
   "size": 5935701,
   "lastModified": 1780370469312,

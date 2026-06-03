@@ -58,7 +58,7 @@ async function runComparison() {
   renderSourcePanel(inventoryRecord, detailRecord);
 
   if (!inventoryRecord || !detailRecord) {
-    $("#compareStatus").textContent = "缺少关账后库存事实表或收发明细汇总表，请先到事实表文件库上传并应用刷新。";
+    $("#compareStatus").textContent = "缺少关账后库存事实表或库存分析月份表，请先到事实表文件库上传并应用刷新。";
     currentComparison = { inventoryQtyTotal: 0, detailQtyTotal: 0, qtyDiffTotal: 0, inventoryValueTotal: 0, detailValueTotal: 0, valueDiffTotal: 0, allRows: [], qtyDiffRows: [], priceDiffRows: [] };
     renderMetrics(currentComparison);
     $("#matchBasis").textContent = "等待两张事实表应用后生成对比。";
@@ -421,7 +421,7 @@ function renderMatchBasis(options, inventoryRecord, detailRecord) {
   $("#matchBasis").textContent = [
     `匹配键：${parts.join(" + ")}`,
     `关账后库存事实表：结存数量取 G 列，库存资产估值取 G 列 × H 列真实成本单价。`,
-    `收发明细汇总表：0430结余库存数量按列名识别，结算价(含税)固定取 P 列。`,
+    `库存分析月份表：0430结余库存数量按列名识别，结算价(含税)固定取 P 列。`,
     `当前文件：${inventoryRecord.fileName || "-"} / ${detailRecord.fileName || "-"}`
   ].join(" ");
 }
@@ -429,7 +429,7 @@ function renderMatchBasis(options, inventoryRecord, detailRecord) {
 function renderSourcePanel(inventoryRecord, detailRecord) {
   const items = [
     sourceLine("关账后库存事实表", "fact-inventory", inventoryRecord),
-    sourceLine("收发明细汇总表", "fact-2", detailRecord)
+    sourceLine("库存分析月份表", "fact-2", detailRecord)
   ];
   $("#sourcePanel").innerHTML = items.join("");
 }

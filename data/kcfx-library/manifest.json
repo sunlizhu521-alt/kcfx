@@ -84,7 +84,7 @@
     "fact-2": {
       "id": "fact-2",
       "type": "fact",
-      "title": "收发明细汇总表",
+      "title": "库存分析月份表",
       "fileName": "Fac-库龄汇总.xlsx",
       "path": "data/kcfx-library/fact/fact-2.json",
       "rows": 9225,

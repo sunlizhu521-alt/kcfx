@@ -60,7 +60,7 @@ async function refreshSummary() {
   renderSourcePanel(detailRecord, []);
   if (!detailRecord) {
     summaryRows = [];
-    $("#summaryStatus").textContent = "缺少收发明细汇总表，请先到事实表文件库上传并应用。";
+    $("#summaryStatus").textContent = "缺少库存分析月份表，请先到事实表文件库上传并应用。";
     populateFilters([]);
     renderSummary();
     return;
@@ -143,7 +143,7 @@ function renderClosedInventoryMetrics(record) {
 
 function buildSummaryStatus(rowCount, matchedCount, diagnostic, records) {
   const refs = [
-    ["收发明细汇总表", records["fact-2"]],
+    ["库存分析月份表", records["fact-2"]],
     ["关账后库存事实表", records["fact-inventory"]],
     ["商品分类维表", records["dim-product"]],
     ["仓库维表", records["dim-warehouse"]],
@@ -167,7 +167,7 @@ function renderSourcePanel(record, rows = []) {
   const appliedAt = record.appliedAt ? new Date(record.appliedAt).toLocaleString("zh-CN", { hour12: false }) : "-";
   const reminder = buildSourceReminder(rows);
   $("#sourcePanel").innerHTML = `
-    <div><strong>收发明细汇总表</strong>：${escapeHtml(record.fileName || "-")}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>IndexedDB: ${KC_DB_NAME}/${KC_STORE}/fact-2</code></div>
+    <div><strong>库存分析月份表</strong>：${escapeHtml(record.fileName || "-")}；保存：${escapeHtml(savedAt)}；当前引用：${escapeHtml(appliedAt)}；<code>IndexedDB: ${KC_DB_NAME}/${KC_STORE}/fact-2</code></div>
     <div class="source-reminder">${escapeHtml(reminder)}</div>
   `;
 }

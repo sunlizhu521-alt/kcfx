@@ -84,24 +84,48 @@ const FACT_SLOTS = [
   {
     id: "fact-2",
     type: "fact",
-    title: "收发明细汇总表",
-    expectedName: "收发明细汇总表",
+    title: "库存分析月份表",
+    expectedName: "库存分析月份表",
     sheetHint: "",
     description: "预留事实表槽位。"
   },
   {
     id: "fact-3",
     type: "fact",
-    title: "事实表 3",
-    expectedName: "事实表 3",
+    title: "收发汇总表1月",
+    expectedName: "收发汇总表1月",
     sheetHint: "",
     description: "预留事实表槽位。"
   },
   {
     id: "fact-4",
     type: "fact",
-    title: "事实表 4",
-    expectedName: "事实表 4",
+    title: "收发汇总表2月",
+    expectedName: "收发汇总表2月",
+    sheetHint: "",
+    description: "预留事实表槽位。"
+  },
+  {
+    id: "fact-5",
+    type: "fact",
+    title: "收发汇总表3月",
+    expectedName: "收发汇总表3月",
+    sheetHint: "",
+    description: "预留事实表槽位。"
+  },
+  {
+    id: "fact-6",
+    type: "fact",
+    title: "收发汇总表4月",
+    expectedName: "收发汇总表4月",
+    sheetHint: "",
+    description: "预留事实表槽位。"
+  },
+  {
+    id: "fact-7",
+    type: "fact",
+    title: "收发汇总表5月",
+    expectedName: "收发汇总表5月",
     sheetHint: "",
     description: "预留事实表槽位。"
   }
