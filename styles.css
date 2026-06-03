@@ -464,7 +464,7 @@ select {
 }
 
 .age-share-metrics {
-  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
   overflow-x: auto;
 }
 
@@ -1018,7 +1018,7 @@ input[type="file"]:disabled {
   }
 
   .age-share-metrics {
-    grid-template-columns: repeat(5, minmax(140px, 1fr));
+    grid-template-columns: repeat(6, minmax(130px, 1fr));
   }
 
   .receipt-chart-grid {
@@ -1203,12 +1203,14 @@ input[type="file"]:disabled {
 .receipt-page .age-share-metrics .metric-card:nth-child(3)::before { background: #ff9f0a; }
 .receipt-page .age-share-metrics .metric-card:nth-child(4)::before { background: #ff375f; }
 .receipt-page .age-share-metrics .metric-card:nth-child(5)::before { background: #af52de; }
+.receipt-page .age-share-metrics .metric-card:nth-child(6)::before { background: #5ac8fa; }
 
 .receipt-page .age-share-metrics .metric-card:nth-child(1) { background: linear-gradient(145deg, #ffffff, #eef6ff); }
 .receipt-page .age-share-metrics .metric-card:nth-child(2) { background: linear-gradient(145deg, #ffffff, #effbf4); }
 .receipt-page .age-share-metrics .metric-card:nth-child(3) { background: linear-gradient(145deg, #ffffff, #fff6e5); }
 .receipt-page .age-share-metrics .metric-card:nth-child(4) { background: linear-gradient(145deg, #ffffff, #fff0f4); }
 .receipt-page .age-share-metrics .metric-card:nth-child(5) { background: linear-gradient(145deg, #ffffff, #f8efff); }
+.receipt-page .age-share-metrics .metric-card:nth-child(6) { background: linear-gradient(145deg, #ffffff, #edfaff); }
 
 .receipt-page .metric-card span {
   color: #60748a;

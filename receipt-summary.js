@@ -16,6 +16,7 @@ const DEPARTMENT_ORDER = [
   "供应商仓（后续划分事业部）"
 ];
 const COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f", "#5ac8fa", "#5856d6", "#30d158", "#bf5af2", "#ff6b35", "#64d2ff", "#8e8e93"];
+const WAREHOUSE_TYPE_CARDS = ["生产材料仓", "生成成品仓", "销售成品仓", "销售退货仓", "销售拆检仓", "销售配件仓"];
 const AGE_BUCKETS = ["0-30天", "31-60天", "61-90天", "91-120天", "120天以上"];
 const AGE_BUCKET_DEFINITIONS = [
   { label: "0-30天", candidates: ["0-30天数量", "0-30天库存数量", "0-30天结余库存数量", "0-30天库龄数量", "0-30天"] },
@@ -282,15 +283,15 @@ function renderQuantityCharts(rows, selectedAgeLabel = "") {
 }
 
 function renderAgeShareCards(rows, selectedAgeLabels = []) {
-  const buckets = selectedAgeLabels.length ? selectedAgeLabels : AGE_BUCKETS;
   const totalAmount = sumVisibleAmount(rows, selectedAgeLabels);
-  AGE_BUCKETS.forEach((bucket, index) => {
-    const el = $(`#ageShare${index}`);
+  WAREHOUSE_TYPE_CARDS.forEach((warehouseType, index) => {
+    const el = $(`#warehouseTypeShare${index}`);
     if (!el) return;
-    const amount = buckets.includes(bucket)
-      ? rows.reduce((total, row) => total + (Number(row.ageSettlementAmounts?.[bucket]) || 0), 0)
-      : 0;
-    el.textContent = formatPercent(amount, totalAmount);
+    const amount = rows.reduce((total, row) => {
+      if (normalizeKey(row.warehouseType) !== normalizeKey(warehouseType)) return total;
+      return total + visibleAmount(row, selectedAgeLabels);
+    }, 0);
+    el.textContent = formatYiWithPercent(amount, totalAmount);
   });
 }
 
@@ -1002,6 +1003,11 @@ function formatNumberWithYi(value, decimals = 3) {
 function formatMoneyWithYi(value) {
   const numeric = Number(value || 0);
   return `${formatMoney(numeric)}（${formatNumber(numeric / 100000000, 2)}亿）`;
+}
+
+function formatYiWithPercent(value, total) {
+  const numeric = Number(value) || 0;
+  return `${formatAdaptiveDecimal(numeric / 100000000)}亿（${formatPercent(numeric, total)}）`;
 }
 
 function formatWan(value) {
