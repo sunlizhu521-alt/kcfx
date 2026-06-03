@@ -512,7 +512,7 @@ function downloadTurnoverSummary() {
       amount: active ? filteredRows.reduce((total, row) => total + (Number(row.ageSettlementAmounts?.[bucket]) || 0), 0) : 0
     };
   });
-  downloadSummaryRows("周转天数", rows);
+  downloadSummaryRows("库龄天数", rows);
 }
 
 function downloadProductLineSummary() {
