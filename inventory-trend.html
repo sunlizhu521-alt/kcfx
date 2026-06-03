@@ -79,105 +79,6 @@
         </div>
       </section>
 
-      <section class="dashboard-grid receipt-chart-grid">
-        <div class="panel">
-          <h2>事业部占用数量情况（万） <span id="departmentQtyTotal" class="chart-total"></span></h2>
-          <div id="departmentQtyChart" class="chart-bars"></div>
-        </div>
-        <div class="panel">
-          <h2>各库龄段占用数量情况（万） <span id="ageQtyTotal" class="chart-total"></span></h2>
-          <div id="ageQtyChart" class="chart-bars"></div>
-        </div>
-        <div class="panel">
-          <h2>各产品线占用数量情况（万） <span id="productLineQtyTotal" class="chart-total"></span></h2>
-          <div id="productLineQtyChart" class="chart-bars"></div>
-        </div>
-        <div class="panel">
-          <h2>仓库位置数量情况（万） <span id="warehouseLocationQtyTotal" class="chart-total"></span></h2>
-          <div id="warehouseLocationQtyChart" class="chart-bars"></div>
-        </div>
-      </section>
-
-      <section class="summary-table-grid">
-        <div class="table-panel mini-table-panel">
-          <div class="table-title-row">
-            <div class="table-title">库龄天数</div>
-            <button id="downloadTurnoverBtn" class="secondary compact-button" type="button">下载</button>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>库龄天数</th>
-                <th>库存数量</th>
-                <th>数量占比</th>
-                <th>货值（万元）</th>
-                <th>货值占比</th>
-              </tr>
-            </thead>
-            <tbody id="turnoverSummaryRows"></tbody>
-          </table>
-        </div>
-        <div class="table-panel mini-table-panel">
-          <div class="table-title-row">
-            <div class="table-title">产品线库存</div>
-            <button id="downloadProductLineBtn" class="secondary compact-button" type="button">下载</button>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>产品线库存</th>
-                <th>库存数量</th>
-                <th>数量占比</th>
-                <th>货值（万元）</th>
-                <th>货值占比</th>
-              </tr>
-            </thead>
-            <tbody id="productLineSummaryRows"></tbody>
-          </table>
-        </div>
-        <div class="table-panel mini-table-panel">
-          <div class="table-title-row">
-            <div class="table-title">产品系列</div>
-            <button id="downloadSeriesBtn" class="secondary compact-button" type="button">下载</button>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>产品系列</th>
-                <th>库存数量</th>
-                <th>数量占比</th>
-                <th>货值（万元）</th>
-                <th>货值占比</th>
-              </tr>
-            </thead>
-            <tbody id="seriesSummaryRows"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="table-panel">
-        <div class="table-title-row">
-          <div class="table-title">库存分析月份表</div>
-          <button id="downloadBtn" class="secondary compact-button" type="button">下载</button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>物料编码</th>
-              <th>物料名称</th>
-              <th>仓库</th>
-              <th>库存天数</th>
-              <th>0430结余库存数量</th>
-              <th>结算价(含税)</th>
-              <th>结算价金额</th>
-              <th>判断依据（PMC口径）</th>
-              <th>问题原因（PMC口径）</th>
-            </tr>
-          </thead>
-          <tbody id="summaryRows"></tbody>
-        </table>
-      </section>
-
       <section class="table-panel">
         <div class="table-title-row">
           <div class="table-title">各产品线、仓库位置中未分类的明细表</div>
@@ -206,8 +107,8 @@
     </main>
   </div>
 
-  <script src="storage.js?v=20260602e"></script>
+  <script src="storage.js?v=20260602f"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260603w"></script>
+  <script src="receipt-summary.js?v=20260603x"></script>
 </body>
 </html>

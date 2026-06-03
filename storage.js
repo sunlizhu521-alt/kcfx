@@ -128,6 +128,14 @@ const FACT_SLOTS = [
     expectedName: "收发汇总表5月",
     sheetHint: "",
     description: "预留事实表槽位。"
+  },
+  {
+    id: "fact-8",
+    type: "fact",
+    title: "收发汇总表6月",
+    expectedName: "收发汇总表6月",
+    sheetHint: "",
+    description: "预留事实表槽位。"
   }
 ];
 

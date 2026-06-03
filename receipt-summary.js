@@ -1,4 +1,8 @@
 const $ = (selector) => document.querySelector(selector);
+const bindIfExists = (selector, eventName, handler) => {
+  const el = $(selector);
+  if (el) el.addEventListener(eventName, handler);
+};
 const DEPARTMENT_ORDER = [
   "海外事业一部",
   "海外事业二部",
@@ -31,20 +35,20 @@ let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 let closedInventoryValue = 0;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  $("#refreshBtn").addEventListener("click", clearFilters);
-  $("#downloadBtn").addEventListener("click", downloadCurrentRows);
-  $("#downloadTurnoverBtn").addEventListener("click", downloadTurnoverSummary);
-  $("#downloadProductLineBtn").addEventListener("click", downloadProductLineSummary);
-  $("#downloadSeriesBtn").addEventListener("click", downloadSeriesSummary);
-  $("#downloadUnclassifiedBtn").addEventListener("click", downloadUnclassifiedRows);
+  bindIfExists("#refreshBtn", "click", clearFilters);
+  bindIfExists("#downloadBtn", "click", downloadCurrentRows);
+  bindIfExists("#downloadTurnoverBtn", "click", downloadTurnoverSummary);
+  bindIfExists("#downloadProductLineBtn", "click", downloadProductLineSummary);
+  bindIfExists("#downloadSeriesBtn", "click", downloadSeriesSummary);
+  bindIfExists("#downloadUnclassifiedBtn", "click", downloadUnclassifiedRows);
   document.addEventListener("click", closeMultiFilters);
-  $("#searchInput").addEventListener("input", renderSummary);
-  $("#productLineFilter").addEventListener("change", () => {
+  bindIfExists("#searchInput", "input", renderSummary);
+  bindIfExists("#productLineFilter", "change", () => {
     populateSeriesFilter(summaryRows);
     renderSummary();
   });
   ["warehouseTypeFilter", "departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
-    $(`#${id}`).addEventListener("change", renderSummary);
+    bindIfExists(`#${id}`, "change", renderSummary);
   });
   await refreshSummary();
 });
@@ -233,7 +237,8 @@ function renderSummary() {
   renderQuantityCharts(filteredRows, selectedAgeLabels);
   renderUnclassifiedRows(filteredRows, selectedAgeLabels);
   const shown = filteredRows.slice(0, 1000);
-  $("#summaryRows").innerHTML = shown.length ? shown.map((row) => `
+  const summaryBody = $("#summaryRows");
+  if (summaryBody) summaryBody.innerHTML = shown.length ? shown.map((row) => `
     <tr>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
@@ -812,6 +817,7 @@ function firstOptionalNumber(candidates) {
 }
 
 function fillSelect(select, allLabel, values) {
+  if (!select) return;
   const current = getSelectValues(select);
   select.dataset.allLabel = allLabel;
   select.innerHTML = `
@@ -847,6 +853,7 @@ function fillSelect(select, allLabel, values) {
 }
 
 function clearSelect(select) {
+  if (!select) return;
   select.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
     checkbox.checked = checkbox.dataset.all === "true";
   });
@@ -854,6 +861,7 @@ function clearSelect(select) {
 }
 
 function getSelectValues(select) {
+  if (!select) return [];
   return [...select.querySelectorAll("input[type='checkbox']:checked")]
     .map((input) => input.value)
     .filter(Boolean);
