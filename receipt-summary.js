@@ -1007,7 +1007,10 @@ function formatMoneyWithYi(value) {
 
 function formatYiWithPercent(value, total) {
   const numeric = Number(value) || 0;
-  return `${formatAdaptiveDecimal(numeric / 100000000)}亿（${formatPercent(numeric, total)}）`;
+  const amountText = Math.abs(numeric) < 1000000
+    ? `${formatAdaptiveDecimal(numeric / 10000)}万元`
+    : `${formatAdaptiveDecimal(numeric / 100000000)}亿`;
+  return `${amountText}（${formatPercent(numeric, total)}）`;
 }
 
 function formatWan(value) {
