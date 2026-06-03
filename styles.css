@@ -1191,11 +1191,22 @@ input[type="file"]:disabled {
 .receipt-page .receipt-metrics .metric-card:nth-child(3)::before { background: var(--receipt-orange); }
 .receipt-page .receipt-metrics .metric-card:nth-child(4)::before { background: var(--receipt-purple); }
 
+.receipt-page .receipt-metrics .metric-card:nth-child(1) { background: linear-gradient(145deg, #ffffff, #eef6ff); }
+.receipt-page .receipt-metrics .metric-card:nth-child(2) { background: linear-gradient(145deg, #ffffff, #eefbf3); }
+.receipt-page .receipt-metrics .metric-card:nth-child(3) { background: linear-gradient(145deg, #ffffff, #fff7e8); }
+.receipt-page .receipt-metrics .metric-card:nth-child(4) { background: linear-gradient(145deg, #ffffff, #f7efff); }
+
 .receipt-page .age-share-metrics .metric-card:nth-child(1)::before { background: #007aff; }
 .receipt-page .age-share-metrics .metric-card:nth-child(2)::before { background: #34c759; }
 .receipt-page .age-share-metrics .metric-card:nth-child(3)::before { background: #ff9f0a; }
 .receipt-page .age-share-metrics .metric-card:nth-child(4)::before { background: #ff375f; }
 .receipt-page .age-share-metrics .metric-card:nth-child(5)::before { background: #af52de; }
+
+.receipt-page .age-share-metrics .metric-card:nth-child(1) { background: linear-gradient(145deg, #ffffff, #eef6ff); }
+.receipt-page .age-share-metrics .metric-card:nth-child(2) { background: linear-gradient(145deg, #ffffff, #effbf4); }
+.receipt-page .age-share-metrics .metric-card:nth-child(3) { background: linear-gradient(145deg, #ffffff, #fff6e5); }
+.receipt-page .age-share-metrics .metric-card:nth-child(4) { background: linear-gradient(145deg, #ffffff, #fff0f4); }
+.receipt-page .age-share-metrics .metric-card:nth-child(5) { background: linear-gradient(145deg, #ffffff, #f8efff); }
 
 .receipt-page .metric-card span {
   color: #60748a;
@@ -1229,11 +1240,9 @@ input[type="file"]:disabled {
 }
 
 .receipt-page .bar-row {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "label value"
-    "track track";
-  gap: 4px 8px;
+  grid-template-columns: minmax(74px, 106px) minmax(72px, 1fr) minmax(92px, 118px);
+  grid-template-areas: "label track value";
+  gap: 8px;
 }
 
 .receipt-page .bar-label {
@@ -1245,12 +1254,13 @@ input[type="file"]:disabled {
 .receipt-page .bar-value {
   grid-area: value;
   color: #4c6076;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
 
 .receipt-page .bar-track {
   grid-area: track;
-  height: 16px;
+  height: 14px;
   background: #dfe8f1;
   box-shadow: inset 0 1px 2px rgba(31, 45, 61, .10);
 }
