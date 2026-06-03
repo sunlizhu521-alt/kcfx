@@ -27,6 +27,7 @@ const AGE_BUCKET_DEFINITIONS = [
 let summaryRows = [];
 let filteredRows = [];
 let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
+let closedInventoryValue = 0;
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", clearFilters);
@@ -134,6 +135,7 @@ function renderClosedInventoryMetrics(record) {
   const rows = record?.rows || [];
   const qty = rows.reduce((total, row) => total + getClosedInventoryQty(row), 0);
   const value = rows.reduce((total, row) => total + getClosedInventoryValue(row), 0);
+  closedInventoryValue = value;
   $("#closedInventoryQtyTotal").textContent = formatNumberWithYi(qty, 3);
   $("#closedInventoryValueTotal").textContent = formatMoneyWithYi(value);
 }
@@ -220,8 +222,10 @@ function renderSummary() {
       && matchSelect(row.series, getSelectValues($("#seriesFilter")))
       && matchSelect(row.warehouseLocation, getSelectValues($("#warehouseLocationFilter")));
   });
+  const visibleAmount = sumVisibleAmount(filteredRows, selectedAgeLabels);
   $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 3);
-  $("#amountTotal").textContent = formatMoneyWithYi(sumVisibleAmount(filteredRows, selectedAgeLabels));
+  $("#amountTotal").textContent = formatMoneyWithYi(visibleAmount);
+  $("#valueGapTotal").textContent = formatMoneyWithYi(visibleAmount - closedInventoryValue);
   renderAgeShareCards(filteredRows, selectedAgeLabels);
   renderSummaryTables(filteredRows, selectedAgeLabels);
   renderAmountCharts(filteredRows, selectedAgeLabels);

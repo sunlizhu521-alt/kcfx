@@ -454,13 +454,13 @@ select {
 }
 
 .receipt-metrics {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .receipt-metrics .metric-card strong {
   white-space: nowrap;
   overflow-wrap: normal;
-  font-size: clamp(18px, 1.35vw, 24px);
+  font-size: clamp(16px, 1.08vw, 21px);
 }
 
 .age-share-metrics {
@@ -1189,12 +1189,14 @@ input[type="file"]:disabled {
 .receipt-page .receipt-metrics .metric-card:nth-child(1)::before { background: var(--receipt-blue); }
 .receipt-page .receipt-metrics .metric-card:nth-child(2)::before { background: var(--receipt-green); }
 .receipt-page .receipt-metrics .metric-card:nth-child(3)::before { background: var(--receipt-orange); }
-.receipt-page .receipt-metrics .metric-card:nth-child(4)::before { background: var(--receipt-purple); }
+.receipt-page .receipt-metrics .metric-card:nth-child(4)::before { background: var(--receipt-cyan); }
+.receipt-page .receipt-metrics .metric-card:nth-child(5)::before { background: var(--receipt-purple); }
 
 .receipt-page .receipt-metrics .metric-card:nth-child(1) { background: linear-gradient(145deg, #ffffff, #eef6ff); }
 .receipt-page .receipt-metrics .metric-card:nth-child(2) { background: linear-gradient(145deg, #ffffff, #eefbf3); }
 .receipt-page .receipt-metrics .metric-card:nth-child(3) { background: linear-gradient(145deg, #ffffff, #fff7e8); }
-.receipt-page .receipt-metrics .metric-card:nth-child(4) { background: linear-gradient(145deg, #ffffff, #f7efff); }
+.receipt-page .receipt-metrics .metric-card:nth-child(4) { background: linear-gradient(145deg, #ffffff, #edfaff); }
+.receipt-page .receipt-metrics .metric-card:nth-child(5) { background: linear-gradient(145deg, #ffffff, #f7efff); }
 
 .receipt-page .age-share-metrics .metric-card:nth-child(1)::before { background: #007aff; }
 .receipt-page .age-share-metrics .metric-card:nth-child(2)::before { background: #34c759; }
@@ -1212,6 +1214,16 @@ input[type="file"]:disabled {
   color: #60748a;
   font-size: 12px;
   font-weight: 700;
+}
+
+.receipt-page .receipt-metrics .metric-card {
+  min-height: 86px;
+  padding: 13px 10px 13px 14px;
+}
+
+.receipt-page .receipt-metrics .metric-card span {
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .receipt-page .metric-card strong {
