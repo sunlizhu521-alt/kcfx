@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     populateSeriesFilter(summaryRows);
     renderSummary();
   });
-  ["departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
+  ["warehouseTypeFilter", "departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
     $(`#${id}`).addEventListener("change", renderSummary);
   });
   await refreshSummary();
@@ -119,6 +119,7 @@ async function refreshSummary() {
 }
 
 function clearFilters() {
+  clearSelect($("#warehouseTypeFilter"));
   clearSelect($("#departmentFilter"));
   clearSelect($("#productLineFilter"));
   populateSeriesFilter(summaryRows);
@@ -190,6 +191,7 @@ function buildSourceReminder(rows) {
 
 function populateFilters(rows, records = null) {
   const warehouseMaterialRows = records?.["dim-warehouse-material"]?.rows || [];
+  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueValues(rows, "warehouseType"));
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
   populateSeriesFilter(rows);
@@ -212,6 +214,7 @@ function renderSummary() {
       .some((value) => normalizeKey(value).includes(query));
     return hit
       && matchAgeBucket(row, ageBuckets)
+      && matchSelect(row.warehouseType, getSelectValues($("#warehouseTypeFilter")))
       && matchSelect(row.department, getSelectValues($("#departmentFilter")))
       && matchSelect(row.productLine, getSelectValues($("#productLineFilter")))
       && matchSelect(row.series, getSelectValues($("#seriesFilter")))
@@ -350,7 +353,7 @@ function renderCompactSummaryRows(rows, totalQty, totalAmount) {
   return [...dataRows, totalRow].map((row) => `
     <tr class="${row.isTotal ? "summary-total-row" : ""}">
       <td>${escapeHtml(row.name)}</td>
-      <td class="num">${formatAdaptiveDecimal(row.qty / 10000)}</td>
+      <td class="num">${formatNumber(row.qty, 3)}</td>
       <td class="num">${formatPercent(row.qty, totalQty)}</td>
       <td class="num">${formatAdaptiveDecimal(row.amount / 10000)}</td>
       <td class="num">${formatPercent(row.amount, totalAmount)}</td>
@@ -553,12 +556,12 @@ function downloadSummaryRows(title, rows) {
   const dataRows = rows.filter((row) => (Number(row.qty) || 0) !== 0 || (Number(row.amount) || 0) !== 0);
   const totalQty = dataRows.reduce((total, row) => total + (Number(row.qty) || 0), 0);
   const totalAmount = dataRows.reduce((total, row) => total + (Number(row.amount) || 0), 0);
-  const headers = [title, "库存数量（万）", "数量占比", "货值（万元）", "货值占比"];
+  const headers = [title, "库存数量", "数量占比", "货值（万元）", "货值占比"];
   const lines = [headers.join(",")];
   [...dataRows, { name: "合计", qty: totalQty, amount: totalAmount }].forEach((row) => {
     lines.push([
       row.name,
-      formatAdaptiveDecimal((Number(row.qty) || 0) / 10000),
+      formatNumber(row.qty, 3),
       formatPercent(row.qty, totalQty),
       formatAdaptiveDecimal((Number(row.amount) || 0) / 10000),
       formatPercent(row.amount, totalAmount)
