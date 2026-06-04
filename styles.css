@@ -1230,7 +1230,7 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-row {
-  grid-template-columns: 132px minmax(16px, .36fr) 118px;
+  grid-template-columns: 188px minmax(12px, .24fr) 118px;
   grid-template-areas: "label track value";
   align-items: center;
   column-gap: 6px;
@@ -1254,7 +1254,7 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-label {
-  width: 132px;
+  width: 188px;
   box-sizing: border-box;
 }
 
