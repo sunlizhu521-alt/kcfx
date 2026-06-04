@@ -341,14 +341,12 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
   if (!container) return;
   const selections = getTrendFilterSelections();
   const selected = selections[filterId] || [];
-  const defaultLimit = metric === "value" ? 300 : TREND_TOP_LIMIT;
-  const categoryNames = selected.length ? selected : topTrendCategories(monthSummaries, field, fallbackName, defaultLimit, metric, selections, filterId);
-  const displayedNames = new Set(categoryNames);
+  const currentFilter = TREND_FILTERS.find((filter) => filter.id === filterId);
+  const aggregateLabel = getTrendAggregateLabel(currentFilter?.allLabel || "全部", selected);
+  const categoryNames = [aggregateLabel];
   const total = monthSummaries.reduce((sum, month) => month.items.reduce((monthSum, item) => {
-    const name = normalizeText(item[field]) || fallbackName;
-    return displayedNames.has(name) && trendItemMatchesSelections(item, selections, filterId)
-      ? monthSum + (Number(item[metric]) || 0)
-      : monthSum;
+    if (!trendItemMatchesSelections(item, selections)) return monthSum;
+    return monthSum + (Number(item[metric]) || 0);
   }, sum), 0);
   const formatValue = metric === "value" ? formatMoneyWan : formatQuantity;
   const formatShortValue = metric === "value" ? formatShortMoneyWan : formatShortQuantity;
@@ -361,7 +359,7 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
 
   const valuesByCategory = categoryNames.map((name) => ({
     name,
-    values: TREND_MONTHS.map((month) => getTrendMonthCategoryValue(monthSummaries, month.label, field, name, fallbackName, metric, selections, filterId))
+    values: TREND_MONTHS.map((month) => getTrendMonthAggregateValue(monthSummaries, month.label, metric, selections))
   }));
   const max = Math.max(...valuesByCategory.flatMap((item) => item.values), 1);
   container.innerHTML = `
@@ -417,6 +415,22 @@ function getTrendMonthCategoryValue(monthSummaries, label, field, categoryName, 
     const name = normalizeText(item[field]) || fallbackName;
     return name === categoryName ? total + (Number(item[metric]) || 0) : total;
   }, 0);
+}
+
+function getTrendMonthAggregateValue(monthSummaries, label, metric = "qty", selections = {}, excludedFilterId = "") {
+  const month = monthSummaries.find((item) => item.label === label);
+  if (!month) return 0;
+  return month.items.reduce((total, item) => {
+    return trendItemMatchesSelections(item, selections, excludedFilterId)
+      ? total + (Number(item[metric]) || 0)
+      : total;
+  }, 0);
+}
+
+function getTrendAggregateLabel(allLabel, selected) {
+  if (!selected.length) return allLabel;
+  if (selected.length === 1) return selected[0];
+  return `已选${selected.length}项合计`;
 }
 
 function renderTrendSourcePanel(monthSummaries, records) {
