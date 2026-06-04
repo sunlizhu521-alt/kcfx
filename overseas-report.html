@@ -19,6 +19,7 @@
       background: rgba(255,255,255,.9);
       box-shadow: 0 12px 28px rgba(31,45,61,.08);
       padding: 16px;
+      min-width: 0;
     }
     .report-card h2 {
       margin: 0 0 12px;
@@ -67,9 +68,8 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .report-grid.five {
-      grid-template-columns: repeat(5, minmax(315px, 1fr));
-      overflow-x: auto;
-      padding-bottom: 4px;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      overflow: visible;
     }
     .report-bars {
       display: grid;
@@ -77,16 +77,18 @@
     }
     .report-bar-row {
       display: grid;
-      grid-template-columns: 132px minmax(120px, 1fr) 118px;
+      grid-template-columns: minmax(92px, .82fr) minmax(46px, 1fr) minmax(90px, .72fr);
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      min-width: 0;
     }
     .report-bar-label,
     .report-bar-value {
       color: #25364a;
-      font-size: 12px;
+      font-size: clamp(10px, .55vw, 12px);
       font-weight: 700;
       white-space: nowrap;
+      min-width: 0;
     }
     .report-bar-value {
       color: #4c6076;
@@ -98,6 +100,7 @@
       border-radius: 999px;
       background: #dfe8f1;
       overflow: hidden;
+      min-width: 0;
     }
     .report-bar-fill {
       height: 100%;
@@ -120,29 +123,46 @@
       grid-template-columns: repeat(2, minmax(360px, 1fr));
     }
     .trend-report-grid.five {
-      grid-template-columns: repeat(5, minmax(315px, 1fr));
-      overflow-x: auto;
-      padding-bottom: 4px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      align-items: stretch;
+      overflow: visible;
     }
     .trend-table {
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
+      table-layout: fixed;
+      font-size: clamp(10px, .58vw, 12px);
+      line-height: 1.25;
     }
     .trend-table th,
     .trend-table td {
       border: 1px solid rgba(126,151,176,.28);
-      padding: 7px 8px;
+      padding: 6px 5px;
       text-align: right;
-      white-space: nowrap;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-all;
+      vertical-align: middle;
     }
     .trend-table th:first-child,
     .trend-table td:first-child {
       text-align: left;
+      width: 30%;
     }
     .trend-table th {
       background: #f0f6fc;
       color: #60748a;
+      font-weight: 800;
+    }
+    .trend-report-grid .report-card {
+      padding: 12px;
+    }
+    .trend-report-grid .report-card h2 {
+      font-size: clamp(13px, .82vw, 16px);
+      line-height: 1.25;
+      min-height: 2.5em;
     }
     .advice-list {
       display: grid;
