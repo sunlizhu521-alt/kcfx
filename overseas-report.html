@@ -160,6 +160,46 @@
       font-size: 12px;
       line-height: 1.5;
     }
+    .report-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .report-title-row h2 {
+      margin: 0;
+    }
+    .report-download-btn {
+      border: 1px solid rgba(10,132,255,.35);
+      border-radius: 8px;
+      background: #f4f9ff;
+      color: #0a66c2;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+    .report-download-btn:hover {
+      background: #e6f2ff;
+    }
+    .report-table-wrap {
+      max-height: 420px;
+      overflow: auto;
+      border: 1px solid rgba(126,151,176,.24);
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    .report-table-wrap .trend-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .report-table-wrap .trend-table td,
+    .report-table-wrap .trend-table th {
+      text-align: center;
+    }
     @media (max-width: 1180px) {
       .report-hero,
       .report-grid,
@@ -242,6 +282,37 @@
       <section class="trend-report-grid two">
         <div class="report-card"><h2>仓库位置资金占用趋势</h2><table id="trendWarehouseLocationTable" class="trend-table"></table></div>
         <div class="report-card"><h2>产品系列 Top 10 资金占用趋势</h2><table id="trendSeriesTable" class="trend-table"></table></div>
+      </section>
+
+      <section class="report-card">
+        <div class="report-title-row">
+          <h2>仓库未分类异常明细</h2>
+          <button id="downloadWarehouseExceptionBtn" class="report-download-btn" type="button">下载异常明细</button>
+        </div>
+        <p id="warehouseExceptionStatus" class="report-note">正在读取文件库数据...</p>
+        <div class="report-table-wrap">
+          <table class="trend-table">
+            <thead>
+              <tr>
+                <th>缺失项</th>
+                <th>库存组织</th>
+                <th>仓库名称</th>
+                <th>物料编码</th>
+                <th>物料名称</th>
+                <th>销售产品线</th>
+                <th>数量合计</th>
+                <th>资金占用合计</th>
+                <th>1月</th>
+                <th>2月</th>
+                <th>3月</th>
+                <th>4月</th>
+              </tr>
+            </thead>
+            <tbody id="warehouseExceptionRows">
+              <tr><td colspan="12" class="empty">正在计算...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   </div>
@@ -335,6 +406,15 @@
       }
     };
 
+    const WAREHOUSE_EXCEPTION_MONTHS = [
+      { label: "1月", id: "fact-3" },
+      { label: "2月", id: "fact-4" },
+      { label: "3月", id: "fact-5" },
+      { label: "4月", id: "fact-6" }
+    ];
+    const OVERSEAS_DEPARTMENT = "海外事业一部";
+    let warehouseExceptionRows = [];
+
     function moneyWan(value) {
       return `${(value / 10000).toLocaleString("zh-CN", { maximumFractionDigits: 1 })}万元`;
     }
@@ -370,6 +450,230 @@
       `;
     }
 
+    async function loadWarehouseExceptions() {
+      const records = {};
+      const paths = [
+        ["dim-product", "data/kcfx-library/dimensions/dim-product.json"],
+        ["dim-warehouse", "data/kcfx-library/dimensions/dim-warehouse.json"],
+        ["dim-warehouse-material", "data/kcfx-library/dimensions/dim-warehouse-material.json"],
+        ["fact-2", "data/kcfx-library/fact/fact-2.json"],
+        ...WAREHOUSE_EXCEPTION_MONTHS.map((month) => [month.id, `data/kcfx-library/fact/${month.id}.json`])
+      ];
+      await Promise.all(paths.map(async ([id, path]) => {
+        records[id] = await fetchLibraryRecord(path);
+      }));
+      warehouseExceptionRows = buildWarehouseExceptionRows(records);
+      renderWarehouseExceptionRows(warehouseExceptionRows, records);
+    }
+
+    async function fetchLibraryRecord(path) {
+      const response = await fetch(`${path}?v=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`${path} ${response.status}`);
+      return response.json();
+    }
+
+    function buildWarehouseExceptionRows(records) {
+      const maps = buildWarehouseExceptionMaps(records);
+      const grouped = new Map();
+      for (const month of WAREHOUSE_EXCEPTION_MONTHS) {
+        const rows = records[month.id]?.rows || [];
+        for (const row of rows.slice(0, -1)) {
+          const organization = normalizeReportText(nthReportValue(row, 1));
+          const materialCode = normalizeReportMaterial(nthReportValue(row, 2));
+          const materialName = normalizeReportText(nthReportValue(row, 3));
+          const warehouse = normalizeReportText(nthReportValue(row, 4));
+          const qty = reportNumber(nthReportValue(row, 11));
+          if (!qty) continue;
+          const department = maps.departmentByKey.get(makeReportDepartmentKey(organization, warehouse, materialCode)) || "";
+          if (department !== OVERSEAS_DEPARTMENT) continue;
+
+          const warehouseType = maps.warehouseTypeByName.get(warehouse) || "";
+          const warehouseLocation = maps.warehouseLocationByName.get(warehouse) || "";
+          if (warehouseType && warehouseLocation) continue;
+
+          const productLine = maps.productLineByMaterial.get(materialCode) || "";
+          const settlementPrice = maps.settlementPriceByMaterial.get(materialCode) || 0;
+          const value = qty * settlementPrice;
+          const reason = [
+            warehouseType ? "" : "未分类仓库类型",
+            warehouseLocation ? "" : "未分类仓库位置"
+          ].filter(Boolean).join("、");
+          const groupKey = [
+            reason,
+            organization,
+            warehouse,
+            materialCode,
+            materialName,
+            productLine,
+            warehouseType,
+            warehouseLocation
+          ].join("\u0001");
+
+          if (!grouped.has(groupKey)) {
+            grouped.set(groupKey, {
+              reason,
+              organization,
+              warehouse,
+              materialCode,
+              materialName,
+              productLine,
+              warehouseType,
+              warehouseLocation,
+              qty: 0,
+              value: 0,
+              months: Object.fromEntries(WAREHOUSE_EXCEPTION_MONTHS.map((item) => [item.label, 0]))
+            });
+          }
+          const item = grouped.get(groupKey);
+          item.qty += qty;
+          item.value += value;
+          item.months[month.label] += value;
+        }
+      }
+      return [...grouped.values()].sort((a, b) => b.value - a.value);
+    }
+
+    function buildWarehouseExceptionMaps(records) {
+      const departmentByKey = new Map();
+      for (const row of records["dim-warehouse-material"]?.rows || []) {
+        const key = normalizeReportDepartmentKey(nthReportValue(row, 6));
+        const department = normalizeReportText(nthReportValue(row, 7));
+        if (key && department && !departmentByKey.has(key)) departmentByKey.set(key, department);
+      }
+
+      const warehouseTypeByName = new Map();
+      const warehouseLocationByName = new Map();
+      for (const row of records["dim-warehouse"]?.rows || []) {
+        const warehouseName = normalizeReportText(nthReportValue(row, 2));
+        const warehouseType = normalizeReportText(nthReportValue(row, 7));
+        const warehouseLocation = normalizeReportText(nthReportValue(row, 8));
+        if (warehouseName && warehouseType && !warehouseTypeByName.has(warehouseName)) {
+          warehouseTypeByName.set(warehouseName, warehouseType);
+        }
+        if (warehouseName && warehouseLocation && !warehouseLocationByName.has(warehouseName)) {
+          warehouseLocationByName.set(warehouseName, warehouseLocation);
+        }
+      }
+
+      const productLineByMaterial = new Map();
+      const settlementPriceByMaterial = new Map();
+      for (const row of records["dim-product"]?.rows || []) {
+        const materialCode = normalizeReportMaterial(nthReportValue(row, 1));
+        const productLine = normalizeReportText(nthReportValue(row, 7));
+        const price = reportNumber(nthReportValue(row, 10));
+        if (materialCode && productLine && !productLineByMaterial.has(materialCode)) {
+          productLineByMaterial.set(materialCode, productLine);
+        }
+        if (materialCode && price && !settlementPriceByMaterial.has(materialCode)) {
+          settlementPriceByMaterial.set(materialCode, price);
+        }
+      }
+
+      for (const row of records["fact-2"]?.rows || []) {
+        const materialCode = normalizeReportMaterial(nthReportValue(row, 1));
+        const price = reportNumber(nthReportValue(row, 16)) || reportNumber(row["结算价(含税)"]) || reportNumber(row["结算价（含税）"]);
+        if (materialCode && price) settlementPriceByMaterial.set(materialCode, price);
+      }
+
+      return { departmentByKey, warehouseTypeByName, warehouseLocationByName, productLineByMaterial, settlementPriceByMaterial };
+    }
+
+    function renderWarehouseExceptionRows(rows, records) {
+      const body = document.getElementById("warehouseExceptionRows");
+      const status = document.getElementById("warehouseExceptionStatus");
+      if (!body || !status) return;
+      const totalValue = rows.reduce((total, row) => total + row.value, 0);
+      status.textContent = rows.length
+        ? `已识别 ${formatNumber(rows.length, 0)} 条仓库未分类异常，资金占用合计 ${moneyWan(totalValue)}；来源：收发汇总表1月-4月 + 仓库维表。`
+        : "当前文件库没有识别到海外事业一部的仓库类型或仓库位置未分类明细。";
+      body.innerHTML = rows.length ? rows.map((row) => `
+        <tr>
+          <td>${escapeReportHtml(row.reason)}</td>
+          <td>${escapeReportHtml(row.organization)}</td>
+          <td>${escapeReportHtml(row.warehouse)}</td>
+          <td>${escapeReportHtml(row.materialCode)}</td>
+          <td>${escapeReportHtml(row.materialName)}</td>
+          <td>${escapeReportHtml(row.productLine || "未分类")}</td>
+          <td>${formatNumber(row.qty, 3)}</td>
+          <td>${moneyWan(row.value)}</td>
+          ${WAREHOUSE_EXCEPTION_MONTHS.map((month) => `<td>${moneyWan(row.months[month.label] || 0)}</td>`).join("")}
+        </tr>
+      `).join("") : `<tr><td colspan="12" class="empty">暂无仓库未分类异常明细</td></tr>`;
+    }
+
+    function downloadWarehouseExceptions() {
+      const headers = ["缺失项", "库存组织", "仓库名称", "物料编码", "物料名称", "销售产品线", "数量合计", "资金占用合计", "1月金额", "2月金额", "3月金额", "4月金额"];
+      const lines = [headers.join(",")];
+      warehouseExceptionRows.forEach((row) => {
+        lines.push([
+          row.reason,
+          row.organization,
+          row.warehouse,
+          row.materialCode,
+          row.materialName,
+          row.productLine || "未分类",
+          row.qty,
+          row.value,
+          ...WAREHOUSE_EXCEPTION_MONTHS.map((month) => row.months[month.label] || 0)
+        ].map(reportCsvCell).join(","));
+      });
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
+      const blob = new Blob([`\ufeff${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `海外事业一部仓库未分类异常明细_${stamp}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function formatNumber(value, digits = 0) {
+      return Number(value || 0).toLocaleString("zh-CN", { maximumFractionDigits: digits });
+    }
+
+    function nthReportValue(row, index) {
+      return Object.values(row || {})[index - 1];
+    }
+
+    function normalizeReportText(value) {
+      return String(value ?? "").trim();
+    }
+
+    function normalizeReportMaterial(value) {
+      return normalizeReportText(value).replace(/\.0$/, "");
+    }
+
+    function normalizeReportDepartmentKey(value) {
+      return normalizeReportMaterial(value).replace(/&/g, "").toLowerCase();
+    }
+
+    function makeReportDepartmentKey(organization, warehouse, materialCode) {
+      return normalizeReportDepartmentKey(`${organization}${warehouse}${materialCode}`);
+    }
+
+    function reportNumber(value) {
+      if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+      const text = normalizeReportText(value).replace(/,/g, "");
+      if (!text || text.startsWith("#")) return 0;
+      const number = Number(text);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function escapeReportHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function reportCsvCell(value) {
+      const text = String(value ?? "");
+      return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
     renderBars("warehouseTypeBars", REPORT.bars.warehouseType);
     renderBars("ageBars", REPORT.bars.age);
     renderBars("productLineBars", REPORT.bars.productLine);
@@ -380,6 +684,13 @@
     renderTrendTable("trendProductLineTable", REPORT.trends.productLine);
     renderTrendTable("trendWarehouseLocationTable", REPORT.trends.warehouseLocation);
     renderTrendTable("trendSeriesTable", REPORT.trends.series);
+    document.getElementById("downloadWarehouseExceptionBtn")?.addEventListener("click", downloadWarehouseExceptions);
+    loadWarehouseExceptions().catch((error) => {
+      const status = document.getElementById("warehouseExceptionStatus");
+      const body = document.getElementById("warehouseExceptionRows");
+      if (status) status.textContent = `仓库未分类异常明细读取失败：${error.message}`;
+      if (body) body.innerHTML = `<tr><td colspan="12" class="empty">读取失败，请刷新后重试</td></tr>`;
+    });
   </script>
 </body>
 </html>
