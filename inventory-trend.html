@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 库存趋势变化</title>
-  <link rel="stylesheet" href="styles.css?v=20260603z">
+  <link rel="stylesheet" href="styles.css?v=20260604a">
 </head>
 <body class="receipt-page">
   <div class="app-shell">
@@ -48,11 +48,35 @@
       </section>
 
       <div id="sourcePanel" class="data-source-panel"></div>
+
+      <section class="table-panel trend-detail-panel">
+        <div class="table-title-row">
+          <div class="table-title">未区分事业部 / 未区分产品线 / 未分类仓库位置明细</div>
+          <button id="downloadTrendUnclassifiedBtn" class="secondary compact-button" type="button">下载</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>月份</th>
+              <th>缺失项</th>
+              <th>A列</th>
+              <th>物料编码(B列)</th>
+              <th>物料名称(C列)</th>
+              <th>仓库(D列)</th>
+              <th>K列数量</th>
+              <th>事业部</th>
+              <th>销售产品线</th>
+              <th>仓库位置</th>
+            </tr>
+          </thead>
+          <tbody id="trendUnclassifiedRows"></tbody>
+        </table>
+      </section>
     </main>
   </div>
 
   <script src="storage.js?v=20260602g"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="inventory-trend.js?v=20260603b"></script>
+  <script src="inventory-trend.js?v=20260604a"></script>
 </body>
 </html>

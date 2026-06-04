@@ -7,9 +7,11 @@ const TREND_MONTHS = [
 
 const TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de"];
 const TREND_TOP_LIMIT = 8;
+let trendUnclassifiedRows = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
   const statusEl = document.querySelector("#summaryStatus");
+  document.querySelector("#downloadTrendUnclassifiedBtn")?.addEventListener("click", downloadTrendUnclassifiedRows);
   await loadSharedLibrary({ statusEl });
   const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
   renderTrendDashboard(records);
@@ -27,6 +29,8 @@ function renderTrendDashboard(records) {
   renderVerticalTrendChart("productTrendChart", "productTrendTotal", monthSummaries, "productLine", "未分类产品线");
   renderVerticalTrendChart("warehouseLocationTrendChart", "warehouseLocationTrendTotal", monthSummaries, "warehouseLocation", "未分类仓库位置");
   renderTrendSourcePanel(monthSummaries, records);
+  trendUnclassifiedRows = monthSummaries.flatMap((item) => item.unclassifiedRows);
+  renderTrendUnclassifiedRows(trendUnclassifiedRows);
 }
 
 function summarizeTrendMonth(month, record, maps) {
@@ -37,12 +41,14 @@ function summarizeTrendMonth(month, record, maps) {
     totalRows: rows.length,
     usedRows: 0,
     totalQty: 0,
-    items: []
+    items: [],
+    unclassifiedRows: []
   };
 
   for (const row of rows) {
     const materialA = normalizeMaterialCode(nthValue(row, 1));
     const materialB = normalizeMaterialCode(nthValue(row, 2));
+    const materialName = normalizeText(nthValue(row, 3));
     const warehouse = normalizeText(nthValue(row, 4));
     const qty = trendToNumber(nthValue(row, 11));
     if (!qty) continue;
@@ -50,6 +56,11 @@ function summarizeTrendMonth(month, record, maps) {
     const department = maps.departmentByKey.get(makeTrendDepartmentKey(materialA, warehouse, materialB)) || "";
     const productLine = maps.productLineByMaterial.get(materialB) || "";
     const warehouseLocation = maps.warehouseLocationByName.get(normalizeText(warehouse)) || "";
+    const missingReasons = [
+      department ? "" : "未区分事业部",
+      productLine ? "" : "未区分产品线",
+      warehouseLocation ? "" : "未分类仓库位置"
+    ].filter(Boolean);
     summary.usedRows += 1;
     summary.totalQty += qty;
     summary.items.push({
@@ -58,9 +69,43 @@ function summarizeTrendMonth(month, record, maps) {
       productLine: productLine || "未分类产品线",
       warehouseLocation: warehouseLocation || "未分类仓库位置"
     });
+    if (missingReasons.length) {
+      summary.unclassifiedRows.push({
+        month: month.label,
+        reason: missingReasons.join("、"),
+        materialA,
+        materialCode: materialB,
+        materialName,
+        warehouse,
+        qty,
+        department,
+        productLine,
+        warehouseLocation
+      });
+    }
   }
 
   return summary;
+}
+
+function renderTrendUnclassifiedRows(rows) {
+  const body = document.querySelector("#trendUnclassifiedRows");
+  if (!body) return;
+  const shown = rows.slice(0, 1000);
+  body.innerHTML = shown.length ? shown.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.month)}</td>
+      <td>${escapeHtml(row.reason)}</td>
+      <td>${escapeHtml(row.materialA)}</td>
+      <td>${escapeHtml(row.materialCode)}</td>
+      <td>${escapeHtml(row.materialName)}</td>
+      <td>${escapeHtml(row.warehouse)}</td>
+      <td class="num">${formatNumber(row.qty, 3)}</td>
+      <td>${escapeHtml(row.department || "未区分")}</td>
+      <td>${escapeHtml(row.productLine || "未区分")}</td>
+      <td>${escapeHtml(row.warehouseLocation || "未分类")}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="10" class="empty">暂无未分类明细</td></tr>`;
 }
 
 function buildTrendDimensionMaps(records) {
@@ -180,6 +225,36 @@ function renderTrendSourcePanel(monthSummaries, records) {
   `;
 }
 
+function downloadTrendUnclassifiedRows() {
+  const headers = ["月份", "缺失项", "A列", "物料编码(B列)", "物料名称(C列)", "仓库(D列)", "K列数量", "事业部", "销售产品线", "仓库位置"];
+  const lines = [headers.join(",")];
+  trendUnclassifiedRows.forEach((row) => {
+    lines.push([
+      row.month,
+      row.reason,
+      row.materialA,
+      row.materialCode,
+      row.materialName,
+      row.warehouse,
+      row.qty,
+      row.department || "未区分",
+      row.productLine || "未区分",
+      row.warehouseLocation || "未分类"
+    ].map(csvCell).join(","));
+  });
+  downloadCsv(`库存趋势未分类明细_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.csv`, lines);
+}
+
+function downloadCsv(fileName, lines) {
+  const blob = new Blob([`\uFEFF${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function makeTrendDepartmentKey(materialA, warehouse, materialB) {
   return normalizeTrendDepartmentKey(`${materialA}${warehouse}${materialB}`);
 }
@@ -225,6 +300,11 @@ function formatShortQuantity(value) {
   if (abs >= 10000) return `${formatNumber(numeric / 10000, 1)}万`;
   if (abs >= 1000) return formatNumber(numeric, 0);
   return formatNumber(numeric, 1);
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 function escapeHtml(value) {
