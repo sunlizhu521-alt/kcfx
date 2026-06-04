@@ -247,10 +247,8 @@ function renderSummary() {
       <td class="num">${formatNumber(row.endingQty, 3)}</td>
       <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
       <td class="num">${formatMoney(row.settlementAmount)}</td>
-      <td>${escapeHtml(row.pmcBasis)}</td>
-      <td>${escapeHtml(row.pmcReason)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="9" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
 }
 
 function renderUnclassifiedRows(rows, selectedAgeLabels = []) {
@@ -482,7 +480,7 @@ function updateChartTotal(id, total, formatter) {
 }
 
 function downloadCurrentRows() {
-  const headers = ["物料编码", "物料名称", "仓库", "库存天数", "0430结余库存数量", "结算价(含税)", "结算价金额", "判断依据（PMC口径）", "问题原因（PMC口径）"];
+  const headers = ["物料编码", "物料名称", "仓库", "库存天数", "0430结余库存数量", "结算价(含税)", "结算价金额"];
   const lines = [headers.join(",")];
   filteredRows.forEach((row) => {
     lines.push([
@@ -492,9 +490,7 @@ function downloadCurrentRows() {
       row.inventoryDays,
       row.endingQty,
       row.settlementPrice,
-      row.settlementAmount,
-      row.pmcBasis,
-      row.pmcReason
+      row.settlementAmount
     ].map(csvCell).join(","));
   });
   const blob = new Blob([`\uFEFF${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
