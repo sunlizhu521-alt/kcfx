@@ -200,8 +200,7 @@ function refreshTrendFilters(monthSummaries = currentTrendMonthSummaries) {
     const options = linkedTrendFilterOptions(monthSummaries, filter, selections);
     const defaultLabel = options[0] || "";
     const current = (selections[filter.id] || []).filter((value) => options.includes(value));
-    const visibleOptions = options.filter((value) => value !== defaultLabel || current.includes(value));
-    fillTrendFilter(select, filter.allLabel, visibleOptions, defaultLabel, current);
+    fillTrendFilter(select, filter.allLabel, options, defaultLabel, current);
   });
 }
 
@@ -218,7 +217,7 @@ function fillTrendFilter(select, allLabel, values, defaultLabel = "", selectedVa
     <div class="multi-filter-menu" role="listbox">
       <label class="multi-filter-option is-all">
         <input type="checkbox" value="" data-all="true" ${current.length ? "" : "checked"}>
-        <span>${escapeHtml(defaultLabel || allLabel)}</span>
+        <span>${escapeHtml(allLabel)}</span>
       </label>
       ${values.map((value) => `
         <label class="multi-filter-option">
@@ -346,11 +345,13 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
   const selections = getTrendFilterSelections();
   const selected = selections[filterId] || [];
   const categoryNames = selected.length ? selected : topTrendCategories(monthSummaries, field, fallbackName, 1, metric, selections, filterId);
-  const total = monthSummaries.reduce((sum, month) => {
-    return sum + month.items.reduce((monthSum, item) => {
-      return trendItemMatchesSelections(item, selections) ? monthSum + (Number(item[metric]) || 0) : monthSum;
-    }, 0);
-  }, 0);
+  const displayedNames = new Set(categoryNames);
+  const total = monthSummaries.reduce((sum, month) => month.items.reduce((monthSum, item) => {
+    const name = normalizeText(item[field]) || fallbackName;
+    return displayedNames.has(name) && trendItemMatchesSelections(item, selections, filterId)
+      ? monthSum + (Number(item[metric]) || 0)
+      : monthSum;
+  }, sum), 0);
   const formatValue = metric === "value" ? formatMoneyWan : formatQuantity;
   const formatShortValue = metric === "value" ? formatShortMoneyWan : formatShortQuantity;
   setText(`#${totalId}`, `合计 ${formatValue(total)}`);
