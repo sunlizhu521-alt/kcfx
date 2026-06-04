@@ -32,9 +32,10 @@ function renderTrendDashboard(records) {
   const loaded = monthSummaries.filter((item) => item.record).length;
   const usedRows = monthSummaries.reduce((total, item) => total + item.usedRows, 0);
   const totalQty = monthSummaries.reduce((total, item) => total + item.totalQty, 0);
+  const totalValue = monthSummaries.reduce((total, item) => total + item.totalValue, 0);
 
   currentTrendMonthSummaries = monthSummaries;
-  setTrendStatus(`已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，K列数量合计 ${formatQuantity(totalQty)}。`);
+  setTrendStatus(`已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，K列数量合计 ${formatQuantity(totalQty)}，K×P货值合计 ${formatMoneyWan(totalValue)}。`);
   populateTrendFilters(monthSummaries);
   renderTrendCharts();
   renderTrendSourcePanel(monthSummaries, records);
@@ -46,6 +47,9 @@ function renderTrendCharts() {
   renderVerticalTrendChart("departmentTrendChart", "departmentTrendTotal", currentTrendMonthSummaries, "department", "未匹配事业部", "departmentTrendFilter");
   renderVerticalTrendChart("productTrendChart", "productTrendTotal", currentTrendMonthSummaries, "productLine", "未分类产品线", "productTrendFilter");
   renderVerticalTrendChart("warehouseLocationTrendChart", "warehouseLocationTrendTotal", currentTrendMonthSummaries, "warehouseLocation", "未分类仓库位置", "warehouseLocationTrendFilter");
+  renderVerticalTrendChart("departmentValueTrendChart", "departmentValueTrendTotal", currentTrendMonthSummaries, "department", "未匹配事业部", "departmentTrendFilter", "value");
+  renderVerticalTrendChart("productValueTrendChart", "productValueTrendTotal", currentTrendMonthSummaries, "productLine", "未分类产品线", "productTrendFilter", "value");
+  renderVerticalTrendChart("warehouseLocationValueTrendChart", "warehouseLocationValueTrendTotal", currentTrendMonthSummaries, "warehouseLocation", "未分类仓库位置", "warehouseLocationTrendFilter", "value");
 }
 
 function summarizeTrendMonth(month, record, maps) {
@@ -58,6 +62,7 @@ function summarizeTrendMonth(month, record, maps) {
     skippedSummaryRows: sourceRows.length ? 1 : 0,
     usedRows: 0,
     totalQty: 0,
+    totalValue: 0,
     items: [],
     unclassifiedRows: []
   };
@@ -69,6 +74,8 @@ function summarizeTrendMonth(month, record, maps) {
     const warehouse = normalizeText(nthValue(row, 4));
     const qty = trendToNumber(nthValue(row, 11));
     if (!qty) continue;
+    const settlementPrice = trendToNumber(nthValue(row, 16));
+    const value = qty * settlementPrice;
 
     const department = maps.departmentByKey.get(makeTrendDepartmentKey(materialA, warehouse, materialB)) || "";
     const productLine = maps.productLineByMaterial.get(materialB) || "";
@@ -80,8 +87,10 @@ function summarizeTrendMonth(month, record, maps) {
     ].filter(Boolean);
     summary.usedRows += 1;
     summary.totalQty += qty;
+    summary.totalValue += value;
     summary.items.push({
       qty,
+      value,
       department: department || "未匹配事业部",
       productLine: productLine || "未分类产品线",
       warehouseLocation: warehouseLocation || "未分类仓库位置"
@@ -265,13 +274,15 @@ function clearTrendFilters() {
   renderTrendCharts();
 }
 
-function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallbackName, filterId = "") {
+function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallbackName, filterId = "", metric = "qty") {
   const container = document.querySelector(`#${chartId}`);
   if (!container) return;
   const selected = getTrendFilterValues(filterId);
-  const categoryNames = selected.length ? selected : topTrendCategories(monthSummaries, field, fallbackName, 1);
-  const total = monthSummaries.reduce((sum, month) => sum + month.totalQty, 0);
-  setText(`#${totalId}`, `合计 ${formatQuantity(total)}`);
+  const categoryNames = selected.length ? selected : topTrendCategories(monthSummaries, field, fallbackName, 1, metric);
+  const total = monthSummaries.reduce((sum, month) => sum + (metric === "value" ? month.totalValue : month.totalQty), 0);
+  const formatValue = metric === "value" ? formatMoneyWan : formatQuantity;
+  const formatShortValue = metric === "value" ? formatShortMoneyWan : formatShortQuantity;
+  setText(`#${totalId}`, `合计 ${formatValue(total)}`);
 
   if (!categoryNames.length) {
     container.innerHTML = `<div class="empty">暂无趋势数据</div>`;
@@ -280,7 +291,7 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
 
   const valuesByCategory = categoryNames.map((name) => ({
     name,
-    values: TREND_MONTHS.map((month) => getTrendMonthCategoryValue(monthSummaries, month.label, field, name, fallbackName))
+    values: TREND_MONTHS.map((month) => getTrendMonthCategoryValue(monthSummaries, month.label, field, name, fallbackName, metric))
   }));
   const max = Math.max(...valuesByCategory.flatMap((item) => item.values), 1);
   container.innerHTML = `
@@ -292,8 +303,8 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
         <div class="trend-category" title="${escapeHtml(category.name)}">
           <div class="trend-bar-group">
             ${category.values.map((value, index) => `
-              <div class="trend-bar-wrap" title="${TREND_MONTHS[index].label} ${escapeHtml(category.name)} ${formatQuantity(value)}">
-                <span class="trend-bar-value">${escapeHtml(formatShortQuantity(value))}</span>
+              <div class="trend-bar-wrap" title="${TREND_MONTHS[index].label} ${escapeHtml(category.name)} ${formatValue(value)}">
+                <span class="trend-bar-value">${escapeHtml(formatShortValue(value))}</span>
                 <div class="trend-bar" style="height:${Math.max(2, value / max * 100)}%;background:${TREND_COLORS[index]}"></div>
               </div>
             `).join("")}
@@ -312,12 +323,12 @@ function trendCategoryDensityClass(count) {
   return "";
 }
 
-function topTrendCategories(monthSummaries, field, fallbackName, limit = TREND_TOP_LIMIT) {
+function topTrendCategories(monthSummaries, field, fallbackName, limit = TREND_TOP_LIMIT, metric = "qty") {
   const totals = new Map();
   for (const month of monthSummaries) {
     for (const item of month.items) {
       const name = normalizeText(item[field]) || fallbackName;
-      totals.set(name, (totals.get(name) || 0) + item.qty);
+      totals.set(name, (totals.get(name) || 0) + (Number(item[metric]) || 0));
     }
   }
   return [...totals.entries()]
@@ -327,12 +338,12 @@ function topTrendCategories(monthSummaries, field, fallbackName, limit = TREND_T
     .map(([name]) => name);
 }
 
-function getTrendMonthCategoryValue(monthSummaries, label, field, categoryName, fallbackName) {
+function getTrendMonthCategoryValue(monthSummaries, label, field, categoryName, fallbackName, metric = "qty") {
   const month = monthSummaries.find((item) => item.label === label);
   if (!month) return 0;
   return month.items.reduce((total, item) => {
     const name = normalizeText(item[field]) || fallbackName;
-    return name === categoryName ? total + item.qty : total;
+    return name === categoryName ? total + (Number(item[metric]) || 0) : total;
   }, 0);
 }
 
@@ -351,7 +362,7 @@ function renderTrendSourcePanel(monthSummaries, records) {
   ].map(([label, record]) => `<div>${label}：${record ? `${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}` : "未引用"}</div>`);
   sourceEl.innerHTML = `
     <strong>趋势图口径</strong>
-    <div>事实表取收发汇总表1月-4月，第4行为表头；数量取K列求和；每张表最后一行汇总数据不参与计算。</div>
+    <div>事实表取收发汇总表1月-4月，第4行为表头；数量取K列求和；货值按K列数量×P列结算价(含税)计算；每张表最后一行汇总数据不参与计算。</div>
     <div>事业部：事实表A列+D列+B列匹配仓库物料事业部对照表F列，取G列。</div>
     <div>产品：事实表B列匹配商品分类维表A列，取G列销售产品线。</div>
     <div>仓库位置：事实表D列匹配仓库维表B列，取H列仓库位置。</div>
@@ -441,6 +452,19 @@ function formatShortQuantity(value) {
   if (abs >= 10000) return `${formatNumber(numeric / 10000, 1)}万`;
   if (abs >= 1000) return formatNumber(numeric, 0);
   return formatNumber(numeric, 1);
+}
+
+function formatMoneyWan(value) {
+  return `${formatNumber((Number(value) || 0) / 10000, 2)}万元`;
+}
+
+function formatShortMoneyWan(value) {
+  const numeric = Number(value) || 0;
+  const wan = numeric / 10000;
+  const abs = Math.abs(wan);
+  if (abs >= 100) return `${formatNumber(wan, 0)}万`;
+  if (abs >= 10) return `${formatNumber(wan, 1)}万`;
+  return `${formatNumber(wan, 2)}万`;
 }
 
 function csvCell(value) {
