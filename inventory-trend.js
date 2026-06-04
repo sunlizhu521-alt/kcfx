@@ -190,17 +190,25 @@ function buildTrendDimensionMaps(records) {
 }
 
 function populateTrendFilters(monthSummaries) {
+  refreshTrendFilters(monthSummaries);
+}
+
+function refreshTrendFilters(monthSummaries = currentTrendMonthSummaries) {
+  const selections = getTrendFilterSelections();
   TREND_FILTERS.forEach((filter) => {
     const select = document.querySelector(`#${filter.id}`);
-    const options = topTrendCategories(monthSummaries, filter.field, filter.allLabel, 200);
+    const options = linkedTrendFilterOptions(monthSummaries, filter, selections);
     const defaultLabel = options[0] || "";
-    fillTrendFilter(select, filter.allLabel, options.filter((value) => value !== defaultLabel), defaultLabel);
+    const current = (selections[filter.id] || []).filter((value) => options.includes(value));
+    const visibleOptions = options.filter((value) => value !== defaultLabel || current.includes(value));
+    fillTrendFilter(select, filter.allLabel, visibleOptions, defaultLabel, current);
   });
 }
 
-function fillTrendFilter(select, allLabel, values, defaultLabel = "") {
+function fillTrendFilter(select, allLabel, values, defaultLabel = "", selectedValues = null) {
   if (!select) return;
-  const current = getTrendFilterValues(select.id).filter((value) => values.includes(value));
+  const allowed = new Set(values);
+  const current = (selectedValues || getTrendFilterValues(select.id)).filter((value) => allowed.has(value));
   select.dataset.allLabel = allLabel;
   select.dataset.defaultLabel = defaultLabel || allLabel;
   select.innerHTML = `
@@ -228,7 +236,7 @@ function fillTrendFilter(select, allLabel, values, defaultLabel = "") {
   select.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
       syncTrendFilterSelection(select, checkbox);
-      updateTrendFilterLabel(select);
+      refreshTrendFilters();
       renderTrendCharts();
     });
   });
@@ -242,6 +250,37 @@ function getTrendFilterValues(id) {
   return [...select.querySelectorAll("input[type='checkbox']:checked")]
     .map((input) => input.value)
     .filter(Boolean);
+}
+
+function getTrendFilterSelections() {
+  return Object.fromEntries(TREND_FILTERS.map((filter) => [filter.id, getTrendFilterValues(filter.id)]));
+}
+
+function linkedTrendFilterOptions(monthSummaries, filter, selections) {
+  const totals = new Map();
+  for (const month of monthSummaries) {
+    for (const item of month.items) {
+      if (!trendItemMatchesSelections(item, selections, filter.id)) continue;
+      const name = normalizeText(item[filter.field]);
+      if (!name) continue;
+      totals.set(name, (totals.get(name) || 0) + (Number(item.qty) || 0));
+    }
+  }
+  return [...totals.entries()]
+    .filter(([, value]) => value !== 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
+    .slice(0, 300)
+    .map(([name]) => name);
+}
+
+function trendItemMatchesSelections(item, selections, excludedFilterId = "") {
+  return TREND_FILTERS.every((filter) => {
+    if (filter.id === excludedFilterId) return true;
+    const selected = selections[filter.id] || [];
+    if (!selected.length) return true;
+    const value = normalizeText(item[filter.field]);
+    return selected.includes(value);
+  });
 }
 
 function toggleTrendFilter(select) {
@@ -297,15 +336,21 @@ function clearTrendFilters() {
     });
     updateTrendFilterLabel(select);
   });
+  refreshTrendFilters();
   renderTrendCharts();
 }
 
 function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallbackName, filterId = "", metric = "qty") {
   const container = document.querySelector(`#${chartId}`);
   if (!container) return;
-  const selected = getTrendFilterValues(filterId);
-  const categoryNames = selected.length ? selected : topTrendCategories(monthSummaries, field, fallbackName, 1, metric);
-  const total = monthSummaries.reduce((sum, month) => sum + (metric === "value" ? month.totalValue : month.totalQty), 0);
+  const selections = getTrendFilterSelections();
+  const selected = selections[filterId] || [];
+  const categoryNames = selected.length ? selected : topTrendCategories(monthSummaries, field, fallbackName, 1, metric, selections, filterId);
+  const total = monthSummaries.reduce((sum, month) => {
+    return sum + month.items.reduce((monthSum, item) => {
+      return trendItemMatchesSelections(item, selections) ? monthSum + (Number(item[metric]) || 0) : monthSum;
+    }, 0);
+  }, 0);
   const formatValue = metric === "value" ? formatMoneyWan : formatQuantity;
   const formatShortValue = metric === "value" ? formatShortMoneyWan : formatShortQuantity;
   setText(`#${totalId}`, `合计 ${formatValue(total)}`);
@@ -317,7 +362,7 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
 
   const valuesByCategory = categoryNames.map((name) => ({
     name,
-    values: TREND_MONTHS.map((month) => getTrendMonthCategoryValue(monthSummaries, month.label, field, name, fallbackName, metric))
+    values: TREND_MONTHS.map((month) => getTrendMonthCategoryValue(monthSummaries, month.label, field, name, fallbackName, metric, selections, filterId))
   }));
   const max = Math.max(...valuesByCategory.flatMap((item) => item.values), 1);
   container.innerHTML = `
@@ -349,10 +394,11 @@ function trendCategoryDensityClass(count) {
   return "";
 }
 
-function topTrendCategories(monthSummaries, field, fallbackName, limit = TREND_TOP_LIMIT, metric = "qty") {
+function topTrendCategories(monthSummaries, field, fallbackName, limit = TREND_TOP_LIMIT, metric = "qty", selections = {}, excludedFilterId = "") {
   const totals = new Map();
   for (const month of monthSummaries) {
     for (const item of month.items) {
+      if (!trendItemMatchesSelections(item, selections, excludedFilterId)) continue;
       const name = normalizeText(item[field]) || fallbackName;
       totals.set(name, (totals.get(name) || 0) + (Number(item[metric]) || 0));
     }
@@ -364,10 +410,11 @@ function topTrendCategories(monthSummaries, field, fallbackName, limit = TREND_T
     .map(([name]) => name);
 }
 
-function getTrendMonthCategoryValue(monthSummaries, label, field, categoryName, fallbackName, metric = "qty") {
+function getTrendMonthCategoryValue(monthSummaries, label, field, categoryName, fallbackName, metric = "qty", selections = {}, excludedFilterId = "") {
   const month = monthSummaries.find((item) => item.label === label);
   if (!month) return 0;
   return month.items.reduce((total, item) => {
+    if (!trendItemMatchesSelections(item, selections, excludedFilterId)) return total;
     const name = normalizeText(item[field]) || fallbackName;
     return name === categoryName ? total + (Number(item[metric]) || 0) : total;
   }, 0);
