@@ -33,9 +33,10 @@ function renderTrendDashboard(records) {
   const usedRows = monthSummaries.reduce((total, item) => total + item.usedRows, 0);
   const totalQty = monthSummaries.reduce((total, item) => total + item.totalQty, 0);
   const totalValue = monthSummaries.reduce((total, item) => total + item.totalValue, 0);
+  const pricedRows = monthSummaries.reduce((total, item) => total + item.pricedRows, 0);
 
   currentTrendMonthSummaries = monthSummaries;
-  setTrendStatus(`已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，K列数量合计 ${formatQuantity(totalQty)}，K×P货值合计 ${formatMoneyWan(totalValue)}。`);
+  setTrendStatus(`已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，P列有效 ${formatNumber(pricedRows, 0)} 行，K列数量合计 ${formatQuantity(totalQty)}，K×P货值合计 ${formatMoneyWan(totalValue)}。`);
   populateTrendFilters(monthSummaries);
   renderTrendCharts();
   renderTrendSourcePanel(monthSummaries, records);
@@ -55,6 +56,8 @@ function renderTrendCharts() {
 function summarizeTrendMonth(month, record, maps) {
   const sourceRows = record?.rows || [];
   const rows = sourceRows.length ? sourceRows.slice(0, -1) : [];
+  const qtyAccessor = makeTrendQtyAccessor(sourceRows[0]);
+  const priceAccessor = makeTrendPriceAccessor(sourceRows[0]);
   const summary = {
     ...month,
     record,
@@ -63,6 +66,7 @@ function summarizeTrendMonth(month, record, maps) {
     usedRows: 0,
     totalQty: 0,
     totalValue: 0,
+    pricedRows: 0,
     items: [],
     unclassifiedRows: []
   };
@@ -72,9 +76,9 @@ function summarizeTrendMonth(month, record, maps) {
     const materialB = normalizeMaterialCode(nthValue(row, 2));
     const materialName = normalizeText(nthValue(row, 3));
     const warehouse = normalizeText(nthValue(row, 4));
-    const qty = trendToNumber(nthValue(row, 11));
+    const qty = trendToNumber(qtyAccessor(row));
     if (!qty) continue;
-    const settlementPrice = trendToNumber(nthValue(row, 16));
+    const settlementPrice = trendToNumber(priceAccessor(row));
     const value = qty * settlementPrice;
 
     const department = maps.departmentByKey.get(makeTrendDepartmentKey(materialA, warehouse, materialB)) || "";
@@ -88,6 +92,7 @@ function summarizeTrendMonth(month, record, maps) {
     summary.usedRows += 1;
     summary.totalQty += qty;
     summary.totalValue += value;
+    if (settlementPrice) summary.pricedRows = (summary.pricedRows || 0) + 1;
     summary.items.push({
       qty,
       value,
@@ -353,7 +358,7 @@ function renderTrendSourcePanel(monthSummaries, records) {
   const monthLines = monthSummaries.map((item) => {
     const record = item.record;
     if (!record) return `<div>${item.label}：未引用</div>`;
-    return `<div>${item.label}：${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}，${formatNumber(item.usedRows, 0)} 行，已排除最后汇总行 ${formatNumber(item.skippedSummaryRows, 0)} 行</div>`;
+    return `<div>${item.label}：${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}，${formatNumber(item.usedRows, 0)} 行，P列有效 ${formatNumber(item.pricedRows, 0)} 行，已排除最后汇总行 ${formatNumber(item.skippedSummaryRows, 0)} 行</div>`;
   });
   const dimLines = [
     ["仓库物料事业部对照表", records["dim-warehouse-material"]],
@@ -413,6 +418,31 @@ function makeTrendDepartmentKey(materialA, warehouse, materialB) {
 
 function normalizeTrendDepartmentKey(value) {
   return normalizeMaterialCode(value).replace(/&/g, "").toLowerCase();
+}
+
+function makeTrendPriceAccessor(sampleRow) {
+  const keys = Object.keys(sampleRow || {});
+  const normalized = keys.map((key) => ({ key, text: normalizeHeaderText(key) }));
+  const preferred = normalized.find(({ text }) => text.includes("结算价") && text.includes("含税"))
+    || normalized.find(({ text }) => text.includes("结算价"))
+    || normalized.find(({ text }) => text.includes("含税") && text.includes("价"));
+  return preferred ? (row) => row?.[preferred.key] : (row) => nthValue(row, 16);
+}
+
+function makeTrendQtyAccessor(sampleRow) {
+  const keys = Object.keys(sampleRow || {});
+  const normalized = keys.map((key) => ({ key, text: normalizeHeaderText(key) }));
+  const preferred = normalized.find(({ text }) => text.includes("结余库存数量"))
+    || normalized.find(({ text }) => text.includes("结存") && text.includes("数量"))
+    || normalized.find(({ text }) => text.includes("库存数量") && !text.includes("占比"))
+    || normalized.find(({ text }) => text === "数量");
+  return preferred ? (row) => row?.[preferred.key] : (row) => nthValue(row, 11);
+}
+
+function normalizeHeaderText(value) {
+  return normalizeText(value)
+    .replace(/[()\[\]（）【】\s_：:，,、-]/g, "")
+    .toLowerCase();
 }
 
 function trendToNumber(value) {
