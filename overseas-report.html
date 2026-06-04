@@ -133,23 +133,25 @@
       max-width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: clamp(8px, .48vw, 11px);
-      line-height: 1.18;
+      font-size: clamp(7px, .42vw, 10px);
+      line-height: 1.12;
     }
     .trend-table th,
     .trend-table td {
       border: 1px solid rgba(126,151,176,.28);
-      padding: 4px 3px;
+      padding: 3px 2px;
       text-align: right;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-all;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: clip;
+      overflow-wrap: normal;
+      word-break: keep-all;
       vertical-align: middle;
     }
     .trend-table th:first-child,
     .trend-table td:first-child {
       text-align: left;
-      width: 28%;
+      width: 26%;
     }
     .trend-table th {
       background: #f0f6fc;
