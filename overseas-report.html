@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>库存分析看板 海外事业一部库存分析报告</title>
+  <link rel="stylesheet" href="styles.css?v=20260604m">
+  <style>
+    .report-page .content { background: #eef4fb; }
+    .report-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .report-card {
+      border: 1px solid rgba(126,151,176,.32);
+      border-radius: 10px;
+      background: rgba(255,255,255,.9);
+      box-shadow: 0 12px 28px rgba(31,45,61,.08);
+      padding: 16px;
+    }
+    .report-card h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      color: #16263a;
+    }
+    .report-lede {
+      margin: 0;
+      color: #4c6076;
+      line-height: 1.65;
+    }
+    .report-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .report-metric {
+      min-height: 84px;
+      border: 1px solid rgba(126,151,176,.28);
+      border-radius: 10px;
+      background: linear-gradient(145deg, #ffffff, #edf7ff);
+      padding: 13px 14px;
+    }
+    .report-metric span {
+      display: block;
+      color: #60748a;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .report-metric strong {
+      display: block;
+      margin-top: 8px;
+      color: #16263a;
+      font-size: 22px;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .report-grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .report-bars {
+      display: grid;
+      gap: 8px;
+    }
+    .report-bar-row {
+      display: grid;
+      grid-template-columns: 132px minmax(120px, 1fr) 118px;
+      align-items: center;
+      gap: 8px;
+    }
+    .report-bar-label,
+    .report-bar-value {
+      color: #25364a;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .report-bar-value {
+      color: #4c6076;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .report-bar-track {
+      height: 14px;
+      border-radius: 999px;
+      background: #dfe8f1;
+      overflow: hidden;
+    }
+    .report-bar-fill {
+      height: 100%;
+      min-width: 2px;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #0a84ff, #32d74b);
+    }
+    .trend-report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .trend-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .trend-table th,
+    .trend-table td {
+      border: 1px solid rgba(126,151,176,.28);
+      padding: 7px 8px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .trend-table th:first-child,
+    .trend-table td:first-child {
+      text-align: left;
+    }
+    .trend-table th {
+      background: #f0f6fc;
+      color: #60748a;
+    }
+    .advice-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .advice-list li {
+      border-left: 4px solid #0a84ff;
+      border-radius: 8px;
+      background: #f8fbff;
+      padding: 10px 12px;
+      color: #25364a;
+      line-height: 1.55;
+    }
+    .report-note {
+      margin: 10px 0 0;
+      color: #60748a;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    @media (max-width: 1180px) {
+      .report-hero,
+      .report-grid,
+      .report-grid.three,
+      .trend-report-grid {
+        grid-template-columns: 1fr;
+      }
+      .report-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body class="receipt-page report-page">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>库存分析看板</strong>
+        <span>供应链维护更新</span>
+      </div>
+      <nav class="nav">
+        <a href="receipt-summary.html">供应链库存分析</a>
+        <a class="active" href="overseas-report.html">海外事业一部库存分析报告</a>
+        <a href="comparison.html">表格对比分析</a>
+        <a href="fact-library.html">事实表文件库</a>
+        <a href="file-library.html">维度表文件库</a>
+        <a href="errors.html">报错信息提示</a>
+        <a href="index.html">库存分析看板-模板</a>
+        <a href="inventory-trend.html">库存趋势变化-模板</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1>海外事业一部库存分析报告</h1>
+          <p class="status-line">静态结果页 · 0430 库存分析月份表 + 1-4 月收发汇总趋势 · 金额单位默认万元</p>
+        </div>
+      </header>
+
+      <section class="report-hero">
+        <div class="report-card">
+          <h2>结论摘要</h2>
+          <p class="report-lede">海外事业一部 0430 库存资产估值为 <strong>6,531.6 万元</strong>，库存数量 <strong>217,822</strong>。资金高度集中在销售成品仓、手推车、FBA 仓和 Z21 系列；1-4 月资金占用从 4,133.5 万元上升到 6,529.7 万元，增长较快，需要把补货节奏、FBA 周转和在途库存纳入同一个控制节奏。</p>
+          <p class="report-note">口径：0430 使用库存分析月份表货值；趋势使用收发汇总表 1-4 月 K 列数量 × 结算价(含税)，并按海外事业一部映射过滤。</p>
+        </div>
+        <div class="report-card">
+          <h2>库存建议</h2>
+          <ul class="advice-list">
+            <li><strong>手推车和 Z21 设红线。</strong>手推车占用 4,654.6 万元，占海外事业一部 71.3%；Z21 系列占用 2,279.0 万元。建议先对这两个维度做周度出库覆盖天数和补货冻结线。</li>
+            <li><strong>FBA 做周转拉通。</strong>FBA 仓占用 3,496.8 万元，占 53.5%。建议按 SKU 识别低动销 FBA，优先做站内促销、调仓或减少下一批入仓。</li>
+            <li><strong>在途库存单独盯。</strong>海上在途 991.4 万元，占 15.2%。建议和 0-30 天库存合看，避免到港后继续推高 FBA/FBM 可售库存。</li>
+            <li><strong>清理长库龄。</strong>120 天以上仍有 397.0 万元，建议按产品线拆出责任清单，优先处理非核心系列和低动销型号。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="report-metrics">
+        <div class="report-metric"><span>0430 库存金额</span><strong>6,531.6 万</strong></div>
+        <div class="report-metric"><span>0430 库存数量</span><strong>217,822</strong></div>
+        <div class="report-metric"><span>1-4 月资金增长</span><strong>+57.9%</strong></div>
+        <div class="report-metric"><span>手推车资金占比</span><strong>71.3%</strong></div>
+      </section>
+
+      <section class="report-grid">
+        <div class="report-card"><h2>0430 仓库类型资金占用情况</h2><div id="warehouseTypeBars" class="report-bars"></div></div>
+        <div class="report-card"><h2>0430 各库龄段资金占用情况</h2><div id="ageBars" class="report-bars"></div></div>
+        <div class="report-card"><h2>0430 各产品线占用资金情况</h2><div id="productLineBars" class="report-bars"></div></div>
+        <div class="report-card"><h2>0430 仓库位置资金占用情况</h2><div id="warehouseLocationBars" class="report-bars"></div></div>
+      </section>
+
+      <section class="report-grid">
+        <div class="report-card"><h2>0430 产品系列 Top 10 资金占用情况</h2><div id="seriesBars" class="report-bars"></div></div>
+        <div class="report-card"><h2>1-4 月总资金占用趋势</h2><table id="trendSummaryTable" class="trend-table"></table></div>
+      </section>
+
+      <section class="trend-report-grid">
+        <div class="report-card"><h2>仓库类型资金占用趋势</h2><table id="trendWarehouseTypeTable" class="trend-table"></table></div>
+        <div class="report-card"><h2>各产品资金占用趋势</h2><table id="trendProductLineTable" class="trend-table"></table></div>
+        <div class="report-card"><h2>仓库位置资金占用趋势</h2><table id="trendWarehouseLocationTable" class="trend-table"></table></div>
+        <div class="report-card"><h2>产品系列 Top 10 资金占用趋势</h2><table id="trendSeriesTable" class="trend-table"></table></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const REPORT = {
+      totalAmount: 65315546.72,
+      bars: {
+        warehouseType: [{ name: "销售成品仓", value: 65315546.72 }],
+        age: [
+          { name: "0-30天", value: 40882733.80 },
+          { name: "31-60天", value: 11905045.00 },
+          { name: "61-90天", value: 6967400.92 },
+          { name: "120天以上", value: 3970128.00 },
+          { name: "91-120天", value: 1590239.00 }
+        ],
+        productLine: [
+          { name: "手推车", value: 46545771.72 },
+          { name: "电动轮椅", value: 8077450 },
+          { name: "手动轮椅", value: 3902552 },
+          { name: "老年代步车", value: 3171307 },
+          { name: "移位机", value: 1775423 },
+          { name: "升降椅", value: 1751536 },
+          { name: "其他/成品", value: 86001 },
+          { name: "其他/配件", value: 5506 }
+        ],
+        warehouseLocation: [
+          { name: "FBA仓", value: 34967575.92 },
+          { name: "FBM仓", value: 17263154.80 },
+          { name: "海上在途", value: 9914137 },
+          { name: "美西自营仓", value: 2844043 },
+          { name: "Walmart平台仓", value: 259565 },
+          { name: "河北景县仓", value: 67071 }
+        ],
+        series: [
+          { name: "Z21", value: 22789542 },
+          { name: "Z11", value: 7333882.72 },
+          { name: "Z51", value: 4756232 },
+          { name: "V56", value: 3095050 },
+          { name: "V62", value: 2105600 },
+          { name: "Z32", value: 2071890 },
+          { name: "D71", value: 1796572 },
+          { name: "Z52", value: 1706802 },
+          { name: "Z22", value: 1533790 },
+          { name: "AY04", value: 1432570 }
+        ]
+      },
+      trendSummary: [
+        { name: "1月", values: [41334587.28] },
+        { name: "2月", values: [47609850.64] },
+        { name: "3月", values: [54868652.24] },
+        { name: "4月", values: [65297186.72] }
+      ],
+      trends: {
+        warehouseType: [
+          { name: "销售成品仓", values: [39867837.28, 45931443.64, 53051954.24, 63236534.72] },
+          { name: "未分类仓库类型", values: [1466750, 1678407, 1816698, 2060652] }
+        ],
+        productLine: [
+          { name: "手推车", values: [30521990.28, 34846397.64, 38752202.24, 46545771.72] },
+          { name: "电动轮椅", values: [5504330, 6127560, 7329080, 8077450] },
+          { name: "老年代步车", values: [1570808, 2367377, 2867196, 3152947] },
+          { name: "手动轮椅", values: [1522210, 1970720, 2315150, 3902552] },
+          { name: "升降椅", values: [1199414, 1296314, 2256944, 1751536] },
+          { name: "移位机", values: [953489, 941883, 1239519, 1775423] },
+          { name: "其他/成品", values: [57418, 55269, 70489, 86001] },
+          { name: "洗澡椅", values: [0, 0, 33200, 0] },
+          { name: "其他/配件", values: [4928, 4330, 4872, 5506] }
+        ],
+        warehouseLocation: [
+          { name: "FBA仓", values: [24334120.20, 28785236.60, 32617569.44, 32888563.92] },
+          { name: "FBM仓", values: [11197311, 13509174, 15740323.80, 17263154.80] },
+          { name: "美西自营仓", values: [3081580.08, 3366900.04, 3400922, 2844043] },
+          { name: "海上在途", values: [1152075, 84692, 1034858, 9914137] },
+          { name: "未分类仓库位置", values: [1466750, 1678407, 1816698, 2060652] },
+          { name: "Walmart平台仓", values: [0, 82690, 191210, 259565] },
+          { name: "河北景县仓", values: [102751, 102751, 67071, 67071] }
+        ],
+        series: [
+          { name: "Z21", values: [14624739.08, 16496249.04, 18946363, 22789542] },
+          { name: "Z11", values: [3246883.20, 4320813.60, 5848234.24, 7333882.72] },
+          { name: "Z51", values: [4775004, 5072886, 4922216, 4756232] },
+          { name: "V56", values: [2131200, 2366150, 2787950, 3095050] },
+          { name: "V62", values: [1534400, 1710800, 2007600, 2105600] },
+          { name: "Z32", values: [1320240, 1406690, 1876060, 2071890] },
+          { name: "Z52", values: [1556799, 1629853, 1613189, 1706802] },
+          { name: "D71", values: [1182668, 1570872, 1823656, 1796572] },
+          { name: "Z22", values: [1135130, 1139230, 1195870, 1533790] },
+          { name: "U31", values: [1050570, 1244160, 1227150, 1235655] }
+        ]
+      }
+    };
+
+    function moneyWan(value) {
+      return `${(value / 10000).toLocaleString("zh-CN", { maximumFractionDigits: 1 })}万元`;
+    }
+
+    function percent(value, total) {
+      return total ? `${(value / total * 100).toFixed(1)}%` : "0%";
+    }
+
+    function renderBars(id, rows) {
+      const el = document.getElementById(id);
+      const max = Math.max(...rows.map((row) => row.value), 1);
+      el.innerHTML = rows.map((row) => `
+        <div class="report-bar-row">
+          <div class="report-bar-label">${row.name}</div>
+          <div class="report-bar-track"><div class="report-bar-fill" style="width:${Math.max(2, row.value / max * 100)}%"></div></div>
+          <div class="report-bar-value">${moneyWan(row.value)} · ${percent(row.value, REPORT.totalAmount)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderTrendTable(id, rows, isSummary = false) {
+      const el = document.getElementById(id);
+      const headers = isSummary ? ["月份", "资金占用"] : ["分类", "1月", "2月", "3月", "4月", "4月较1月"];
+      el.innerHTML = `
+        <thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead>
+        <tbody>
+          ${rows.map((row) => {
+            if (isSummary) return `<tr><td>${row.name}</td><td>${moneyWan(row.values[0])}</td></tr>`;
+            const growth = row.values[0] ? `${((row.values[3] / row.values[0] - 1) * 100).toFixed(1)}%` : "-";
+            return `<tr><td>${row.name}</td>${row.values.map((value) => `<td>${moneyWan(value)}</td>`).join("")}<td>${growth}</td></tr>`;
+          }).join("")}
+        </tbody>
+      `;
+    }
+
+    renderBars("warehouseTypeBars", REPORT.bars.warehouseType);
+    renderBars("ageBars", REPORT.bars.age);
+    renderBars("productLineBars", REPORT.bars.productLine);
+    renderBars("warehouseLocationBars", REPORT.bars.warehouseLocation);
+    renderBars("seriesBars", REPORT.bars.series);
+    renderTrendTable("trendSummaryTable", REPORT.trendSummary, true);
+    renderTrendTable("trendWarehouseTypeTable", REPORT.trends.warehouseType);
+    renderTrendTable("trendProductLineTable", REPORT.trends.productLine);
+    renderTrendTable("trendWarehouseLocationTable", REPORT.trends.warehouseLocation);
+    renderTrendTable("trendSeriesTable", REPORT.trends.series);
+  </script>
+</body>
+</html>
