@@ -463,27 +463,6 @@ select {
   font-size: clamp(16px, 1.08vw, 21px);
 }
 
-.age-share-metrics {
-  grid-template-columns: repeat(6, minmax(130px, 1fr));
-  overflow-x: auto;
-}
-
-.age-share-metrics .metric-card {
-  min-width: 0;
-  min-height: 78px;
-  padding: 13px 12px;
-}
-
-.age-share-metrics .metric-card span {
-  margin-bottom: 7px;
-  line-height: 1.25;
-}
-
-.age-share-metrics .metric-card strong {
-  font-size: clamp(17px, 1.35vw, 24px);
-  white-space: nowrap;
-}
-
 .comparison-summary {
   display: flex;
   align-items: center;
@@ -1026,10 +1005,6 @@ input[type="file"]:disabled {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
-  .age-share-metrics {
-    grid-template-columns: repeat(6, minmax(130px, 1fr));
-  }
-
   .receipt-chart-grid {
     grid-template-columns: repeat(5, minmax(178px, 1fr));
   }
@@ -1207,24 +1182,6 @@ input[type="file"]:disabled {
 .receipt-page .receipt-metrics .metric-card:nth-child(4) { background: linear-gradient(145deg, #ffffff, #edfaff); }
 .receipt-page .receipt-metrics .metric-card:nth-child(5) { background: linear-gradient(145deg, #ffffff, #f7efff); }
 
-.receipt-page .age-share-metrics .metric-card:nth-child(1)::before { background: #007aff; }
-.receipt-page .age-share-metrics .metric-card:nth-child(2)::before { background: #34c759; }
-.receipt-page .age-share-metrics .metric-card:nth-child(3)::before { background: #ff9f0a; }
-.receipt-page .age-share-metrics .metric-card:nth-child(4)::before { background: #ff375f; }
-.receipt-page .age-share-metrics .metric-card:nth-child(5)::before { background: #af52de; }
-.receipt-page .age-share-metrics .metric-card:nth-child(6)::before { background: #5ac8fa; }
-
-.receipt-page .age-share-metrics .metric-card:nth-child(1) { background: linear-gradient(145deg, #ffffff, #eef6ff); }
-.receipt-page .age-share-metrics .metric-card:nth-child(2) { background: linear-gradient(145deg, #ffffff, #effbf4); }
-.receipt-page .age-share-metrics .metric-card:nth-child(3) { background: linear-gradient(145deg, #ffffff, #fff6e5); }
-.receipt-page .age-share-metrics .metric-card:nth-child(4) { background: linear-gradient(145deg, #ffffff, #fff0f4); }
-.receipt-page .age-share-metrics .metric-card:nth-child(5) { background: linear-gradient(145deg, #ffffff, #f8efff); }
-.receipt-page .age-share-metrics .metric-card:nth-child(6) { background: linear-gradient(145deg, #ffffff, #edfaff); }
-
-.receipt-page .age-share-metrics .metric-card strong {
-  font-size: clamp(15px, .98vw, 19px);
-}
-
 .receipt-page .metric-card span {
   color: #60748a;
   font-size: 12px;
@@ -1340,13 +1297,13 @@ input[type="file"]:disabled {
 
 .trend-chart-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 16px;
 }
 
 .trend-filter-toolbar {
-  grid-template-columns: repeat(3, minmax(180px, 220px)) auto;
+  grid-template-columns: repeat(4, minmax(150px, 210px)) auto;
 }
 
 .trend-embed-panel {
@@ -1501,7 +1458,9 @@ input[type="file"]:disabled {
 
 @media (max-width: 1280px) {
   .trend-chart-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(4, minmax(210px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
 }
 

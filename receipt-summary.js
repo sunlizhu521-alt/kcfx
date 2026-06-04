@@ -20,7 +20,6 @@ const DEPARTMENT_ORDER = [
   "供应商仓（后续划分事业部）"
 ];
 const COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f", "#5ac8fa", "#5856d6", "#30d158", "#bf5af2", "#ff6b35", "#64d2ff", "#8e8e93"];
-const WAREHOUSE_TYPE_CARDS = ["生产成品仓", "销售成品仓", "销售退货仓", "销售拆检仓", "销售配件仓"];
 const AGE_BUCKETS = ["0-30天", "31-60天", "61-90天", "91-120天", "120天以上"];
 const AGE_BUCKET_DEFINITIONS = [
   { label: "0-30天", candidates: ["0-30天数量", "0-30天库存数量", "0-30天结余库存数量", "0-30天库龄数量", "0-30天"] },
@@ -231,7 +230,6 @@ function renderSummary() {
   $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 2);
   $("#amountTotal").textContent = formatMoneyWithYi(visibleAmount);
   $("#valueGapTotal").textContent = formatMoneyWithYi(visibleAmount - closedInventoryValue);
-  renderAgeShareCards(filteredRows, selectedAgeLabels);
   renderSummaryTables(filteredRows, selectedAgeLabels);
   renderAmountCharts(filteredRows, selectedAgeLabels);
   renderQuantityCharts(filteredRows, selectedAgeLabels);
@@ -284,19 +282,6 @@ function renderQuantityCharts(rows, selectedAgeLabel = "") {
   renderQuantityBars("ageQtyChart", groupAgeQuantitySum(rows, selectedAgeLabel), "ageQtyTotal");
   renderQuantityBars("productLineQtyChart", groupComputedSum(rows, "productLine", (row) => visibleQuantity(row, selectedAgeLabel), 12), "productLineQtyTotal");
   renderQuantityBars("warehouseLocationQtyChart", groupComputedSum(rows, "warehouseLocation", (row) => visibleQuantity(row, selectedAgeLabel), 12), "warehouseLocationQtyTotal");
-}
-
-function renderAgeShareCards(rows, selectedAgeLabels = []) {
-  const totalAmount = sumVisibleAmount(rows, selectedAgeLabels);
-  WAREHOUSE_TYPE_CARDS.forEach((warehouseType, index) => {
-    const el = $(`#warehouseTypeShare${index}`);
-    if (!el) return;
-    const amount = rows.reduce((total, row) => {
-      if (normalizeKey(row.warehouseType) !== normalizeKey(warehouseType)) return total;
-      return total + visibleAmount(row, selectedAgeLabels);
-    }, 0);
-    el.textContent = formatYiWithPercent(amount, totalAmount);
-  });
 }
 
 function renderSummaryTables(rows, selectedAgeLabels = []) {

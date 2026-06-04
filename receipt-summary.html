@@ -51,14 +51,6 @@
         <div class="metric-card"><span>库存资产估值-2026年结算价</span><strong id="amountTotal">¥0</strong></div>
       </section>
 
-      <section class="metrics age-share-metrics">
-        <div class="metric-card"><span>生产成品仓</span><strong id="warehouseTypeShare0">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售成品仓</span><strong id="warehouseTypeShare1">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售退货仓</span><strong id="warehouseTypeShare2">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售拆检仓</span><strong id="warehouseTypeShare3">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售配件仓</span><strong id="warehouseTypeShare4">0亿（0%）</strong></div>
-      </section>
-
       <section class="dashboard-grid receipt-chart-grid">
         <div class="panel">
           <h2>仓库类型占用资金情况 <span id="warehouseTypeAmountTotal" class="chart-total"></span></h2>
@@ -90,12 +82,17 @@
           </div>
         </div>
         <section class="toolbar trend-filter-toolbar">
+          <div id="warehouseTypeTrendFilter" class="multi-filter"></div>
           <div id="departmentTrendFilter" class="multi-filter"></div>
           <div id="productTrendFilter" class="multi-filter"></div>
           <div id="warehouseLocationTrendFilter" class="multi-filter"></div>
           <button id="clearTrendFiltersBtn" type="button">显示全部资金占用</button>
         </section>
         <section class="trend-chart-grid">
+          <div class="panel trend-panel">
+            <h2>仓库类型资金占用趋势 <span id="warehouseTypeValueTrendTotal" class="chart-total"></span></h2>
+            <div id="warehouseTypeValueTrendChart" class="vertical-trend-chart"></div>
+          </div>
           <div class="panel trend-panel">
             <h2>事业部资金占用趋势 <span id="departmentValueTrendTotal" class="chart-total"></span></h2>
             <div id="departmentValueTrendChart" class="vertical-trend-chart"></div>
@@ -219,7 +216,7 @@
 
   <script src="storage.js?v=20260602g"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260603z"></script>
-  <script src="inventory-trend.js?v=20260604n"></script>
+  <script src="receipt-summary.js?v=20260604a"></script>
+  <script src="inventory-trend.js?v=20260604o"></script>
 </body>
 </html>

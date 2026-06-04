@@ -33,6 +33,7 @@
       </header>
 
       <section class="toolbar trend-filter-toolbar">
+        <div id="warehouseTypeTrendFilter" class="multi-filter"></div>
         <div id="departmentTrendFilter" class="multi-filter"></div>
         <div id="productTrendFilter" class="multi-filter"></div>
         <div id="warehouseLocationTrendFilter" class="multi-filter"></div>
@@ -40,6 +41,10 @@
       </section>
 
       <section class="trend-chart-grid">
+        <div class="panel trend-panel">
+          <h2>仓库类型资金占用趋势 <span id="warehouseTypeValueTrendTotal" class="chart-total"></span></h2>
+          <div id="warehouseTypeValueTrendChart" class="vertical-trend-chart"></div>
+        </div>
         <div class="panel trend-panel">
           <h2>事业部资金占用趋势 <span id="departmentValueTrendTotal" class="chart-total"></span></h2>
           <div id="departmentValueTrendChart" class="vertical-trend-chart"></div>
@@ -84,6 +89,6 @@
 
   <script src="storage.js?v=20260602g"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="inventory-trend.js?v=20260604n"></script>
+  <script src="inventory-trend.js?v=20260604o"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@ const TREND_MONTHS = [
 const TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de"];
 const TREND_TOP_LIMIT = 8;
 const TREND_FILTERS = [
+  { id: "warehouseTypeTrendFilter", field: "warehouseType", allLabel: "全部仓库类型" },
   { id: "departmentTrendFilter", field: "department", allLabel: "全部事业部" },
   { id: "productTrendFilter", field: "productLine", allLabel: "全部产品线" },
   { id: "warehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "全部仓库位置" }
@@ -47,6 +48,7 @@ function renderTrendDashboard(records) {
 }
 
 function renderTrendCharts() {
+  renderVerticalTrendChart("warehouseTypeValueTrendChart", "warehouseTypeValueTrendTotal", currentTrendMonthSummaries, "warehouseType", "未分类仓库类型", "warehouseTypeTrendFilter", "value");
   renderVerticalTrendChart("departmentValueTrendChart", "departmentValueTrendTotal", currentTrendMonthSummaries, "department", "未匹配事业部", "departmentTrendFilter", "value");
   renderVerticalTrendChart("productValueTrendChart", "productValueTrendTotal", currentTrendMonthSummaries, "productLine", "未分类产品线", "productTrendFilter", "value");
   renderVerticalTrendChart("warehouseLocationValueTrendChart", "warehouseLocationValueTrendTotal", currentTrendMonthSummaries, "warehouseLocation", "未分类仓库位置", "warehouseLocationTrendFilter", "value");
@@ -86,6 +88,7 @@ function summarizeTrendMonth(month, record, maps) {
 
     const department = maps.departmentByKey.get(makeTrendDepartmentKey(materialA, warehouse, materialB)) || "";
     const productLine = maps.productLineByMaterial.get(materialB) || "";
+    const warehouseType = maps.warehouseTypeByName.get(normalizeText(warehouse)) || "";
     const warehouseLocation = maps.warehouseLocationByName.get(normalizeText(warehouse)) || "";
     const missingReasons = [
       department ? "" : "未区分事业部",
@@ -101,6 +104,7 @@ function summarizeTrendMonth(month, record, maps) {
     summary.items.push({
       qty,
       value,
+      warehouseType: warehouseType || "未分类仓库类型",
       department: department || "未匹配事业部",
       productLine: productLine || "未分类产品线",
       warehouseLocation: warehouseLocation || "未分类仓库位置"
@@ -152,10 +156,15 @@ function buildTrendDimensionMaps(records) {
     if (key && department && !departmentByKey.has(key)) departmentByKey.set(key, department);
   }
 
+  const warehouseTypeByName = new Map();
   const warehouseLocationByName = new Map();
   for (const row of records["dim-warehouse"]?.rows || []) {
     const warehouseName = normalizeText(nthValue(row, 2));
+    const warehouseType = normalizeText(nthValue(row, 7));
     const warehouseLocation = normalizeText(nthValue(row, 8));
+    if (warehouseName && warehouseType && !warehouseTypeByName.has(warehouseName)) {
+      warehouseTypeByName.set(warehouseName, warehouseType);
+    }
     if (warehouseName && warehouseLocation && !warehouseLocationByName.has(warehouseName)) {
       warehouseLocationByName.set(warehouseName, warehouseLocation);
     }
@@ -183,7 +192,7 @@ function buildTrendDimensionMaps(records) {
     if (materialCode && price) settlementPriceByMaterial.set(materialCode, price);
   }
 
-  return { departmentByKey, warehouseLocationByName, productLineByMaterial, settlementPriceByMaterial };
+  return { departmentByKey, warehouseTypeByName, warehouseLocationByName, productLineByMaterial, settlementPriceByMaterial };
 }
 
 function populateTrendFilters(monthSummaries) {
