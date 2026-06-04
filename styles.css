@@ -497,7 +497,7 @@ select {
 }
 
 .receipt-chart-grid {
-  grid-template-columns: repeat(5, minmax(178px, 1fr));
+  grid-template-columns: repeat(5, minmax(460px, 1fr));
   overflow-x: auto;
   padding-bottom: 4px;
 }
@@ -1006,7 +1006,7 @@ input[type="file"]:disabled {
   }
 
   .receipt-chart-grid {
-    grid-template-columns: repeat(5, minmax(178px, 1fr));
+    grid-template-columns: repeat(5, minmax(460px, 1fr));
   }
 
   .summary-table-grid {
@@ -1230,7 +1230,7 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-row {
-  grid-template-columns: 240px minmax(8px, .16fr) 118px;
+  grid-template-columns: 240px minmax(90px, 1fr) 118px;
   grid-template-areas: "label track value";
   align-items: center;
   column-gap: 6px;
