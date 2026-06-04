@@ -504,11 +504,11 @@ select {
 
 .receipt-chart-grid .panel {
   min-height: 286px;
-  padding: 14px 12px;
+  padding: 14px 8px;
 }
 
 .receipt-chart-grid .panel h2 {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .panel {
@@ -1230,7 +1230,7 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-row {
-  grid-template-columns: 188px minmax(12px, .24fr) 118px;
+  grid-template-columns: 240px minmax(8px, .16fr) 118px;
   grid-template-areas: "label track value";
   align-items: center;
   column-gap: 6px;
@@ -1254,7 +1254,7 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-label {
-  width: 188px;
+  width: 240px;
   box-sizing: border-box;
 }
 
