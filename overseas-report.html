@@ -58,6 +58,13 @@
       line-height: 1.15;
       white-space: nowrap;
     }
+    .report-metric small {
+      display: block;
+      margin-top: 6px;
+      color: #60748a;
+      font-size: 11px;
+      line-height: 1.35;
+    }
     .report-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -290,7 +297,7 @@
       <section class="report-metrics">
         <div class="report-metric"><span>0430 库存金额</span><strong>6,531.6 万</strong></div>
         <div class="report-metric"><span>0430 库存数量</span><strong>217,822</strong></div>
-        <div class="report-metric"><span>1-4 月资金增长</span><strong>+57.9%</strong></div>
+        <div class="report-metric"><span>4月资金较1月增长</span><strong>57.9%</strong><small>按4月资金占用与1月资金占用对比计算</small></div>
         <div class="report-metric"><span>手推车资金占比</span><strong>71.3%</strong></div>
       </section>
 
@@ -473,12 +480,16 @@
 
     function renderTrendTable(id, rows, isSummary = false) {
       const el = document.getElementById(id);
-      const headers = isSummary ? ["月份", "资金占用"] : ["分类", "1月", "2月", "3月", "4月", "4月较3月"];
+      const headers = isSummary ? ["月份", "资金占用", "环比"] : ["分类", "1月", "2月", "3月", "4月", "4月较3月"];
       el.innerHTML = `
         <thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead>
         <tbody>
-          ${rows.map((row) => {
-            if (isSummary) return `<tr><td>${row.name}</td><td>${moneyWan(row.values[0])}</td></tr>`;
+          ${rows.map((row, index) => {
+            if (isSummary) {
+              const previous = rows[index - 1]?.values?.[0] || 0;
+              const monthGrowth = previous ? `${((row.values[0] / previous - 1) * 100).toFixed(1)}%` : "-";
+              return `<tr><td>${row.name}</td><td>${moneyWan(row.values[0])}</td><td>${monthGrowth}</td></tr>`;
+            }
             const growth = row.values[2] ? `${((row.values[3] / row.values[2] - 1) * 100).toFixed(1)}%` : "-";
             return `<tr><td>${row.name}</td>${row.values.map((value) => `<td>${moneyWan(value)}</td>`).join("")}<td>${growth}</td></tr>`;
           }).join("")}
