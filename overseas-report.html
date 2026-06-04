@@ -66,6 +66,11 @@
     .report-grid.three {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+    .report-grid.five {
+      grid-template-columns: repeat(5, minmax(315px, 1fr));
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
     .report-bars {
       display: grid;
       gap: 8px;
@@ -105,6 +110,14 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin-bottom: 14px;
+    }
+    .trend-report-grid.three {
+      grid-template-columns: repeat(3, minmax(320px, 1fr));
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .trend-report-grid.two {
+      grid-template-columns: repeat(2, minmax(360px, 1fr));
     }
     .trend-table {
       width: 100%;
@@ -151,6 +164,7 @@
       .report-hero,
       .report-grid,
       .report-grid.three,
+      .report-grid.five,
       .trend-report-grid {
         grid-template-columns: 1fr;
       }
@@ -211,21 +225,21 @@
         <div class="report-metric"><span>手推车资金占比</span><strong>71.3%</strong></div>
       </section>
 
-      <section class="report-grid">
+      <section class="report-grid five">
         <div class="report-card"><h2>0430 仓库类型资金占用情况</h2><div id="warehouseTypeBars" class="report-bars"></div></div>
         <div class="report-card"><h2>0430 各库龄段资金占用情况</h2><div id="ageBars" class="report-bars"></div></div>
         <div class="report-card"><h2>0430 各产品线占用资金情况</h2><div id="productLineBars" class="report-bars"></div></div>
         <div class="report-card"><h2>0430 仓库位置资金占用情况</h2><div id="warehouseLocationBars" class="report-bars"></div></div>
-      </section>
-
-      <section class="report-grid">
         <div class="report-card"><h2>0430 产品系列 Top 10 资金占用情况</h2><div id="seriesBars" class="report-bars"></div></div>
-        <div class="report-card"><h2>1-4 月总资金占用趋势</h2><table id="trendSummaryTable" class="trend-table"></table></div>
       </section>
 
-      <section class="trend-report-grid">
+      <section class="trend-report-grid three">
+        <div class="report-card"><h2>1-4 月总资金占用趋势</h2><table id="trendSummaryTable" class="trend-table"></table></div>
         <div class="report-card"><h2>仓库类型资金占用趋势</h2><table id="trendWarehouseTypeTable" class="trend-table"></table></div>
         <div class="report-card"><h2>各产品资金占用趋势</h2><table id="trendProductLineTable" class="trend-table"></table></div>
+      </section>
+
+      <section class="trend-report-grid two">
         <div class="report-card"><h2>仓库位置资金占用趋势</h2><table id="trendWarehouseLocationTable" class="trend-table"></table></div>
         <div class="report-card"><h2>产品系列 Top 10 资金占用趋势</h2><table id="trendSeriesTable" class="trend-table"></table></div>
       </section>
