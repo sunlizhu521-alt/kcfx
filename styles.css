@@ -1340,6 +1340,22 @@ input[type="file"]:disabled {
   grid-template-columns: repeat(3, minmax(180px, 220px)) auto;
 }
 
+.trend-embed-panel {
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid rgba(150, 170, 190, .45);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .62);
+}
+
+.trend-embed-panel > .table-title-row {
+  margin-bottom: 8px;
+}
+
+.trend-embed-panel .status-line {
+  margin: 4px 0 0;
+}
+
 .trend-filter-toolbar .multi-filter {
   width: 100%;
 }

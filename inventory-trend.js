@@ -16,7 +16,8 @@ let trendUnclassifiedRows = [];
 let currentTrendMonthSummaries = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const statusEl = document.querySelector("#summaryStatus");
+  if (!document.querySelector("#departmentTrendChart")) return;
+  const statusEl = document.querySelector("#trendSummaryStatus") || document.querySelector("#summaryStatus");
   document.querySelector("#downloadTrendUnclassifiedBtn")?.addEventListener("click", downloadTrendUnclassifiedRows);
   document.querySelector("#clearTrendFiltersBtn")?.addEventListener("click", clearTrendFilters);
   document.addEventListener("click", closeTrendFilters);
@@ -33,7 +34,7 @@ function renderTrendDashboard(records) {
   const totalQty = monthSummaries.reduce((total, item) => total + item.totalQty, 0);
 
   currentTrendMonthSummaries = monthSummaries;
-  setText("#summaryStatus", `已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，K列数量合计 ${formatQuantity(totalQty)}。`);
+  setTrendStatus(`已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，K列数量合计 ${formatQuantity(totalQty)}。`);
   populateTrendFilters(monthSummaries);
   renderTrendCharts();
   renderTrendSourcePanel(monthSummaries, records);
@@ -335,7 +336,7 @@ function getTrendMonthCategoryValue(monthSummaries, label, field, categoryName, 
 }
 
 function renderTrendSourcePanel(monthSummaries, records) {
-  const sourceEl = document.querySelector("#sourcePanel");
+  const sourceEl = document.querySelector("#trendSourcePanel") || (document.querySelector("#trendSummaryStatus") ? null : document.querySelector("#sourcePanel"));
   if (!sourceEl) return;
   const monthLines = monthSummaries.map((item) => {
     const record = item.record;
@@ -357,6 +358,11 @@ function renderTrendSourcePanel(monthSummaries, records) {
     ${monthLines.join("")}
     ${dimLines.join("")}
   `;
+}
+
+function setTrendStatus(value) {
+  const statusEl = document.querySelector("#trendSummaryStatus") || document.querySelector("#summaryStatus");
+  if (statusEl) statusEl.textContent = value;
 }
 
 function downloadTrendUnclassifiedRows() {
