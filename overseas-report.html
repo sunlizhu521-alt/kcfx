@@ -7,6 +7,15 @@
   <link rel="stylesheet" href="styles.css?v=20260604m">
   <style>
     .report-page .content { background: #eef4fb; }
+    .report-page .app-shell {
+      grid-template-columns: 252px minmax(0, 1fr);
+    }
+    .report-page .nav a {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: clip;
+      font-size: 14px;
+    }
     .report-hero {
       display: grid;
       grid-template-columns: minmax(280px, .78fr) minmax(460px, 1.22fr);
@@ -188,6 +197,9 @@
       color: #25364a;
       line-height: 1.55;
     }
+    .summary-list li {
+      padding: 9px 11px;
+    }
     .report-note {
       margin: 10px 0 0;
       color: #60748a;
@@ -278,18 +290,23 @@
       <section class="report-hero">
         <div class="report-card">
           <h2>结论摘要</h2>
-          <p class="report-lede">海外事业一部 0430 库存资产估值为 <strong>6,531.6 万元</strong>，库存数量 <strong>217,822</strong>。从 SCM 库存健康度看，当前不是单纯库存高，而是资金集中度、仓库结构和补货节奏同时偏紧：资金主要集中在销售海上在途仓、手推车、FBA 仓和 Z21 系列；1-4 月资金占用从 4,133.5 万元上升到 6,529.7 万元，说明需求计划、在途到港、FBA 入仓和可售库存消化需要放在同一套 S&OP 节奏里联动管理。短期重点应放在高金额 SKU 的周转验证、FBA/在途库存的到货节奏控制，以及长库龄和低动销型号的专项处理。</p>
+          <ul class="advice-list summary-list">
+            <li><strong>库存规模。</strong>0430 库存资产估值为 6,531.6 万元，库存数量 217,822。</li>
+            <li><strong>核心判断。</strong>当前不是单纯库存高，而是资金集中度、仓库结构和补货节奏同时偏紧。</li>
+            <li><strong>集中维度。</strong>资金主要集中在销售海上在途仓、手推车、FBA 仓和 Z21 系列。</li>
+            <li><strong>趋势风险。</strong>1-4 月资金占用从 4,133.5 万元上升到 6,529.7 万元，需要把需求计划、在途到港、FBA 入仓和可售库存消化放在同一套 S&OP 节奏里管理。</li>
+          </ul>
           <p class="report-note">口径：0430 使用库存分析月份表货值；趋势使用收发汇总表 1-4 月 K 列数量 × 结算价(含税)，并按海外事业一部映射过滤。</p>
         </div>
         <div class="report-card">
           <h2>库存建议</h2>
           <ul class="advice-list">
-            <li><strong>建立 ABC 资金分层。</strong>手推车占用 4,654.6 万元，占海外事业一部 71.3%；Z21 系列占用 2,279.0 万元。建议把这类高资金 SKU 作为 A 类库存，单独设置库存上限、周转天数目标和补货冻结线。</li>
-            <li><strong>用需求覆盖天数校验补货。</strong>对手推车、Z21 和其他 Top 系列，按近 4 周销量、在途数量、FBA 可售库存和预计到港周期计算覆盖天数；覆盖天数高于目标时暂停新采购或延后入仓。</li>
-            <li><strong>FBA 做周转拉通。</strong>FBA 仓占用 3,496.8 万元，占 53.5%。建议按 SKU 识别低动销 FBA，优先通过站内促销、调仓、移仓或降低下一批入仓量释放资金。</li>
-            <li><strong>在途库存纳入到港预警。</strong>海上在途 991.4 万元，占 15.2%。建议把海上在途和 0-30 天库存合并看，按预计到港周做滚动预警，避免到港后继续推高 FBA/FBM 可售库存。</li>
-            <li><strong>长库龄做责任闭环。</strong>120 天以上仍有 397.0 万元，建议按产品线、销售系列、仓库位置拆出责任清单，区分可促销、可调拨、需报废或需供应商协同处理的库存。</li>
-            <li><strong>把异常维度前置治理。</strong>仓库类型、仓库位置、产品线和系列维度要保持最新，否则资金占用会被打到未分类，影响判断。建议文件库更新后固定做一次未分类明细下载和维表补齐。</li>
+            <li><strong>资金分层。</strong>手推车占用 4,654.6 万元，占 71.3%；Z21 系列占用 2,279.0 万元。建议作为 A 类库存，设置库存上限、周转天数目标和补货冻结线。</li>
+            <li><strong>补货校验。</strong>对手推车、Z21 和其他 Top 系列，按近 4 周销量、在途数量、FBA 可售库存和预计到港周期计算覆盖天数；高于目标时暂停新采购或延后入仓。</li>
+            <li><strong>FBA 周转。</strong>FBA 仓占用 3,496.8 万元，占 53.5%。建议按 SKU 识别低动销库存，通过站内促销、调仓、移仓或降低下一批入仓量释放资金。</li>
+            <li><strong>在途预警。</strong>海上在途 991.4 万元，占 15.2%。建议把海上在途和 0-30 天库存合并看，按预计到港周做滚动预警。</li>
+            <li><strong>长库龄闭环。</strong>120 天以上仍有 397.0 万元。建议按产品线、销售系列、仓库位置拆出责任清单，区分促销、调拨、报废或供应商协同处理。</li>
+            <li><strong>维度治理。</strong>仓库类型、仓库位置、产品线和系列维度要保持最新；文件库更新后固定下载未分类明细，并及时补齐维表。</li>
           </ul>
         </div>
       </section>
