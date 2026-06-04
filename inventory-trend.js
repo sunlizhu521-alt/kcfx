@@ -158,7 +158,8 @@ function populateTrendFilters(monthSummaries) {
   TREND_FILTERS.forEach((filter) => {
     const select = document.querySelector(`#${filter.id}`);
     const options = topTrendCategories(monthSummaries, filter.field, filter.allLabel, 200);
-    fillTrendFilter(select, filter.allLabel, options, options[0] || "");
+    const defaultLabel = options[0] || "";
+    fillTrendFilter(select, filter.allLabel, options.filter((value) => value !== defaultLabel), defaultLabel);
   });
 }
 
