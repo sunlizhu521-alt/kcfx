@@ -1230,7 +1230,7 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-row {
-  grid-template-columns: 92px minmax(24px, .68fr) 76px;
+  grid-template-columns: 104px minmax(24px, .62fr) 76px;
   grid-template-areas: "label track value";
   align-items: center;
   column-gap: 6px;
@@ -1245,12 +1245,17 @@ input[type="file"]:disabled {
 .receipt-chart-grid .bar-label,
 .receipt-chart-grid .bar-value {
   min-width: 0;
-  overflow: visible;
+  overflow: hidden;
   text-overflow: clip;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
   line-height: 1.25;
+}
+
+.receipt-chart-grid .bar-label {
+  width: 104px;
+  box-sizing: border-box;
 }
 
 .receipt-page .bar-value {
@@ -1262,6 +1267,7 @@ input[type="file"]:disabled {
 
 .receipt-chart-grid .bar-value {
   width: 76px;
+  box-sizing: border-box;
   text-align: right;
 }
 
