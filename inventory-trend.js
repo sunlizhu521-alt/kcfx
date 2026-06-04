@@ -157,14 +157,15 @@ function populateTrendFilters(monthSummaries) {
   TREND_FILTERS.forEach((filter) => {
     const select = document.querySelector(`#${filter.id}`);
     const options = topTrendCategories(monthSummaries, filter.field, filter.allLabel, 200);
-    fillTrendFilter(select, filter.allLabel, options);
+    fillTrendFilter(select, filter.allLabel, options, options[0] || "");
   });
 }
 
-function fillTrendFilter(select, allLabel, values) {
+function fillTrendFilter(select, allLabel, values, defaultLabel = "") {
   if (!select) return;
   const current = getTrendFilterValues(select.id).filter((value) => values.includes(value));
   select.dataset.allLabel = allLabel;
+  select.dataset.defaultLabel = defaultLabel || allLabel;
   select.innerHTML = `
     <button class="multi-filter-button" type="button" aria-haspopup="listbox" aria-expanded="false">
       <span></span>
@@ -172,7 +173,7 @@ function fillTrendFilter(select, allLabel, values) {
     <div class="multi-filter-menu" role="listbox">
       <label class="multi-filter-option is-all">
         <input type="checkbox" value="" data-all="true" ${current.length ? "" : "checked"}>
-        <span>${escapeHtml(allLabel)}</span>
+        <span>${escapeHtml(defaultLabel || allLabel)}</span>
       </label>
       ${values.map((value) => `
         <label class="multi-filter-option">
@@ -242,7 +243,7 @@ function updateTrendFilterLabel(select) {
   if (!buttonText) return;
   const values = getTrendFilterValues(select.id);
   if (!values.length) {
-    buttonText.textContent = select.dataset.allLabel || "数量最大";
+    buttonText.textContent = select.dataset.defaultLabel || select.dataset.allLabel || "数量最大";
   } else if (values.length <= 2) {
     buttonText.textContent = values.join("、");
   } else {
