@@ -1336,6 +1336,14 @@ input[type="file"]:disabled {
   margin-bottom: 16px;
 }
 
+.trend-filter-toolbar {
+  grid-template-columns: repeat(3, minmax(180px, 220px)) auto;
+}
+
+.trend-filter-toolbar .multi-filter {
+  width: 100%;
+}
+
 .trend-panel {
   min-height: 380px;
   overflow: hidden;

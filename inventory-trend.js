@@ -7,11 +7,19 @@ const TREND_MONTHS = [
 
 const TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de"];
 const TREND_TOP_LIMIT = 8;
+const TREND_FILTERS = [
+  { id: "departmentTrendFilter", field: "department", allLabel: "数量最大事业部" },
+  { id: "productTrendFilter", field: "productLine", allLabel: "数量最大产品线" },
+  { id: "warehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "数量最大仓库位置" }
+];
 let trendUnclassifiedRows = [];
+let currentTrendMonthSummaries = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
   const statusEl = document.querySelector("#summaryStatus");
   document.querySelector("#downloadTrendUnclassifiedBtn")?.addEventListener("click", downloadTrendUnclassifiedRows);
+  document.querySelector("#clearTrendFiltersBtn")?.addEventListener("click", clearTrendFilters);
+  document.addEventListener("click", closeTrendFilters);
   await loadSharedLibrary({ statusEl });
   const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
   renderTrendDashboard(records);
@@ -24,13 +32,19 @@ function renderTrendDashboard(records) {
   const usedRows = monthSummaries.reduce((total, item) => total + item.usedRows, 0);
   const totalQty = monthSummaries.reduce((total, item) => total + item.totalQty, 0);
 
+  currentTrendMonthSummaries = monthSummaries;
   setText("#summaryStatus", `已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，K列数量合计 ${formatQuantity(totalQty)}。`);
-  renderVerticalTrendChart("departmentTrendChart", "departmentTrendTotal", monthSummaries, "department", "未匹配事业部");
-  renderVerticalTrendChart("productTrendChart", "productTrendTotal", monthSummaries, "productLine", "未分类产品线");
-  renderVerticalTrendChart("warehouseLocationTrendChart", "warehouseLocationTrendTotal", monthSummaries, "warehouseLocation", "未分类仓库位置");
+  populateTrendFilters(monthSummaries);
+  renderTrendCharts();
   renderTrendSourcePanel(monthSummaries, records);
   trendUnclassifiedRows = monthSummaries.flatMap((item) => item.unclassifiedRows);
   renderTrendUnclassifiedRows(trendUnclassifiedRows);
+}
+
+function renderTrendCharts() {
+  renderVerticalTrendChart("departmentTrendChart", "departmentTrendTotal", currentTrendMonthSummaries, "department", "未匹配事业部", "departmentTrendFilter");
+  renderVerticalTrendChart("productTrendChart", "productTrendTotal", currentTrendMonthSummaries, "productLine", "未分类产品线", "productTrendFilter");
+  renderVerticalTrendChart("warehouseLocationTrendChart", "warehouseLocationTrendTotal", currentTrendMonthSummaries, "warehouseLocation", "未分类仓库位置", "warehouseLocationTrendFilter");
 }
 
 function summarizeTrendMonth(month, record, maps) {
@@ -137,10 +151,120 @@ function buildTrendDimensionMaps(records) {
   return { departmentByKey, warehouseLocationByName, productLineByMaterial };
 }
 
-function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallbackName) {
+function populateTrendFilters(monthSummaries) {
+  TREND_FILTERS.forEach((filter) => {
+    const select = document.querySelector(`#${filter.id}`);
+    const options = topTrendCategories(monthSummaries, filter.field, filter.allLabel, 200);
+    fillTrendFilter(select, filter.allLabel, options);
+  });
+}
+
+function fillTrendFilter(select, allLabel, values) {
+  if (!select) return;
+  const current = getTrendFilterValues(select.id).filter((value) => values.includes(value));
+  select.dataset.allLabel = allLabel;
+  select.innerHTML = `
+    <button class="multi-filter-button" type="button" aria-haspopup="listbox" aria-expanded="false">
+      <span></span>
+    </button>
+    <div class="multi-filter-menu" role="listbox">
+      <label class="multi-filter-option is-all">
+        <input type="checkbox" value="" data-all="true" ${current.length ? "" : "checked"}>
+        <span>${escapeHtml(allLabel)}</span>
+      </label>
+      ${values.map((value) => `
+        <label class="multi-filter-option">
+          <input type="checkbox" value="${escapeHtml(value)}" ${current.includes(value) ? "checked" : ""}>
+          <span>${escapeHtml(value)}</span>
+        </label>
+      `).join("")}
+    </div>
+  `;
+  select.querySelector(".multi-filter-button")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleTrendFilter(select);
+  });
+  select.querySelector(".multi-filter-menu")?.addEventListener("click", (event) => event.stopPropagation());
+  select.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      syncTrendFilterSelection(select, checkbox);
+      updateTrendFilterLabel(select);
+      renderTrendCharts();
+    });
+  });
+  updateTrendFilterLabel(select);
+}
+
+function getTrendFilterValues(id) {
+  if (!id) return [];
+  const select = document.querySelector(`#${id}`);
+  if (!select) return [];
+  return [...select.querySelectorAll("input[type='checkbox']:checked")]
+    .map((input) => input.value)
+    .filter(Boolean);
+}
+
+function toggleTrendFilter(select) {
+  const isOpen = select.classList.contains("open");
+  closeTrendFilters();
+  select.classList.toggle("open", !isOpen);
+  select.querySelector(".multi-filter-button")?.setAttribute("aria-expanded", String(!isOpen));
+}
+
+function closeTrendFilters() {
+  document.querySelectorAll(".trend-filter-toolbar .multi-filter.open").forEach((select) => {
+    select.classList.remove("open");
+    select.querySelector(".multi-filter-button")?.setAttribute("aria-expanded", "false");
+  });
+}
+
+function syncTrendFilterSelection(select, changedCheckbox) {
+  const allCheckbox = select.querySelector("input[data-all='true']");
+  const itemCheckboxes = [...select.querySelectorAll("input[type='checkbox']:not([data-all='true'])")];
+  if (changedCheckbox.dataset.all === "true") {
+    if (changedCheckbox.checked) {
+      itemCheckboxes.forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+    } else if (!itemCheckboxes.some((checkbox) => checkbox.checked)) {
+      changedCheckbox.checked = true;
+    }
+    return;
+  }
+  if (changedCheckbox.checked && allCheckbox) allCheckbox.checked = false;
+  if (!itemCheckboxes.some((checkbox) => checkbox.checked) && allCheckbox) allCheckbox.checked = true;
+}
+
+function updateTrendFilterLabel(select) {
+  const buttonText = select.querySelector(".multi-filter-button span");
+  if (!buttonText) return;
+  const values = getTrendFilterValues(select.id);
+  if (!values.length) {
+    buttonText.textContent = select.dataset.allLabel || "数量最大";
+  } else if (values.length <= 2) {
+    buttonText.textContent = values.join("、");
+  } else {
+    buttonText.textContent = `已选${values.length}项`;
+  }
+}
+
+function clearTrendFilters() {
+  TREND_FILTERS.forEach((filter) => {
+    const select = document.querySelector(`#${filter.id}`);
+    if (!select) return;
+    select.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
+      checkbox.checked = checkbox.dataset.all === "true";
+    });
+    updateTrendFilterLabel(select);
+  });
+  renderTrendCharts();
+}
+
+function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallbackName, filterId = "") {
   const container = document.querySelector(`#${chartId}`);
   if (!container) return;
-  const categoryNames = topTrendCategories(monthSummaries, field, fallbackName);
+  const selected = getTrendFilterValues(filterId);
+  const categoryNames = selected.length ? selected : topTrendCategories(monthSummaries, field, fallbackName, 1);
   const total = monthSummaries.reduce((sum, month) => sum + month.totalQty, 0);
   setText(`#${totalId}`, `合计 ${formatQuantity(total)}`);
 
@@ -176,7 +300,7 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
   `;
 }
 
-function topTrendCategories(monthSummaries, field, fallbackName) {
+function topTrendCategories(monthSummaries, field, fallbackName, limit = TREND_TOP_LIMIT) {
   const totals = new Map();
   for (const month of monthSummaries) {
     for (const item of month.items) {
@@ -187,7 +311,7 @@ function topTrendCategories(monthSummaries, field, fallbackName) {
   return [...totals.entries()]
     .filter(([, value]) => value !== 0)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, TREND_TOP_LIMIT)
+    .slice(0, limit)
     .map(([name]) => name);
 }
 
