@@ -269,16 +269,18 @@
       <section class="report-hero">
         <div class="report-card">
           <h2>结论摘要</h2>
-          <p class="report-lede">海外事业一部 0430 库存资产估值为 <strong>6,531.6 万元</strong>，库存数量 <strong>217,822</strong>。资金高度集中在销售海上在途仓、手推车、FBA 仓和 Z21 系列；1-4 月资金占用从 4,133.5 万元上升到 6,529.7 万元，增长较快，需要把补货节奏、FBA 周转和在途库存纳入同一个控制节奏。</p>
+          <p class="report-lede">海外事业一部 0430 库存资产估值为 <strong>6,531.6 万元</strong>，库存数量 <strong>217,822</strong>。从 SCM 库存健康度看，当前不是单纯库存高，而是资金集中度、仓库结构和补货节奏同时偏紧：资金主要集中在销售海上在途仓、手推车、FBA 仓和 Z21 系列；1-4 月资金占用从 4,133.5 万元上升到 6,529.7 万元，说明需求计划、在途到港、FBA 入仓和可售库存消化需要放在同一套 S&OP 节奏里联动管理。短期重点应放在高金额 SKU 的周转验证、FBA/在途库存的到货节奏控制，以及长库龄和低动销型号的专项处理。</p>
           <p class="report-note">口径：0430 使用库存分析月份表货值；趋势使用收发汇总表 1-4 月 K 列数量 × 结算价(含税)，并按海外事业一部映射过滤。</p>
         </div>
         <div class="report-card">
           <h2>库存建议</h2>
           <ul class="advice-list">
-            <li><strong>手推车和 Z21 设红线。</strong>手推车占用 4,654.6 万元，占海外事业一部 71.3%；Z21 系列占用 2,279.0 万元。建议先对这两个维度做周度出库覆盖天数和补货冻结线。</li>
-            <li><strong>FBA 做周转拉通。</strong>FBA 仓占用 3,496.8 万元，占 53.5%。建议按 SKU 识别低动销 FBA，优先做站内促销、调仓或减少下一批入仓。</li>
-            <li><strong>在途库存单独盯。</strong>海上在途 991.4 万元，占 15.2%。建议和 0-30 天库存合看，避免到港后继续推高 FBA/FBM 可售库存。</li>
-            <li><strong>清理长库龄。</strong>120 天以上仍有 397.0 万元，建议按产品线拆出责任清单，优先处理非核心系列和低动销型号。</li>
+            <li><strong>建立 ABC 资金分层。</strong>手推车占用 4,654.6 万元，占海外事业一部 71.3%；Z21 系列占用 2,279.0 万元。建议把这类高资金 SKU 作为 A 类库存，单独设置库存上限、周转天数目标和补货冻结线。</li>
+            <li><strong>用需求覆盖天数校验补货。</strong>对手推车、Z21 和其他 Top 系列，按近 4 周销量、在途数量、FBA 可售库存和预计到港周期计算覆盖天数；覆盖天数高于目标时暂停新采购或延后入仓。</li>
+            <li><strong>FBA 做周转拉通。</strong>FBA 仓占用 3,496.8 万元，占 53.5%。建议按 SKU 识别低动销 FBA，优先通过站内促销、调仓、移仓或降低下一批入仓量释放资金。</li>
+            <li><strong>在途库存纳入到港预警。</strong>海上在途 991.4 万元，占 15.2%。建议把海上在途和 0-30 天库存合并看，按预计到港周做滚动预警，避免到港后继续推高 FBA/FBM 可售库存。</li>
+            <li><strong>长库龄做责任闭环。</strong>120 天以上仍有 397.0 万元，建议按产品线、销售系列、仓库位置拆出责任清单，区分可促销、可调拨、需报废或需供应商协同处理的库存。</li>
+            <li><strong>把异常维度前置治理。</strong>仓库类型、仓库位置、产品线和系列维度要保持最新，否则资金占用会被打到未分类，影响判断。建议文件库更新后固定做一次未分类明细下载和维表补齐。</li>
           </ul>
         </div>
       </section>
@@ -469,13 +471,13 @@
 
     function renderTrendTable(id, rows, isSummary = false) {
       const el = document.getElementById(id);
-      const headers = isSummary ? ["月份", "资金占用"] : ["分类", "1月", "2月", "3月", "4月", "4月较1月"];
+      const headers = isSummary ? ["月份", "资金占用"] : ["分类", "1月", "2月", "3月", "4月", "4月较3月"];
       el.innerHTML = `
         <thead><tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr></thead>
         <tbody>
           ${rows.map((row) => {
             if (isSummary) return `<tr><td>${row.name}</td><td>${moneyWan(row.values[0])}</td></tr>`;
-            const growth = row.values[0] ? `${((row.values[3] / row.values[0] - 1) * 100).toFixed(1)}%` : "-";
+            const growth = row.values[2] ? `${((row.values[3] / row.values[2] - 1) * 100).toFixed(1)}%` : "-";
             return `<tr><td>${row.name}</td>${row.values.map((value) => `<td>${moneyWan(value)}</td>`).join("")}<td>${growth}</td></tr>`;
           }).join("")}
         </tbody>
