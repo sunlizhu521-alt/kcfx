@@ -33,7 +33,7 @@ async function loadKcfxFileLibrary(statusEl) {
         && !hasPendingRecord(local)
         && (!local.libraryPath || local.libraryPath !== entry.path)
         && (local.savedAt || "") === (nextRecord.savedAt || "");
-      if (recordIsNewer(nextRecord, local) || shouldMigratePath) {
+      if (recordIsNewer(nextRecord, local) || shouldMigratePath || libraryRecordDiffers(nextRecord, local)) {
         await saveRecord(nextRecord);
         imported += 1;
       }
@@ -49,6 +49,17 @@ async function loadKcfxFileLibrary(statusEl) {
     if (statusEl) statusEl.textContent = `库存分析看板文件库未加载：${error.message}`;
     return { ok: false, error };
   }
+}
+
+function libraryRecordDiffers(shared, local) {
+  if (!local) return true;
+  if (hasPendingRecord(local)) return false;
+  return isDeletedRecord(local)
+    || (local.libraryPath || "") !== (shared.libraryPath || "")
+    || (local.savedAt || "") !== (shared.savedAt || "")
+    || (local.appliedAt || "") !== (shared.appliedAt || "")
+    || (local.sharedSavedAt || "") !== (shared.sharedSavedAt || "")
+    || (local.size || 0) !== (shared.size || 0);
 }
 
 async function buildSharedLibraryPayload() {

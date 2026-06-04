@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "project": "kcfx",
   "name": "库存分析看板文件库",
-  "savedAt": "2026-06-04T03:33:36.717Z",
+  "savedAt": "2026-06-04T21:35:02.439934Z",
   "records": {
     "fact-inventory": {
       "id": "fact-inventory",
@@ -32,10 +32,10 @@
       "title": "仓库、金蝶、旺店通、领星",
       "fileName": "Dim-仓库_金蝶、旺店通、领星-2026年整理版.xlsx",
       "path": "data/kcfx-library/dimensions/dim-warehouse.json",
-      "rows": 275,
-      "size": 248725,
-      "savedAt": "2026-05-31T02:14:46.882350Z",
-      "appliedAt": "2026-05-31T02:14:46.882350Z"
+      "rows": 279,
+      "size": 250823,
+      "savedAt": "2026-06-04T08:34:08.738588Z",
+      "appliedAt": "2026-06-04T08:34:08.738588Z"
     },
     "dim-warehouse-material": {
       "id": "dim-warehouse-material",

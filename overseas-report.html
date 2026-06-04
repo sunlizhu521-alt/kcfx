@@ -249,7 +249,7 @@
       <section class="report-hero">
         <div class="report-card">
           <h2>结论摘要</h2>
-          <p class="report-lede">海外事业一部 0430 库存资产估值为 <strong>6,531.6 万元</strong>，库存数量 <strong>217,822</strong>。资金高度集中在销售成品仓、手推车、FBA 仓和 Z21 系列；1-4 月资金占用从 4,133.5 万元上升到 6,529.7 万元，增长较快，需要把补货节奏、FBA 周转和在途库存纳入同一个控制节奏。</p>
+          <p class="report-lede">海外事业一部 0430 库存资产估值为 <strong>6,531.6 万元</strong>，库存数量 <strong>217,822</strong>。资金高度集中在销售海上在途仓、手推车、FBA 仓和 Z21 系列；1-4 月资金占用从 4,133.5 万元上升到 6,529.7 万元，增长较快，需要把补货节奏、FBA 周转和在途库存纳入同一个控制节奏。</p>
           <p class="report-note">口径：0430 使用库存分析月份表货值；趋势使用收发汇总表 1-4 月 K 列数量 × 结算价(含税)，并按海外事业一部映射过滤。</p>
         </div>
         <div class="report-card">
@@ -323,7 +323,14 @@
     const REPORT = {
       totalAmount: 65315546.72,
       bars: {
-        warehouseType: [{ name: "销售成品仓", value: 65315546.72 }],
+        warehouseType: [
+          { name: "销售海上在途仓", value: 32335209.12 },
+          { name: "销售出库仓", value: 22749426.60 },
+          { name: "销售调仓在途仓", value: 4499443.00 },
+          { name: "销售退货拆检仓（国内）", value: 2235640.00 },
+          { name: "销售移除在途仓", value: 2079012.00 },
+          { name: "销售退货仓", value: 1416816.00 }
+        ],
         age: [
           { name: "0-30天", value: 40882733.80 },
           { name: "31-60天", value: 11905045.00 },
@@ -370,8 +377,12 @@
       ],
       trends: {
         warehouseType: [
-          { name: "销售成品仓", values: [39867837.28, 45931443.64, 53051954.24, 63236534.72] },
-          { name: "未分类仓库类型", values: [1466750, 1678407, 1816698, 2060652] }
+          { name: "销售海上在途仓", values: [22517338.20, 23150171.60, 20780130.20, 32335209.12] },
+          { name: "销售出库仓", values: [10881552.00, 15593913.00, 18748603.04, 22749426.60] },
+          { name: "销售调仓在途仓", values: [4621402.00, 5467807.00, 4816512.00, 4499443.00] },
+          { name: "销售退货拆检仓（国内）", values: [930208.00, 709435.00, 7425559.00, 2235640.00] },
+          { name: "销售移除在途仓", values: [1466750.00, 1678407.00, 1816698.00, 2060652.00] },
+          { name: "销售退货仓", values: [917337.08, 1010117.04, 1281150.00, 1416816.00] }
         ],
         productLine: [
           { name: "手推车", values: [30521990.28, 34846397.64, 38752202.24, 46545771.72] },
@@ -385,11 +396,10 @@
           { name: "其他/配件", values: [4928, 4330, 4872, 5506] }
         ],
         warehouseLocation: [
-          { name: "FBA仓", values: [24334120.20, 28785236.60, 32617569.44, 32888563.92] },
+          { name: "FBA仓", values: [25800870.20, 30463643.60, 34434267.44, 34949215.92] },
           { name: "FBM仓", values: [11197311, 13509174, 15740323.80, 17263154.80] },
           { name: "美西自营仓", values: [3081580.08, 3366900.04, 3400922, 2844043] },
           { name: "海上在途", values: [1152075, 84692, 1034858, 9914137] },
-          { name: "未分类仓库位置", values: [1466750, 1678407, 1816698, 2060652] },
           { name: "Walmart平台仓", values: [0, 82690, 191210, 259565] },
           { name: "河北景县仓", values: [102751, 102751, 67071, 67071] }
         ],
@@ -464,6 +474,14 @@
       await Promise.all(paths.map(async ([id, path]) => {
         records[id] = await fetchLibraryRecord(path);
       }));
+      const latestReport = buildLatestReport(records);
+      if (latestReport) {
+        REPORT.totalAmount = latestReport.totalAmount;
+        REPORT.bars = latestReport.bars;
+        REPORT.trendSummary = latestReport.trendSummary;
+        REPORT.trends = latestReport.trends;
+        renderReportVisuals();
+      }
       warehouseExceptionRows = buildWarehouseExceptionRows(records);
       renderWarehouseExceptionRows(warehouseExceptionRows, records);
     }
@@ -472,6 +490,94 @@
       const response = await fetch(`${path}?v=${Date.now()}`, { cache: "no-store" });
       if (!response.ok) throw new Error(`${path} ${response.status}`);
       return response.json();
+    }
+
+    function buildLatestReport(records) {
+      const maps = buildWarehouseExceptionMaps(records);
+      const factRows = records["fact-2"]?.rows || [];
+      if (!factRows.length) return null;
+      const bars = {
+        warehouseType: new Map(),
+        age: new Map(),
+        productLine: new Map(),
+        warehouseLocation: new Map(),
+        series: new Map()
+      };
+      let totalAmount = 0;
+      for (const row of factRows) {
+        const materialCode = normalizeReportMaterial(nthReportValue(row, 1));
+        const warehouse = normalizeReportText(nthReportValue(row, 3));
+        const department = normalizeReportText(nthReportValue(row, 21));
+        const qty = reportNumber(nthReportValue(row, 5));
+        if (department !== OVERSEAS_DEPARTMENT || !qty) continue;
+        const price = reportNumber(nthReportValue(row, 16));
+        const value = qty * price;
+        const warehouseInfo = getReportWarehouseInfo(maps, warehouse);
+        const product = maps.productByMaterial.get(materialCode) || {};
+        totalAmount += value;
+        addReportSum(bars.warehouseType, warehouseInfo.warehouseType || normalizeReportText(nthReportValue(row, 17)) || "未分类仓库类型", value);
+        addReportSum(bars.warehouseLocation, warehouseInfo.warehouseLocation || normalizeReportText(nthReportValue(row, 18)) || "未分类仓库位置", value);
+        addReportSum(bars.productLine, normalizeReportText(nthReportValue(row, 11)) || product.productLine || "未分类产品线", value);
+        addReportSum(bars.series, normalizeReportText(nthReportValue(row, 12)) || product.series || "未分类系列", value);
+        [
+          ["0-30天", 6],
+          ["31-60天", 7],
+          ["61-90天", 8],
+          ["91-120天", 9],
+          ["120天以上", 10]
+        ].forEach(([label, index]) => {
+          const ageQty = reportNumber(nthReportValue(row, index));
+          if (ageQty) addReportSum(bars.age, label, ageQty * price);
+        });
+      }
+
+      const trendMaps = {
+        warehouseType: new Map(),
+        productLine: new Map(),
+        warehouseLocation: new Map(),
+        series: new Map()
+      };
+      const trendSummary = [];
+      WAREHOUSE_EXCEPTION_MONTHS.forEach((month, monthIndex) => {
+        const rows = records[month.id]?.rows || [];
+        let monthTotal = 0;
+        for (const row of rows.slice(0, -1)) {
+          const organization = normalizeReportText(nthReportValue(row, 1));
+          const materialCode = normalizeReportMaterial(nthReportValue(row, 2));
+          const warehouse = normalizeReportText(nthReportValue(row, 4));
+          const qty = reportNumber(nthReportValue(row, 11));
+          if (!qty) continue;
+          const department = maps.departmentByKey.get(makeReportDepartmentKey(organization, warehouse, materialCode)) || "";
+          if (department !== OVERSEAS_DEPARTMENT) continue;
+          const value = qty * (maps.settlementPriceByMaterial.get(materialCode) || 0);
+          const warehouseInfo = getReportWarehouseInfo(maps, warehouse);
+          const product = maps.productByMaterial.get(materialCode) || {};
+          monthTotal += value;
+          addTrendSum(trendMaps.warehouseType, warehouseInfo.warehouseType || "未分类仓库类型", monthIndex, value);
+          addTrendSum(trendMaps.warehouseLocation, warehouseInfo.warehouseLocation || "未分类仓库位置", monthIndex, value);
+          addTrendSum(trendMaps.productLine, product.productLine || "未分类产品线", monthIndex, value);
+          addTrendSum(trendMaps.series, product.series || "未分类系列", monthIndex, value);
+        }
+        trendSummary.push({ name: month.label, values: [monthTotal] });
+      });
+
+      return {
+        totalAmount,
+        bars: {
+          warehouseType: sortedReportRows(bars.warehouseType),
+          age: sortedReportRows(bars.age),
+          productLine: sortedReportRows(bars.productLine),
+          warehouseLocation: sortedReportRows(bars.warehouseLocation),
+          series: sortedReportRows(bars.series, 10)
+        },
+        trendSummary,
+        trends: {
+          warehouseType: sortedTrendRows(trendMaps.warehouseType),
+          productLine: sortedTrendRows(trendMaps.productLine),
+          warehouseLocation: sortedTrendRows(trendMaps.warehouseLocation),
+          series: sortedTrendRows(trendMaps.series, 10)
+        }
+      };
     }
 
     function buildWarehouseExceptionRows(records) {
@@ -489,8 +595,9 @@
           const department = maps.departmentByKey.get(makeReportDepartmentKey(organization, warehouse, materialCode)) || "";
           if (department !== OVERSEAS_DEPARTMENT) continue;
 
-          const warehouseType = maps.warehouseTypeByName.get(warehouse) || "";
-          const warehouseLocation = maps.warehouseLocationByName.get(warehouse) || "";
+          const warehouseInfo = getReportWarehouseInfo(maps, warehouse);
+          const warehouseType = warehouseInfo.warehouseType || "";
+          const warehouseLocation = warehouseInfo.warehouseLocation || "";
           if (warehouseType && warehouseLocation) continue;
 
           const productLine = maps.productLineByMaterial.get(materialCode) || "";
@@ -557,12 +664,17 @@
         }
       }
 
+      const productByMaterial = new Map();
       const productLineByMaterial = new Map();
       const settlementPriceByMaterial = new Map();
       for (const row of records["dim-product"]?.rows || []) {
         const materialCode = normalizeReportMaterial(nthReportValue(row, 1));
         const productLine = normalizeReportText(nthReportValue(row, 7));
+        const series = normalizeReportText(nthReportValue(row, 8));
         const price = reportNumber(nthReportValue(row, 10));
+        if (materialCode && !productByMaterial.has(materialCode)) {
+          productByMaterial.set(materialCode, { productLine, series });
+        }
         if (materialCode && productLine && !productLineByMaterial.has(materialCode)) {
           productLineByMaterial.set(materialCode, productLine);
         }
@@ -577,7 +689,41 @@
         if (materialCode && price) settlementPriceByMaterial.set(materialCode, price);
       }
 
-      return { departmentByKey, warehouseTypeByName, warehouseLocationByName, productLineByMaterial, settlementPriceByMaterial };
+      return { departmentByKey, warehouseTypeByName, warehouseLocationByName, productByMaterial, productLineByMaterial, settlementPriceByMaterial };
+    }
+
+    function getReportWarehouseInfo(maps, warehouse) {
+      return {
+        warehouseType: maps.warehouseTypeByName.get(warehouse) || "",
+        warehouseLocation: maps.warehouseLocationByName.get(warehouse) || ""
+      };
+    }
+
+    function addReportSum(map, name, value) {
+      if (!name) return;
+      map.set(name, (map.get(name) || 0) + (Number(value) || 0));
+    }
+
+    function addTrendSum(map, name, index, value) {
+      if (!name) return;
+      const values = map.get(name) || [0, 0, 0, 0];
+      values[index] += Number(value) || 0;
+      map.set(name, values);
+    }
+
+    function sortedReportRows(map, limit = 99) {
+      return [...map.entries()]
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, limit);
+    }
+
+    function sortedTrendRows(map, limit = 99) {
+      return [...map.entries()]
+        .map(([name, values]) => ({ name, values, total: values.reduce((sum, value) => sum + value, 0) }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, limit)
+        .map(({ name, values }) => ({ name, values }));
     }
 
     function renderWarehouseExceptionRows(rows, records) {
@@ -676,16 +822,20 @@
       return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
     }
 
-    renderBars("warehouseTypeBars", REPORT.bars.warehouseType);
-    renderBars("ageBars", REPORT.bars.age);
-    renderBars("productLineBars", REPORT.bars.productLine);
-    renderBars("warehouseLocationBars", REPORT.bars.warehouseLocation);
-    renderBars("seriesBars", REPORT.bars.series);
-    renderTrendTable("trendSummaryTable", REPORT.trendSummary, true);
-    renderTrendTable("trendWarehouseTypeTable", REPORT.trends.warehouseType);
-    renderTrendTable("trendProductLineTable", REPORT.trends.productLine);
-    renderTrendTable("trendWarehouseLocationTable", REPORT.trends.warehouseLocation);
-    renderTrendTable("trendSeriesTable", REPORT.trends.series);
+    function renderReportVisuals() {
+      renderBars("warehouseTypeBars", REPORT.bars.warehouseType);
+      renderBars("ageBars", REPORT.bars.age);
+      renderBars("productLineBars", REPORT.bars.productLine);
+      renderBars("warehouseLocationBars", REPORT.bars.warehouseLocation);
+      renderBars("seriesBars", REPORT.bars.series);
+      renderTrendTable("trendSummaryTable", REPORT.trendSummary, true);
+      renderTrendTable("trendWarehouseTypeTable", REPORT.trends.warehouseType);
+      renderTrendTable("trendProductLineTable", REPORT.trends.productLine);
+      renderTrendTable("trendWarehouseLocationTable", REPORT.trends.warehouseLocation);
+      renderTrendTable("trendSeriesTable", REPORT.trends.series);
+    }
+
+    renderReportVisuals();
     document.getElementById("downloadWarehouseExceptionBtn")?.addEventListener("click", downloadWarehouseExceptions);
     loadWarehouseExceptions().catch((error) => {
       const status = document.getElementById("warehouseExceptionStatus");
