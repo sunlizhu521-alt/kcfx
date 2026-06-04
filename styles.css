@@ -518,9 +518,18 @@ select {
 }
 
 .receipt-chart-grid {
-  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  grid-template-columns: repeat(5, minmax(178px, 1fr));
   overflow-x: auto;
   padding-bottom: 4px;
+}
+
+.receipt-chart-grid .panel {
+  min-height: 286px;
+  padding: 14px 12px;
+}
+
+.receipt-chart-grid .panel h2 {
+  font-size: 14px;
 }
 
 .panel {
@@ -1022,7 +1031,7 @@ input[type="file"]:disabled {
   }
 
   .receipt-chart-grid {
-    grid-template-columns: repeat(4, minmax(240px, 1fr));
+    grid-template-columns: repeat(5, minmax(178px, 1fr));
   }
 
   .summary-table-grid {

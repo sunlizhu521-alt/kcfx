@@ -52,15 +52,18 @@
       </section>
 
       <section class="metrics age-share-metrics">
-        <div class="metric-card"><span>生产材料仓</span><strong id="warehouseTypeShare0">0亿（0%）</strong></div>
-        <div class="metric-card"><span>生产成品仓</span><strong id="warehouseTypeShare1">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售成品仓</span><strong id="warehouseTypeShare2">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售退货仓</span><strong id="warehouseTypeShare3">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售拆检仓</span><strong id="warehouseTypeShare4">0亿（0%）</strong></div>
-        <div class="metric-card"><span>销售配件仓</span><strong id="warehouseTypeShare5">0亿（0%）</strong></div>
+        <div class="metric-card"><span>生产成品仓</span><strong id="warehouseTypeShare0">0亿（0%）</strong></div>
+        <div class="metric-card"><span>销售成品仓</span><strong id="warehouseTypeShare1">0亿（0%）</strong></div>
+        <div class="metric-card"><span>销售退货仓</span><strong id="warehouseTypeShare2">0亿（0%）</strong></div>
+        <div class="metric-card"><span>销售拆检仓</span><strong id="warehouseTypeShare3">0亿（0%）</strong></div>
+        <div class="metric-card"><span>销售配件仓</span><strong id="warehouseTypeShare4">0亿（0%）</strong></div>
       </section>
 
       <section class="dashboard-grid receipt-chart-grid">
+        <div class="panel">
+          <h2>仓库类型占用资金情况 <span id="warehouseTypeAmountTotal" class="chart-total"></span></h2>
+          <div id="warehouseTypeAmountChart" class="chart-bars"></div>
+        </div>
         <div class="panel">
           <h2>事业部占用资金情况 <span id="departmentAmountTotal" class="chart-total"></span></h2>
           <div id="departmentAmountChart" class="chart-bars"></div>
@@ -216,7 +219,7 @@
 
   <script src="storage.js?v=20260602g"></script>
   <script src="shared-library.js?v=20260601d"></script>
-  <script src="receipt-summary.js?v=20260603y"></script>
+  <script src="receipt-summary.js?v=20260603z"></script>
   <script src="inventory-trend.js?v=20260604n"></script>
 </body>
 </html>
