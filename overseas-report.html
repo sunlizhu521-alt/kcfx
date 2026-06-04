@@ -119,6 +119,11 @@
     .trend-report-grid.two {
       grid-template-columns: repeat(2, minmax(360px, 1fr));
     }
+    .trend-report-grid.five {
+      grid-template-columns: repeat(5, minmax(315px, 1fr));
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
     .trend-table {
       width: 100%;
       border-collapse: collapse;
@@ -273,13 +278,10 @@
         <div class="report-card"><h2>0430 产品系列 Top 10 资金占用情况</h2><div id="seriesBars" class="report-bars"></div></div>
       </section>
 
-      <section class="trend-report-grid three">
+      <section class="trend-report-grid five">
         <div class="report-card"><h2>1-4 月总资金占用趋势</h2><table id="trendSummaryTable" class="trend-table"></table></div>
         <div class="report-card"><h2>仓库类型资金占用趋势</h2><table id="trendWarehouseTypeTable" class="trend-table"></table></div>
         <div class="report-card"><h2>各产品资金占用趋势</h2><table id="trendProductLineTable" class="trend-table"></table></div>
-      </section>
-
-      <section class="trend-report-grid two">
         <div class="report-card"><h2>仓库位置资金占用趋势</h2><table id="trendWarehouseLocationTable" class="trend-table"></table></div>
         <div class="report-card"><h2>产品系列 Top 10 资金占用趋势</h2><table id="trendSeriesTable" class="trend-table"></table></div>
       </section>
