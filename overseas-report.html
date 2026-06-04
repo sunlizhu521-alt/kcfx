@@ -149,14 +149,15 @@
       max-width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: clamp(7px, .42vw, 10px);
+      font-size: clamp(6px, .38vw, 9px);
       line-height: 1.12;
     }
     .trend-table th,
     .trend-table td {
       border: 1px solid rgba(126,151,176,.28);
       padding: 3px 2px;
-      text-align: right;
+      text-align: center;
+      font-size: inherit;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: clip;
@@ -164,9 +165,13 @@
       word-break: keep-all;
       vertical-align: middle;
     }
+    .trend-report-grid.five .trend-table th,
+    .trend-report-grid.five .trend-table td {
+      font-size: clamp(6px, .38vw, 9px);
+    }
     .trend-table th:first-child,
     .trend-table td:first-child {
-      text-align: left;
+      text-align: center;
       width: 26%;
     }
     .trend-table th {
