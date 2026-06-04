@@ -111,7 +111,7 @@
     .trend-report-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
+      gap: 12px;
       margin-bottom: 14px;
     }
     .trend-report-grid.three {
@@ -123,7 +123,7 @@
       grid-template-columns: repeat(2, minmax(360px, 1fr));
     }
     .trend-report-grid.five {
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       align-items: stretch;
       overflow: visible;
     }
@@ -133,13 +133,13 @@
       max-width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      font-size: clamp(10px, .58vw, 12px);
-      line-height: 1.25;
+      font-size: clamp(8px, .48vw, 11px);
+      line-height: 1.18;
     }
     .trend-table th,
     .trend-table td {
       border: 1px solid rgba(126,151,176,.28);
-      padding: 6px 5px;
+      padding: 4px 3px;
       text-align: right;
       white-space: normal;
       overflow-wrap: anywhere;
@@ -149,7 +149,7 @@
     .trend-table th:first-child,
     .trend-table td:first-child {
       text-align: left;
-      width: 30%;
+      width: 28%;
     }
     .trend-table th {
       background: #f0f6fc;
@@ -157,12 +157,12 @@
       font-weight: 800;
     }
     .trend-report-grid .report-card {
-      padding: 12px;
+      padding: 10px;
     }
     .trend-report-grid .report-card h2 {
-      font-size: clamp(13px, .82vw, 16px);
-      line-height: 1.25;
-      min-height: 2.5em;
+      font-size: clamp(10px, .68vw, 14px);
+      line-height: 1.2;
+      min-height: 2.4em;
     }
     .advice-list {
       display: grid;
@@ -230,7 +230,7 @@
       .report-grid,
       .report-grid.three,
       .report-grid.five,
-      .trend-report-grid {
+      .trend-report-grid:not(.five) {
         grid-template-columns: 1fr;
       }
       .report-metrics {
