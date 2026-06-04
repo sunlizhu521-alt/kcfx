@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "project": "kcfx",
   "name": "库存分析看板文件库",
-  "savedAt": "2026-06-02T06:12:58.937672Z",
+  "savedAt": "2026-06-04T03:33:36.717Z",
   "records": {
     "fact-inventory": {
       "id": "fact-inventory",
@@ -91,6 +91,50 @@
       "size": 5935701,
       "savedAt": "2026-06-02T03:21:09.312472Z",
       "appliedAt": "2026-06-02T03:21:09.312472Z"
+    },
+    "fact-3": {
+      "id": "fact-3",
+      "type": "fact",
+      "title": "收发汇总表1月",
+      "fileName": "0131物料收发汇总表_2026060316521287_115748.xlsx",
+      "path": "data/kcfx-library/fact/fact-3.json",
+      "rows": 12638,
+      "size": 805268,
+      "savedAt": "2026-06-03T08:56:26.767Z",
+      "appliedAt": "2026-06-03T08:56:26.767Z"
+    },
+    "fact-4": {
+      "id": "fact-4",
+      "type": "fact",
+      "title": "收发汇总表2月",
+      "fileName": "0228物料收发汇总表_2026060316490642_115748.xlsx",
+      "path": "data/kcfx-library/fact/fact-4.json",
+      "rows": 12647,
+      "size": 803867,
+      "savedAt": "2026-06-03T08:56:29.435Z",
+      "appliedAt": "2026-06-03T08:56:29.435Z"
+    },
+    "fact-5": {
+      "id": "fact-5",
+      "type": "fact",
+      "title": "收发汇总表3月",
+      "fileName": "0331物料收发汇总表_2026060316472648_115748.xlsx",
+      "path": "data/kcfx-library/fact/fact-5.json",
+      "rows": 14358,
+      "size": 923862,
+      "savedAt": "2026-06-03T08:56:28.741Z",
+      "appliedAt": "2026-06-03T08:56:28.741Z"
+    },
+    "fact-6": {
+      "id": "fact-6",
+      "type": "fact",
+      "title": "收发汇总表4月",
+      "fileName": "0430物料收发汇总表_2026060316541177_115748.xlsx",
+      "path": "data/kcfx-library/fact/fact-6.json",
+      "rows": 14909,
+      "size": 957938,
+      "savedAt": "2026-06-03T08:56:27.058Z",
+      "appliedAt": "2026-06-03T08:56:27.058Z"
     }
   }
 }

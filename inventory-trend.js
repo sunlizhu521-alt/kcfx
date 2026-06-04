@@ -34,9 +34,11 @@ function renderTrendDashboard(records) {
   const totalQty = monthSummaries.reduce((total, item) => total + item.totalQty, 0);
   const totalValue = monthSummaries.reduce((total, item) => total + item.totalValue, 0);
   const pricedRows = monthSummaries.reduce((total, item) => total + item.pricedRows, 0);
+  const directPricedRows = monthSummaries.reduce((total, item) => total + item.directPricedRows, 0);
+  const fallbackPricedRows = monthSummaries.reduce((total, item) => total + item.fallbackPricedRows, 0);
 
   currentTrendMonthSummaries = monthSummaries;
-  setTrendStatus(`已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，P列有效 ${formatNumber(pricedRows, 0)} 行，K列数量合计 ${formatQuantity(totalQty)}，K×P货值合计 ${formatMoneyWan(totalValue)}。`);
+  setTrendStatus(`已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，结算价有效 ${formatNumber(pricedRows, 0)} 行（本表P列 ${formatNumber(directPricedRows, 0)} 行，补价 ${formatNumber(fallbackPricedRows, 0)} 行），K列数量合计 ${formatQuantity(totalQty)}，K×P货值合计 ${formatMoneyWan(totalValue)}。`);
   populateTrendFilters(monthSummaries);
   renderTrendCharts();
   renderTrendSourcePanel(monthSummaries, records);
@@ -67,6 +69,8 @@ function summarizeTrendMonth(month, record, maps) {
     totalQty: 0,
     totalValue: 0,
     pricedRows: 0,
+    directPricedRows: 0,
+    fallbackPricedRows: 0,
     items: [],
     unclassifiedRows: []
   };
@@ -78,7 +82,9 @@ function summarizeTrendMonth(month, record, maps) {
     const warehouse = normalizeText(nthValue(row, 4));
     const qty = trendToNumber(qtyAccessor(row));
     if (!qty) continue;
-    const settlementPrice = trendToNumber(priceAccessor(row));
+    const directSettlementPrice = trendToNumber(priceAccessor(row));
+    const fallbackSettlementPrice = maps.settlementPriceByMaterial.get(materialB) || 0;
+    const settlementPrice = directSettlementPrice || fallbackSettlementPrice;
     const value = qty * settlementPrice;
 
     const department = maps.departmentByKey.get(makeTrendDepartmentKey(materialA, warehouse, materialB)) || "";
@@ -92,7 +98,9 @@ function summarizeTrendMonth(month, record, maps) {
     summary.usedRows += 1;
     summary.totalQty += qty;
     summary.totalValue += value;
-    if (settlementPrice) summary.pricedRows = (summary.pricedRows || 0) + 1;
+    if (settlementPrice) summary.pricedRows += 1;
+    if (directSettlementPrice) summary.directPricedRows += 1;
+    else if (fallbackSettlementPrice) summary.fallbackPricedRows += 1;
     summary.items.push({
       qty,
       value,
@@ -157,15 +165,28 @@ function buildTrendDimensionMaps(records) {
   }
 
   const productLineByMaterial = new Map();
+  const settlementPriceByMaterial = new Map();
   for (const row of records["dim-product"]?.rows || []) {
     const materialCode = normalizeMaterialCode(nthValue(row, 1));
     const productLine = normalizeText(nthValue(row, 7));
     if (materialCode && productLine && !productLineByMaterial.has(materialCode)) {
       productLineByMaterial.set(materialCode, productLine);
     }
+    const price = trendToNumber(nthValue(row, 10));
+    if (materialCode && price && !settlementPriceByMaterial.has(materialCode)) {
+      settlementPriceByMaterial.set(materialCode, price);
+    }
   }
 
-  return { departmentByKey, warehouseLocationByName, productLineByMaterial };
+  const inventoryMonthRows = records["fact-2"]?.rows || [];
+  const monthPriceAccessor = makeTrendPriceAccessor(inventoryMonthRows[0]);
+  for (const row of inventoryMonthRows) {
+    const materialCode = normalizeMaterialCode(nthValue(row, 1));
+    const price = trendToNumber(monthPriceAccessor(row));
+    if (materialCode && price) settlementPriceByMaterial.set(materialCode, price);
+  }
+
+  return { departmentByKey, warehouseLocationByName, productLineByMaterial, settlementPriceByMaterial };
 }
 
 function populateTrendFilters(monthSummaries) {
@@ -358,7 +379,7 @@ function renderTrendSourcePanel(monthSummaries, records) {
   const monthLines = monthSummaries.map((item) => {
     const record = item.record;
     if (!record) return `<div>${item.label}：未引用</div>`;
-    return `<div>${item.label}：${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}，${formatNumber(item.usedRows, 0)} 行，P列有效 ${formatNumber(item.pricedRows, 0)} 行，已排除最后汇总行 ${formatNumber(item.skippedSummaryRows, 0)} 行</div>`;
+    return `<div>${item.label}：${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}，${formatNumber(item.usedRows, 0)} 行，结算价有效 ${formatNumber(item.pricedRows, 0)} 行（本表P列 ${formatNumber(item.directPricedRows, 0)} 行，补价 ${formatNumber(item.fallbackPricedRows, 0)} 行），已排除最后汇总行 ${formatNumber(item.skippedSummaryRows, 0)} 行</div>`;
   });
   const dimLines = [
     ["仓库物料事业部对照表", records["dim-warehouse-material"]],
@@ -367,7 +388,7 @@ function renderTrendSourcePanel(monthSummaries, records) {
   ].map(([label, record]) => `<div>${label}：${record ? `${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}` : "未引用"}</div>`);
   sourceEl.innerHTML = `
     <strong>趋势图口径</strong>
-    <div>事实表取收发汇总表1月-4月，第4行为表头；数量取K列求和；货值按K列数量×P列结算价(含税)计算；每张表最后一行汇总数据不参与计算。</div>
+    <div>事实表取收发汇总表1月-4月，第4行为表头；数量取K列求和；货值优先按本表K列数量×P列结算价(含税)计算，本表没有P列时按物料编码使用库存分析月份表的结算价(含税)补价；每张表最后一行汇总数据不参与计算。</div>
     <div>事业部：事实表A列+D列+B列匹配仓库物料事业部对照表F列，取G列。</div>
     <div>产品：事实表B列匹配商品分类维表A列，取G列销售产品线。</div>
     <div>仓库位置：事实表D列匹配仓库维表B列，取H列仓库位置。</div>
