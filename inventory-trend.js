@@ -48,11 +48,13 @@ function renderTrendCharts() {
 }
 
 function summarizeTrendMonth(month, record, maps) {
-  const rows = record?.rows || [];
+  const sourceRows = record?.rows || [];
+  const rows = sourceRows.length ? sourceRows.slice(0, -1) : [];
   const summary = {
     ...month,
     record,
-    totalRows: rows.length,
+    totalRows: sourceRows.length,
+    skippedSummaryRows: sourceRows.length ? 1 : 0,
     usedRows: 0,
     totalQty: 0,
     items: [],
@@ -282,7 +284,7 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
     <div class="trend-legend">
       ${TREND_MONTHS.map((month, index) => `<span><i style="background:${TREND_COLORS[index]}"></i>${month.label}</span>`).join("")}
     </div>
-    <div class="trend-bars-vertical">
+    <div class="trend-bars-vertical ${trendCategoryDensityClass(valuesByCategory.length)}">
       ${valuesByCategory.map((category) => `
         <div class="trend-category" title="${escapeHtml(category.name)}">
           <div class="trend-bar-group">
@@ -298,6 +300,13 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
       `).join("")}
     </div>
   `;
+}
+
+function trendCategoryDensityClass(count) {
+  if (count <= 1) return "single-category";
+  if (count <= 2) return "two-categories";
+  if (count <= 4) return "few-categories";
+  return "";
 }
 
 function topTrendCategories(monthSummaries, field, fallbackName, limit = TREND_TOP_LIMIT) {
@@ -330,7 +339,7 @@ function renderTrendSourcePanel(monthSummaries, records) {
   const monthLines = monthSummaries.map((item) => {
     const record = item.record;
     if (!record) return `<div>${item.label}：未引用</div>`;
-    return `<div>${item.label}：${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}，${formatNumber(item.usedRows, 0)} 行</div>`;
+    return `<div>${item.label}：${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}，${formatNumber(item.usedRows, 0)} 行，已排除最后汇总行 ${formatNumber(item.skippedSummaryRows, 0)} 行</div>`;
   });
   const dimLines = [
     ["仓库物料事业部对照表", records["dim-warehouse-material"]],
@@ -339,7 +348,7 @@ function renderTrendSourcePanel(monthSummaries, records) {
   ].map(([label, record]) => `<div>${label}：${record ? `${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}` : "未引用"}</div>`);
   sourceEl.innerHTML = `
     <strong>趋势图口径</strong>
-    <div>事实表取收发汇总表1月-4月，第4行为表头；数量取K列求和。</div>
+    <div>事实表取收发汇总表1月-4月，第4行为表头；数量取K列求和；每张表最后一行汇总数据不参与计算。</div>
     <div>事业部：事实表A列+D列+B列匹配仓库物料事业部对照表F列，取G列。</div>
     <div>产品：事实表B列匹配商品分类维表A列，取G列销售产品线。</div>
     <div>仓库位置：事实表D列匹配仓库维表B列，取H列仓库位置。</div>
