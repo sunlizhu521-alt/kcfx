@@ -376,6 +376,8 @@
     </main>
   </div>
 
+  <script src="storage.js?v=20260602g"></script>
+  <script src="shared-library.js?v=20260605c"></script>
   <script>
     const REPORT_PAGE_CONFIG = {
       department: "海外事业一部",
@@ -583,16 +585,17 @@
     }
 
     async function loadWarehouseExceptions() {
+      if (typeof loadSharedLibrary === "function") await loadSharedLibrary();
       const records = {};
-      const paths = [
-        ["dim-product", "data/kcfx-library/dimensions/dim-product.json"],
-        ["dim-warehouse", "data/kcfx-library/dimensions/dim-warehouse.json"],
-        ["dim-warehouse-material", "data/kcfx-library/dimensions/dim-warehouse-material.json"],
-        ["fact-2", "data/kcfx-library/fact/fact-2.json"],
-        ...WAREHOUSE_EXCEPTION_MONTHS.map((month) => [month.id, `data/kcfx-library/fact/${month.id}.json`])
+      const recordIds = [
+        "dim-product",
+        "dim-warehouse",
+        "dim-warehouse-material",
+        "fact-2",
+        ...WAREHOUSE_EXCEPTION_MONTHS.map((month) => month.id)
       ];
-      await Promise.all(paths.map(async ([id, path]) => {
-        records[id] = await fetchLibraryRecord(path);
+      await Promise.all(recordIds.map(async (id) => {
+        records[id] = await fetchLibraryRecord(id);
       }));
       const latestReport = buildLatestReport(records);
       if (latestReport) {
@@ -609,10 +612,11 @@
       renderWarehouseExceptionRows(warehouseExceptionRows, records);
     }
 
-    async function fetchLibraryRecord(path) {
-      const response = await fetch(`${path}?v=${Date.now()}`, { cache: "no-store" });
-      if (!response.ok) throw new Error(`${path} ${response.status}`);
-      return response.json();
+    async function fetchLibraryRecord(id) {
+      const local = typeof getRecord === "function" ? await getRecord(id).catch(() => null) : null;
+      const displayRecord = typeof getDisplayRecord === "function" ? getDisplayRecord(local) : local;
+      if (displayRecord && Array.isArray(displayRecord.rows)) return displayRecord;
+      return { id, rows: [] };
     }
 
     function buildLatestReport(records) {

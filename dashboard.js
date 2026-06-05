@@ -101,7 +101,7 @@ function buildFactReferenceDiagnostics(record) {
     iSum: 0,
     ghValue: 0,
     parseDiagnostics: record?.parseDiagnostics || null,
-    path: record?.libraryPath || "data/kcfx-library/fact/fact-inventory.json"
+    path: record?.libraryPath || ""
   };
   for (const row of rows) {
     if (getFactMaterialCode(row)) result.materialRows += 1;

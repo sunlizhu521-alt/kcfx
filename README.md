@@ -1,98 +1,48 @@
 # 库存分析看板
 
-库存分析看板是一个独立的 GitHub Pages 静态看板项目，用于供应链维护更新与关账后库存的财务口径分析。项目不依赖本地路径、不需要后端服务，浏览器端使用 SheetJS 读取 Excel，并把文件数据保存到 IndexedDB。
+这是独立的 GitHub Pages 库存分析项目。页面代码和文件库在同一个仓库里，但不再随链接预置业务表格数据。
 
-## 页面结构
+## 当前共享规则
 
-```text
-kcfx/
-├── index.html              # 库存分析看板
-├── fact-library.html       # 事实表文件库
-├── file-library.html       # 维度表文件库
-├── storage.js              # IndexedDB 与 Excel 解析
-├── shared-library.js       # 共享数据包同步与导出
-├── dashboard.js            # 库存宽表 Join 与看板渲染
-├── library-page.js         # 文件库页面逻辑
-├── styles.css              # 统一样式
-└── data/
-    └── shared-library.json # 给同事打开 GitHub Pages 时自动加载的数据包
-```
+- `data/kcfx-library/manifest.json` 默认保持空记录。
+- 不提交解析后的事实表、维度表 JSON 数据。
+- 同事打开链接后，需要在“事实表文件库”和“维度表文件库”重新上传并应用最新 Excel。
+- 各看板页面优先读取浏览器 IndexedDB 中当前已应用的文件库记录。
+- 页面加载时会清理旧版本 GitHub 共享包留下的缓存记录，但不会清理用户自己上传的本地记录。
 
-## 文件库
+## 主要页面
 
-### 事实表文件库
+- `receipt-summary.html`：供应链库存分析。
+- `over-120.html`：120天以上库存导航。
+- `index.html`：库存分析看板-模板。
+- `inventory-trend.html`：库存趋势变化-模板。
+- `comparison.html`：表格对比分析。
+- `errors.html`：报错信息提示。
+- `fact-library.html`：事实表文件库。
+- `file-library.html`：维度表文件库。
 
-- `关账后库存事实表`
-- 典型文件：`4月底物料收发汇总表`
-- 第 1 行作为真实表头读取
+## 文件库口径
 
-### 维度表文件库
-
-- `Dim-YL医疗器械商品分类-2026年整理版`
-- `Dim-仓库_金蝶、旺店通、领星-2026年整理版`
-- `Dim-仓库与物料对照表-2026年整理版`
-
-## 核心关联逻辑
-
-事业部关联使用三元联合键：
+事实表和维度表都通过浏览器端 SheetJS 解析，并保存到 IndexedDB：
 
 ```text
-联合Key = 库存组织 + 仓库名称 + 物料编码
+IndexedDB: kcfx-inventory-analysis-file-library/files
 ```
 
-商品维度按 `物料编码` 匹配：
-
-- SKU
-- 金蝶名称
-- 销售产品线
-- 销售系列
-- 采购分组
-- 财务加权平均价
-- 结算价
-
-财务估值：
-
-```text
-单价估值 = 财务加权平均价；若为 0，则使用结算价兜底
-库存价值 = (结存)数量（库存） × 单价估值
-```
+同事替换文件时，上传后需要点击应用刷新；刷新页面后仍读取当前浏览器里最新应用的版本。
 
 ## 本地预览
-
-直接打开 `index.html` 即可。为了模拟 GitHub Pages 的 `data/shared-library.json` 加载，也可以开一个静态服务：
 
 ```bash
 python -m http.server 8080
 ```
 
-访问：
+然后访问：
 
 ```text
-http://127.0.0.1:8080
+http://127.0.0.1:8080/
 ```
 
-## 发布共享数据包
+## 发布
 
-1. 打开 `fact-library.html` 和 `file-library.html` 上传 4 张 Excel。
-2. 点击 `导出共享数据包`，得到 `shared-library.json`。
-3. 用导出的文件替换仓库里的 `data/shared-library.json`。
-4. 提交并推送到 GitHub。
-5. 同事打开 GitHub Pages 链接时，页面会自动同步共享数据到浏览器 IndexedDB。
-
-## 部署到 GitHub Pages
-
-1. 创建 GitHub 仓库 `kcfx`。
-2. 推送本项目代码到 `main`。
-3. 在 GitHub 仓库设置中启用 Pages：
-   - Source: `Deploy from a branch`
-   - Branch: `main`
-   - Folder: `/root`
-4. Pages 地址通常为：
-
-```text
-https://你的用户名.github.io/kcfx/
-```
-
-## 数据安全
-
-`data/shared-library.json` 会包含解析后的业务数据。若包含库存、价格、仓库、事业部等敏感信息，请使用私有仓库或确认数据允许分享后再发布。
+代码推送到 GitHub 后由 GitHub Pages 发布。共享链接只发布页面框架和空文件库清单，不发布业务数据。

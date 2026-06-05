@@ -35,14 +35,11 @@ async function loadKcfxFileLibrary(statusEl) {
       }
     }
 
-    if (statusEl) {
-      statusEl.textContent = imported
-        ? `已同步 ${imported} 个库存分析看板文件库记录。`
-        : "库存分析看板文件库已检查，无需更新。";
-    }
-    return { ok: true, imported, manifest };
+    const cleared = await clearStaleSharedRecords(new Set(entries.map(([id]) => id)));
+    if (statusEl) statusEl.textContent = buildSharedLibraryStatus(imported, cleared, entries.length);
+    return { ok: true, imported, cleared, manifest };
   } catch (error) {
-    if (statusEl) statusEl.textContent = `库存分析看板文件库未加载：${error.message}`;
+    if (statusEl) statusEl.textContent = `文件库未加载：${error.message}`;
     return { ok: false, error };
   }
 }
@@ -60,6 +57,43 @@ function isLocalBrowserRecord(record) {
     && !record.libraryPath
     && !record.libraryManifestPath
     && !record.sharedSavedAt;
+}
+
+function isSharedLibraryRecord(record) {
+  return Boolean(record?.libraryPath || record?.libraryManifestPath || record?.sharedSavedAt);
+}
+
+async function clearStaleSharedRecords(activeSharedIds) {
+  const records = await getAllRecords();
+  let cleared = 0;
+  for (const record of records) {
+    if (!record?.id || !SLOT_BY_ID[record.id]) continue;
+    if (activeSharedIds.has(record.id)) continue;
+    if (isDeletedRecord(record) || hasPendingRecord(record) || isLocalBrowserRecord(record)) continue;
+    if (!isSharedLibraryRecord(record)) continue;
+    const deletedAt = new Date().toISOString();
+    await saveRecord({
+      id: record.id,
+      type: record.type || SLOT_BY_ID[record.id]?.type || "",
+      title: record.title || SLOT_BY_ID[record.id]?.title || record.id,
+      expectedName: record.expectedName || SLOT_BY_ID[record.id]?.expectedName || "",
+      fileName: "",
+      savedAt: deletedAt,
+      deletedAt,
+      clearedSharedDefault: true
+    });
+    cleared += 1;
+  }
+  return cleared;
+}
+
+function buildSharedLibraryStatus(imported, cleared, sharedCount) {
+  if (!sharedCount && cleared) return `文件库共享默认数据已清空，已清理 ${cleared} 个旧共享记录。`;
+  if (!sharedCount) return "文件库共享默认数据为空，请上传并应用最新文件。";
+  if (imported && cleared) return `已同步 ${imported} 个文件库记录，并清理 ${cleared} 个旧共享记录。`;
+  if (imported) return `已同步 ${imported} 个文件库记录。`;
+  if (cleared) return `已清理 ${cleared} 个旧共享记录。`;
+  return "文件库已检查，无需更新。";
 }
 
 function sharedIsNotOlder(shared, local) {
