@@ -224,7 +224,7 @@ function renderDetails(rows, selectedAgeLabels) {
 
 function downloadDetailRows() {
   const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
-  const headers = ["仓库名称", "物料编码", "物料名称", "0430结余库存数量", "结算价(含税)", "占用资金总额", "原因"];
+  const headers = ["仓库名称", "物料编码", "物料名称", "0430结余库存数量", "结算价(含税)", "库存总额", "原因"];
   const lines = [headers.join(",")];
   filteredRows.forEach((row) => {
     lines.push([
