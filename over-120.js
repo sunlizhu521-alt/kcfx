@@ -214,25 +214,23 @@ function renderDetails(rows, selectedAgeLabels) {
       <td>${escapeHtml(row.warehouse)}</td>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
-      <td class="num">${formatOptionalNumber(row.inventoryDays, 0)}</td>
       <td class="num">${formatNumber(visibleQuantity(row, selectedAgeLabels), 3)}</td>
       <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
       <td class="num">${formatMoney(visibleAmount(row, selectedAgeLabels))}</td>
       <td>${escapeHtml(row.reason)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="8" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
 }
 
 function downloadDetailRows() {
   const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
-  const headers = ["仓库名称", "物料编码", "物料名称", "库存天数", "0430结余库存数量", "结算价(含税)", "占用资金总额", "原因"];
+  const headers = ["仓库名称", "物料编码", "物料名称", "0430结余库存数量", "结算价(含税)", "占用资金总额", "原因"];
   const lines = [headers.join(",")];
   filteredRows.forEach((row) => {
     lines.push([
       row.warehouse,
       row.materialCode,
       row.materialName,
-      row.inventoryDays,
       visibleQuantity(row, selectedAgeLabels),
       row.settlementPrice,
       visibleAmount(row, selectedAgeLabels),
