@@ -1254,6 +1254,27 @@ input[type="file"]:disabled {
   margin-bottom: 0;
 }
 
+.over120-page .over120-toolbar {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.over120-page .over120-toolbar .multi-filter {
+  flex: 0 0 170px;
+  min-width: 150px;
+  max-width: 190px;
+}
+
+.over120-page .over120-toolbar input {
+  flex: 0 0 220px;
+}
+
+.over120-page .analysis-section-tables table th,
+.over120-page .analysis-section-tables table td {
+  text-align: center;
+}
+
 .receipt-page .toolbar input {
   border-color: rgba(126, 151, 176, .46);
   background: rgba(255, 255, 255, .92);
