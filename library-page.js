@@ -165,6 +165,9 @@ function renderCard(slot, record, labels) {
 }
 
 function bindCardEvents() {
+  document.querySelectorAll(".file-slot").forEach((card) => {
+    bindSlotDropEvents(card);
+  });
   document.querySelectorAll("[data-save]").forEach((button) => {
     button.addEventListener("click", () => chooseSlotFile(button.dataset.save));
   });
@@ -177,6 +180,36 @@ function bindCardEvents() {
   document.querySelectorAll("[data-apply]").forEach((button) => {
     button.addEventListener("click", () => applySlot(button.dataset.apply));
   });
+}
+
+function bindSlotDropEvents(card) {
+  const slotId = card.dataset.slotId;
+  if (!slotId) return;
+  ["dragenter", "dragover"].forEach((eventName) => {
+    card.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      card.classList.add("is-drag-over");
+    });
+  });
+  ["dragleave", "dragend"].forEach((eventName) => {
+    card.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (eventName === "dragleave" && card.contains(event.relatedTarget)) return;
+      card.classList.remove("is-drag-over");
+    });
+  });
+  card.addEventListener("drop", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    card.classList.remove("is-drag-over");
+    await saveSlotFile(slotId, firstDroppedFile(event.dataTransfer));
+  });
+}
+
+function firstDroppedFile(dataTransfer) {
+  return [...(dataTransfer?.files || [])].find(Boolean) || null;
 }
 
 function chooseSlotFile(slotId) {
@@ -213,6 +246,40 @@ async function saveSlot(slotId) {
   } catch (error) {
     status.textContent = `解析失败：${error.message}`;
   }
+}
+
+async function saveSlotFile(slotId, file) {
+  const slot = SLOT_BY_ID[slotId];
+  const status = $(`#status-${slotId}`);
+  if (!slot || !status) return;
+  if (!file) {
+    status.textContent = "请先选择或拖拽文件。";
+    return;
+  }
+  if (!isAcceptedLibraryFile(file)) {
+    status.textContent = "请上传 Excel 或 CSV 文件（.xlsx/.xlsm/.xls/.csv）。";
+    return;
+  }
+
+  try {
+    status.textContent = "正在解析文件...";
+    const record = await readExcelFile(file, slot);
+    if (!record.rows.length) throw new Error("文件未解析到有效行。");
+    const existing = await getRecord(slotId);
+    if (existing?.appliedAt) {
+      await saveRecord({ ...existing, pending: { ...record, appliedAt: "" } });
+    } else {
+      await saveRecord({ ...record, appliedAt: "" });
+    }
+    status.textContent = "已保存到文件库，状态为待应用。点击应用刷新后，看板才会读取这份文件。";
+    await renderLibrary();
+  } catch (error) {
+    status.textContent = `解析失败：${error.message}`;
+  }
+}
+
+function isAcceptedLibraryFile(file) {
+  return /\.(xlsx|xlsm|xls|csv)$/i.test(file?.name || "");
 }
 
 async function applySlot(slotId) {
