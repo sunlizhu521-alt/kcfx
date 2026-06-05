@@ -380,8 +380,8 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
         <div class="trend-category" title="${escapeHtml(category.name)}">
           <div class="trend-bar-group">
             ${category.values.map((value, index) => `
-              <div class="trend-bar-wrap" title="${TREND_MONTHS[index].label} ${escapeHtml(category.name)} ${formatValue(value)}">
-                <span class="trend-bar-value">${escapeHtml(formatShortValue(value))}</span>
+              <div class="trend-bar-wrap" title="${TREND_MONTHS[index].label} ${escapeHtml(category.name)} ${formatValue(value)} ${formatTrendMoM(value, category.values[index - 1])}">
+                <span class="trend-bar-value">${escapeHtml(formatTrendBarValue(value, category.values[index - 1], formatShortValue))}</span>
                 <div class="trend-bar" style="height:${Math.max(2, value / max * 100)}%;background:${TREND_COLORS[index]}"></div>
               </div>
             `).join("")}
@@ -391,6 +391,17 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
       `).join("")}
     </div>
   `;
+}
+
+function formatTrendBarValue(value, previousValue, formatter) {
+  return `${formatter(value)}（${formatTrendMoM(value, previousValue)}）`;
+}
+
+function formatTrendMoM(value, previousValue) {
+  const current = Number(value) || 0;
+  const previous = Number(previousValue);
+  if (!Number.isFinite(previous) || previous === 0) return "环比-";
+  return `环比${((current / previous - 1) * 100).toFixed(1)}%`;
 }
 
 function trendCategoryDensityClass(count) {

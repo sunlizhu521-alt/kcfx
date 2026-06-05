@@ -23,14 +23,16 @@ async function refreshAll() {
     await renderLibrary();
     return;
   }
-  if (!window.confirm(`确认应用刷新 ${count} 个已上传文件？`)) return;
+  let appliedCount = 0;
   for (const slot of applicableSlots) {
     const nextRecord = promotePendingRecord(records[slot.id]);
     if (nextRecord) {
       await saveRecord(nextRecord);
+      appliedCount += 1;
     }
   }
   await renderLibrary();
+  if (appliedCount) window.alert("应用成功");
 }
 
 function pageType() {
@@ -216,10 +218,11 @@ async function saveSlot(slotId) {
 async function applySlot(slotId) {
   const record = await getRecord(slotId);
   if (!record) return;
-  const displayRecord = getDisplayRecord(record);
-  if (!window.confirm(`确认应用刷新：${displayRecord.fileName || SLOT_BY_ID[slotId].title}？`)) return;
-  await saveRecord(promotePendingRecord(record));
+  const nextRecord = promotePendingRecord(record);
+  if (!nextRecord) return;
+  await saveRecord(nextRecord);
   await renderLibrary();
+  window.alert("应用成功");
 }
 
 async function clearSlot(slotId) {

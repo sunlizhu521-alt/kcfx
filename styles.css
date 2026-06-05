@@ -1601,7 +1601,7 @@ input[type="file"]:disabled {
   left: 50%;
   transform: translateX(-50%);
   color: #51677e;
-  font-size: 10px;
+  font-size: clamp(7px, .45vw, 9px);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
