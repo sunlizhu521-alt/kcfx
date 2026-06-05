@@ -17,7 +17,7 @@ let trendUnclassifiedRows = [];
 let currentTrendMonthSummaries = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
-  if (!document.querySelector("#departmentValueTrendChart")) return;
+  if (!document.querySelector("#inventoryValueTrendChart")) return;
   const statusEl = document.querySelector("#trendSummaryStatus") || document.querySelector("#summaryStatus");
   document.querySelector("#downloadTrendUnclassifiedBtn")?.addEventListener("click", downloadTrendUnclassifiedRows);
   document.querySelector("#clearTrendFiltersBtn")?.addEventListener("click", clearTrendFilters);
@@ -48,10 +48,7 @@ function renderTrendDashboard(records) {
 }
 
 function renderTrendCharts() {
-  renderVerticalTrendChart("warehouseTypeValueTrendChart", "warehouseTypeValueTrendTotal", currentTrendMonthSummaries, "warehouseType", "未分类仓库类型", "warehouseTypeTrendFilter", "value");
-  renderVerticalTrendChart("departmentValueTrendChart", "departmentValueTrendTotal", currentTrendMonthSummaries, "department", "未匹配事业部", "departmentTrendFilter", "value");
-  renderVerticalTrendChart("productValueTrendChart", "productValueTrendTotal", currentTrendMonthSummaries, "productLine", "未分类产品线", "productTrendFilter", "value");
-  renderVerticalTrendChart("warehouseLocationValueTrendChart", "warehouseLocationValueTrendTotal", currentTrendMonthSummaries, "warehouseLocation", "未分类仓库位置", "warehouseLocationTrendFilter", "value");
+  renderVerticalTrendChart("inventoryValueTrendChart", "inventoryValueTrendTotal", currentTrendMonthSummaries, "", "", "", "value", "库存趋势");
 }
 
 function summarizeTrendMonth(month, record, maps) {
@@ -345,13 +342,13 @@ function clearTrendFilters() {
   renderTrendCharts();
 }
 
-function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallbackName, filterId = "", metric = "qty") {
+function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallbackName, filterId = "", metric = "qty", aggregateLabelOverride = "") {
   const container = document.querySelector(`#${chartId}`);
   if (!container) return;
   const selections = getTrendFilterSelections();
   const selected = selections[filterId] || [];
   const currentFilter = TREND_FILTERS.find((filter) => filter.id === filterId);
-  const aggregateLabel = getTrendAggregateLabel(currentFilter?.allLabel || "全部", selected);
+  const aggregateLabel = aggregateLabelOverride || getTrendAggregateLabel(currentFilter?.allLabel || "全部", selected);
   const categoryNames = [aggregateLabel];
   const total = monthSummaries.reduce((sum, month) => month.items.reduce((monthSum, item) => {
     if (!trendItemMatchesSelections(item, selections)) return monthSum;
