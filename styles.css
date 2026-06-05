@@ -653,6 +653,115 @@ th {
   color: #22313f;
 }
 
+.filterable-table th {
+  overflow: visible;
+  z-index: 4;
+}
+
+.table-filter-head {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.table-filter-trigger {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(24, 50, 77, .25);
+  border-radius: 4px;
+  background: #fff;
+  color: #496276;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+}
+
+.table-filter-trigger.active {
+  border-color: #0a84ff;
+  color: #0a66c2;
+  background: #eaf4ff;
+}
+
+.table-filter-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 4px;
+  min-width: 220px;
+  max-width: min(320px, 70vw);
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid #b8c8d8;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(15, 33, 51, .18);
+  padding: 8px;
+  text-align: left;
+  z-index: 20;
+}
+
+.table-filter-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 6px;
+  border: 1px solid #c8d6e2;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.table-filter-options {
+  display: grid;
+  gap: 4px;
+  max-height: 210px;
+  overflow: auto;
+  padding: 2px 0;
+}
+
+.table-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #22313f;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.table-filter-option span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-filter-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.table-filter-actions button {
+  border: 1px solid #b8c8d8;
+  border-radius: 6px;
+  background: #f6f9fc;
+  color: #24384d;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 9px;
+}
+
+.table-filter-actions button[data-table-filter-apply] {
+  border-color: #0a84ff;
+  background: #0a84ff;
+  color: #fff;
+}
+
 td.num {
   text-align: right;
   font-variant-numeric: tabular-nums;

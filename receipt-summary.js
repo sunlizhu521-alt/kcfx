@@ -30,6 +30,9 @@ const AGE_BUCKET_DEFINITIONS = [
 ];
 let summaryRows = [];
 let filteredRows = [];
+let detailTableRows = [];
+let detailTableBaseRows = [];
+const detailTableFilters = {};
 let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 let closedInventoryValue = 0;
 
@@ -41,6 +44,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   bindIfExists("#downloadSeriesBtn", "click", downloadSeriesSummary);
   bindIfExists("#downloadUnclassifiedBtn", "click", downloadUnclassifiedRows);
   document.addEventListener("click", closeMultiFilters);
+  document.addEventListener("click", handleDetailTableFilterClick);
+  document.addEventListener("input", handleDetailTableFilterSearch);
   bindIfExists("#searchInput", "input", renderSummary);
   bindIfExists("#productLineFilter", "change", () => {
     populateSeriesFilter(summaryRows);
@@ -132,6 +137,7 @@ function clearFilters() {
   clearSelect($("#ageFilter"));
   clearSelect($("#warehouseLocationFilter"));
   $("#searchInput").value = "";
+  clearDetailTableFilters();
   renderSummary();
 }
 
@@ -234,7 +240,10 @@ function renderSummary() {
   renderAmountCharts(filteredRows, selectedAgeLabels);
   renderQuantityCharts(filteredRows, selectedAgeLabels);
   renderUnclassifiedRows(filteredRows, selectedAgeLabels);
-  const shown = filteredRows.slice(0, 1000);
+  detailTableBaseRows = filteredRows;
+  renderDetailTableHeaderFilters(filteredRows);
+  detailTableRows = applyDetailTableFilters(filteredRows);
+  const shown = detailTableRows.slice(0, 1000);
   const summaryBody = $("#summaryRows");
   if (summaryBody) summaryBody.innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -249,6 +258,140 @@ function renderSummary() {
   `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
 }
 
+function renderDetailTableHeaderFilters(rows) {
+  document.querySelectorAll("[data-detail-filter]").forEach((th) => {
+    const key = th.dataset.detailFilter;
+    const label = th.dataset.detailLabel || th.textContent.trim();
+    th.dataset.detailLabel = label;
+    const selectedCount = detailTableFilters[key]?.size || 0;
+    th.innerHTML = `
+      <div class="table-filter-head">
+        <span>${escapeHtml(label)}</span>
+        <button class="table-filter-trigger ${selectedCount ? "active" : ""}" type="button" data-table-filter-trigger="${escapeHtml(key)}" title="筛选${escapeHtml(label)}">${selectedCount ? selectedCount : "筛"}</button>
+      </div>
+    `;
+  });
+  pruneDetailTableFilters(rows);
+}
+
+function handleDetailTableFilterClick(event) {
+  const trigger = event.target.closest("[data-table-filter-trigger]");
+  if (trigger) {
+    event.stopPropagation();
+    const key = trigger.dataset.tableFilterTrigger;
+    const th = trigger.closest("th");
+    const openMenu = th.querySelector(".table-filter-menu");
+    closeDetailTableFilterMenus();
+    if (!openMenu) openDetailTableFilterMenu(th, key);
+    return;
+  }
+
+  const apply = event.target.closest("[data-table-filter-apply]");
+  if (apply) {
+    event.stopPropagation();
+    const menu = apply.closest(".table-filter-menu");
+    const key = menu.dataset.tableFilterKey;
+    const checked = [...menu.querySelectorAll("input[data-filter-value]:checked")].map((input) => input.value);
+    if (checked.length) detailTableFilters[key] = new Set(checked);
+    else delete detailTableFilters[key];
+    closeDetailTableFilterMenus();
+    renderSummary();
+    return;
+  }
+
+  const clear = event.target.closest("[data-table-filter-clear]");
+  if (clear) {
+    event.stopPropagation();
+    const key = clear.closest(".table-filter-menu").dataset.tableFilterKey;
+    delete detailTableFilters[key];
+    closeDetailTableFilterMenus();
+    renderSummary();
+    return;
+  }
+
+  if (!event.target.closest(".table-filter-menu")) closeDetailTableFilterMenus();
+}
+
+function handleDetailTableFilterSearch(event) {
+  if (!event.target.matches("[data-table-filter-search]")) return;
+  const query = normalizeKey(event.target.value);
+  const menu = event.target.closest(".table-filter-menu");
+  menu.querySelectorAll(".table-filter-option").forEach((option) => {
+    option.hidden = query && !normalizeKey(option.textContent).includes(query);
+  });
+}
+
+function openDetailTableFilterMenu(th, key) {
+  const selected = detailTableFilters[key] || new Set();
+  const values = uniqueDetailTableFilterValues(detailTableBaseRows, key);
+  const menu = document.createElement("div");
+  menu.className = "table-filter-menu";
+  menu.dataset.tableFilterKey = key;
+  const options = values.map((value) => `
+        <label class="table-filter-option" title="${escapeHtml(value.label)}">
+          <input type="checkbox" data-filter-value value="${escapeHtml(value.value)}" ${selected.has(value.value) ? "checked" : ""}>
+          <span>${escapeHtml(value.label)}</span>
+        </label>
+      `).join("");
+  menu.innerHTML = `
+    <input class="table-filter-search" data-table-filter-search type="search" placeholder="搜索筛选项">
+    <div class="table-filter-options">${options || `<div class="empty">暂无筛选项</div>`}</div>
+    <div class="table-filter-actions">
+      <button type="button" data-table-filter-clear>清除</button>
+      <button type="button" data-table-filter-apply>确定</button>
+    </div>
+  `;
+  th.appendChild(menu);
+  menu.querySelector("[data-table-filter-search]")?.focus();
+}
+
+function closeDetailTableFilterMenus() {
+  document.querySelectorAll(".table-filter-menu").forEach((menu) => menu.remove());
+}
+
+function clearDetailTableFilters() {
+  Object.keys(detailTableFilters).forEach((key) => delete detailTableFilters[key]);
+  closeDetailTableFilterMenus();
+}
+
+function pruneDetailTableFilters(rows) {
+  for (const key of Object.keys(detailTableFilters)) {
+    const available = new Set(uniqueDetailTableFilterValues(rows, key).map((item) => item.value));
+    const next = new Set([...detailTableFilters[key]].filter((value) => available.has(value)));
+    if (next.size) detailTableFilters[key] = next;
+    else delete detailTableFilters[key];
+  }
+}
+
+function applyDetailTableFilters(rows) {
+  const activeKeys = Object.keys(detailTableFilters).filter((key) => detailTableFilters[key]?.size);
+  if (!activeKeys.length) return rows;
+  return rows.filter((row) => activeKeys.every((key) => detailTableFilters[key].has(detailTableFilterValue(row, key).value)));
+}
+
+function uniqueDetailTableFilterValues(rows, key) {
+  const map = new Map();
+  rows.forEach((row) => {
+    const item = detailTableFilterValue(row, key);
+    if (!map.has(item.value)) map.set(item.value, item);
+  });
+  return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, "zh-CN", { numeric: true }));
+}
+
+function detailTableFilterValue(row, key) {
+  const empty = "(空白)";
+  const valueMap = {
+    materialCode: row.materialCode,
+    materialName: row.materialName,
+    warehouse: row.warehouse,
+    inventoryDays: formatOptionalNumber(row.inventoryDays, 0),
+    endingQty: formatNumber(row.endingQty, 3),
+    settlementPrice: formatNumber(row.settlementPrice, 6),
+    settlementAmount: formatMoney(row.settlementAmount)
+  };
+  const label = normalizeText(valueMap[key]) || empty;
+  return { value: label, label };
+}
 function renderUnclassifiedRows(rows, selectedAgeLabels = []) {
   const body = $("#unclassifiedRows");
   if (!body) return;
@@ -468,7 +611,7 @@ function updateChartTotal(id, total, formatter) {
 function downloadCurrentRows() {
   const headers = ["物料编码", "物料名称", "仓库", "库存天数", "0430结余库存数量", "结算价(含税)", "结算价金额"];
   const lines = [headers.join(",")];
-  filteredRows.forEach((row) => {
+  detailTableRows.forEach((row) => {
     lines.push([
       row.materialCode,
       row.materialName,

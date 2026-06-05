@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 供应链库存分析</title>
-  <link rel="stylesheet" href="styles.css?v=20260604m">
+  <link rel="stylesheet" href="styles.css?v=20260605b">
 </head>
 <body class="receipt-page">
   <div class="app-shell">
@@ -175,16 +175,16 @@
           <div class="table-title">库存分析月份表</div>
           <button id="downloadBtn" class="secondary compact-button" type="button">下载</button>
         </div>
-        <table>
+        <table id="inventoryMonthTable" class="filterable-table">
           <thead>
             <tr>
-              <th>物料编码</th>
-              <th>物料名称</th>
-              <th>仓库</th>
-              <th>库存天数</th>
-              <th>0430结余库存数量</th>
-              <th>结算价(含税)</th>
-              <th>结算价金额</th>
+              <th data-detail-filter="materialCode">物料编码</th>
+              <th data-detail-filter="materialName">物料名称</th>
+              <th data-detail-filter="warehouse">仓库</th>
+              <th data-detail-filter="inventoryDays">库存天数</th>
+              <th data-detail-filter="endingQty">0430结余库存数量</th>
+              <th data-detail-filter="settlementPrice">结算价(含税)</th>
+              <th data-detail-filter="settlementAmount">结算价金额</th>
             </tr>
           </thead>
           <tbody id="summaryRows"></tbody>
@@ -221,7 +221,7 @@
 
   <script src="storage.js?v=20260602g"></script>
   <script src="shared-library.js?v=20260605a"></script>
-  <script src="receipt-summary.js?v=20260604a"></script>
+  <script src="receipt-summary.js?v=20260605b"></script>
   <script src="inventory-trend.js?v=20260604o"></script>
 </body>
 </html>
