@@ -1,6 +1,4 @@
 const $ = (selector) => document.querySelector(selector);
-const REPLACE_SECRET = "3.1415926";
-let replacementEnabled = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadSharedLibrary({ statusEl: $("#sharedStatus") });
@@ -14,12 +12,6 @@ function bindToolbar() {
   $("#downloadSharedBtn").addEventListener("click", downloadSharedLibrary);
   $("#importSharedBtn")?.addEventListener("click", () => $("#importSharedInput")?.click());
   $("#importSharedInput")?.addEventListener("change", importSharedLibraryFile);
-  $("#enableReplaceBtn").addEventListener("click", () => {
-    const key = $("#unlockInput").value.trim();
-    replacementEnabled = key === REPLACE_SECRET;
-    $("#permissionStatus").textContent = replacementEnabled ? "已启用秘钥替换权限" : "验证秘钥不正确";
-    renderLibrary();
-  });
 }
 
 async function refreshAll() {
@@ -161,9 +153,9 @@ function renderCard(slot, record, labels) {
       ${renderParseDiagnostics(displayRecord)}
       <input class="slot-file-input" type="file" accept=".xlsx,.xlsm,.xls,.csv" data-file-input="${slot.id}">
       <div class="card-actions">
-        <button type="button" data-save="${slot.id}" ${replacementEnabled ? "" : "disabled"}>替换文件</button>
+        <button type="button" data-save="${slot.id}">替换文件</button>
         <button class="secondary" type="button" data-apply="${slot.id}">应用刷新</button>
-        <button class="danger" type="button" data-delete="${slot.id}" ${replacementEnabled ? "" : "disabled"}>删除</button>
+        <button class="danger" type="button" data-delete="${slot.id}">删除</button>
       </div>
       <p class="muted" id="status-${slot.id}"></p>
     </article>

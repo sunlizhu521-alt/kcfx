@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 维度表文件库</title>
-  <link rel="stylesheet" href="styles.css?v=20260601f">
+  <link rel="stylesheet" href="styles.css?v=20260605d">
 </head>
 <body data-library-type="dimension">
   <div class="app-shell">
@@ -53,17 +53,6 @@
           <div><span>已应用维度</span><strong id="appliedCount">0</strong></div>
           <div><span>最近更新</span><strong id="latestUpdate">-</strong></div>
         </div>
-        <div class="permission-row">
-          <div class="permission-status">
-            <span>替换权限</span>
-            <strong id="permissionStatus">请输入验证秘钥后可替换已上传文件</strong>
-          </div>
-          <label>
-            <span>验证秘钥</span>
-            <input id="unlockInput" placeholder="请输入验证秘钥">
-          </label>
-          <button id="enableReplaceBtn" type="button">启用替换</button>
-        </div>
         <div class="toolbar">
           <button id="refreshBtn" type="button">应用刷新</button>
           <button id="downloadSharedBtn" class="secondary" type="button">导出共享数据包</button>
@@ -80,6 +69,6 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="storage.js?v=20260602g"></script>
   <script src="shared-library.js?v=20260605c"></script>
-  <script src="library-page.js?v=20260602c"></script>
+  <script src="library-page.js?v=20260605d"></script>
 </body>
 </html>

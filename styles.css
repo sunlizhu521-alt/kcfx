@@ -839,8 +839,7 @@ td.num {
   margin-bottom: 12px;
 }
 
-.summary-metrics div,
-.permission-status {
+.summary-metrics div {
   min-height: 66px;
   padding: 12px;
   border: 1px solid #d2dee8;
@@ -849,8 +848,6 @@ td.num {
 }
 
 .summary-metrics span,
-.permission-status span,
-.permission-row label span,
 .slot-info span {
   display: block;
   color: #758799;
@@ -859,41 +856,10 @@ td.num {
 }
 
 .summary-metrics strong,
-.permission-status strong,
 .slot-info strong {
   display: block;
   margin-top: 6px;
   font-size: 17px;
-}
-
-.permission-status strong {
-  color: #138a45;
-  font-size: 14px;
-}
-
-.permission-row {
-  display: grid;
-  grid-template-columns: minmax(260px, .9fr) minmax(260px, 1.1fr) 110px;
-  gap: 10px;
-  align-items: end;
-  margin-bottom: 12px;
-}
-
-.permission-row label {
-  min-height: 66px;
-  padding: 12px;
-  border: 1px solid #d2dee8;
-  border-radius: 6px;
-  background: #fff;
-}
-
-.permission-row input {
-  width: 100%;
-  margin-top: 6px;
-}
-
-.permission-row button {
-  min-height: 58px;
 }
 
 .library-grid {
@@ -1075,7 +1041,6 @@ input[type="file"]:disabled {
   .metrics,
   .dashboard-grid,
   .summary-metrics,
-  .permission-row,
   .library-grid,
   .error-grid {
     grid-template-columns: 1fr;
