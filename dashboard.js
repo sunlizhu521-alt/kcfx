@@ -330,10 +330,10 @@ function renderDashboard() {
 
 function renderChartTitles(priceBasis) {
   const settlementMode = priceBasis === "settlement";
-  $("#departmentChartTitle").textContent = settlementMode ? "事业部库存资金（万元）" : "事业部库存资产排行（万元）";
-  $("#productLineChartTitle").textContent = settlementMode ? "销售产品线库存资金（万元）" : "销售产品线库存资产排行（万元）";
-  $("#warehouseTypeChartTitle").textContent = settlementMode ? "仓库类型资金" : "仓库类型资金占用（万元）";
-  $("#seriesChartTitle").textContent = settlementMode ? "产品系列 资金Top 10（万元）" : "产品系列 Top 10（万元）";
+  $("#departmentChartTitle").textContent = settlementMode ? "事业部库存（万元）" : "事业部库存资产排行（万元）";
+  $("#productLineChartTitle").textContent = settlementMode ? "销售产品线库存（万元）" : "销售产品线库存资产排行（万元）";
+  $("#warehouseTypeChartTitle").textContent = settlementMode ? "仓库类型库存" : "仓库类型库存占用（万元）";
+  $("#seriesChartTitle").textContent = settlementMode ? "产品系列 库存Top 10（万元）" : "产品系列 Top 10（万元）";
 }
 
 function renderDataSourcePanel(records) {
