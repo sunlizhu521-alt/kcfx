@@ -140,7 +140,7 @@ function renderSourcePanel(record) {
 
 function populateFilters(rows, records = {}) {
   const warehouseMaterialRows = records["dim-warehouse-material"]?.rows || [];
-  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueValues(rows, "warehouseType"));
+  fillSelect($("#warehouseTypeFilter"), "库存全链路", uniqueValues(rows, "warehouseType"));
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
   populateSeriesFilter(rows);

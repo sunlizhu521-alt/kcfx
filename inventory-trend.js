@@ -8,7 +8,7 @@ const TREND_MONTHS = [
 const TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de"];
 const TREND_TOP_LIMIT = 8;
 const TREND_FILTERS = [
-  { id: "warehouseTypeTrendFilter", field: "warehouseType", allLabel: "全部仓库类型" },
+  { id: "warehouseTypeTrendFilter", field: "warehouseType", allLabel: "库存全链路", sortByName: true },
   { id: "departmentTrendFilter", field: "department", allLabel: "全部事业部" },
   { id: "productTrendFilter", field: "productLine", allLabel: "全部产品线" },
   { id: "warehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "全部仓库位置" }
@@ -273,7 +273,7 @@ function linkedTrendFilterOptions(monthSummaries, filter, selections) {
   }
   return [...totals.entries()]
     .filter(([, value]) => value !== 0)
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
+    .sort((a, b) => filter.sortByName ? a[0].localeCompare(b[0], "zh-CN") : b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
     .slice(0, 300)
     .map(([name]) => name);
 }

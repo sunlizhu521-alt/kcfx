@@ -497,13 +497,14 @@ select {
 }
 
 .receipt-chart-grid {
-  grid-template-columns: repeat(5, minmax(460px, 1fr));
-  overflow-x: auto;
-  padding-bottom: 4px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow-x: hidden;
+  padding-bottom: 0;
 }
 
 .receipt-chart-grid .panel {
   min-height: 286px;
+  min-width: 0;
   padding: 14px 8px;
 }
 
@@ -1081,7 +1082,8 @@ input[type="file"]:disabled {
   }
 
   .receipt-chart-grid {
-    grid-template-columns: repeat(5, minmax(460px, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    overflow-x: hidden;
   }
 
   .summary-table-grid {
@@ -1373,10 +1375,11 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-row {
-  grid-template-columns: 240px minmax(90px, 1fr) 118px;
+  grid-template-columns: clamp(86px, 10vw, 210px) minmax(28px, 1fr) minmax(72px, 118px);
   grid-template-areas: "label track value";
   align-items: center;
   column-gap: 6px;
+  min-width: 0;
 }
 
 .receipt-page .bar-label {
@@ -1397,7 +1400,7 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-label {
-  width: 240px;
+  width: auto;
   box-sizing: border-box;
 }
 
@@ -1409,7 +1412,7 @@ input[type="file"]:disabled {
 }
 
 .receipt-chart-grid .bar-value {
-  width: 118px;
+  width: auto;
   box-sizing: border-box;
   overflow: visible;
   white-space: nowrap;

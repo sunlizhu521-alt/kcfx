@@ -243,7 +243,7 @@ function populateFilters(records) {
   fillSelect($("#departmentFilter"), "\u5168\u90e8\u4e8b\u4e1a\u90e8", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
   fillSelect($("#productLineFilter"), "全部销售产品线", uniqueColumnValues(productRows, ["销售产品线"]));
   fillSelect($("#seriesFilter"), "全部销售系列", uniqueColumnValues(productRows, ["销售系列"]));
-  fillSelect($("#warehouseTypeFilter"), "全部仓库类型", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
+  fillSelect($("#warehouseTypeFilter"), "库存全链路", uniqueColumnValues(warehouseRows, ["一级仓库分类"]));
   fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueColumnValues(warehouseRows, ["二级仓库分类"]));
 }
 
