@@ -29,11 +29,7 @@ async function loadKcfxFileLibrary(statusEl) {
         sharedSavedAt: manifest.savedAt || record.savedAt || ""
       };
       const local = await getRecord(id);
-      const shouldMigratePath = local
-        && !hasPendingRecord(local)
-        && (!local.libraryPath || local.libraryPath !== entry.path)
-        && (local.savedAt || "") === (nextRecord.savedAt || "");
-      if (recordIsNewer(nextRecord, local) || shouldMigratePath || libraryRecordDiffers(nextRecord, local)) {
+      if (shouldImportSharedRecord(nextRecord, local)) {
         await saveRecord(nextRecord);
         imported += 1;
       }
@@ -49,6 +45,32 @@ async function loadKcfxFileLibrary(statusEl) {
     if (statusEl) statusEl.textContent = `库存分析看板文件库未加载：${error.message}`;
     return { ok: false, error };
   }
+}
+
+function shouldImportSharedRecord(shared, local) {
+  if (!local) return true;
+  if (isDeletedRecord(local) || hasPendingRecord(local)) return false;
+  if (isLocalBrowserRecord(local)) return false;
+  if (recordIsNewer(shared, local)) return true;
+  return sharedIsNotOlder(shared, local) && libraryRecordDiffers(shared, local);
+}
+
+function isLocalBrowserRecord(record) {
+  return Boolean(record)
+    && !record.libraryPath
+    && !record.libraryManifestPath
+    && !record.sharedSavedAt;
+}
+
+function sharedIsNotOlder(shared, local) {
+  const sharedTime = Date.parse(shared.savedAt || shared.appliedAt || shared.sharedSavedAt || 0);
+  const localTime = Math.max(
+    Date.parse(local.savedAt || 0) || 0,
+    Date.parse(local.appliedAt || 0) || 0,
+    Date.parse(local.sharedSavedAt || 0) || 0
+  );
+  if (!Number.isFinite(sharedTime) || !Number.isFinite(localTime)) return false;
+  return sharedTime >= localTime;
 }
 
 function libraryRecordDiffers(shared, local) {
