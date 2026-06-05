@@ -135,6 +135,16 @@
       overflow-x: auto;
       padding-bottom: 4px;
     }
+    .trend-report-grid.report-trend-row-three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      overflow: hidden;
+      padding-bottom: 0;
+    }
+    .trend-report-grid.report-trend-row-two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      overflow: hidden;
+      padding-bottom: 0;
+    }
     .trend-report-grid.two {
       grid-template-columns: repeat(2, minmax(360px, 1fr));
     }
@@ -256,7 +266,7 @@
       .report-grid,
       .report-grid.three,
       .report-grid.five,
-      .trend-report-grid:not(.five) {
+      .trend-report-grid:not(.five):not(.report-trend-row-three):not(.report-trend-row-two) {
         grid-template-columns: 1fr;
       }
       .report-metrics {
@@ -335,11 +345,14 @@
         <div class="report-card"><h2>0430 产品系列 Top 10 库存占用情况</h2><div id="seriesBars" class="report-bars"></div></div>
       </section>
 
-      <section class="trend-report-grid five">
+      <section class="trend-report-grid report-trend-row-three">
         <div class="report-card"><h2>1-4 月总库存占用趋势</h2><table id="trendSummaryTable" class="trend-table"></table></div>
         <div class="report-card"><h2>仓库类型库存占用趋势</h2><table id="trendWarehouseTypeTable" class="trend-table"></table></div>
-        <div class="report-card"><h2>各产品库存占用趋势</h2><table id="trendProductLineTable" class="trend-table"></table></div>
         <div class="report-card"><h2>仓库位置库存占用趋势</h2><table id="trendWarehouseLocationTable" class="trend-table"></table></div>
+      </section>
+
+      <section class="trend-report-grid report-trend-row-two">
+        <div class="report-card"><h2>各产品库存占用趋势</h2><table id="trendProductLineTable" class="trend-table"></table></div>
         <div class="report-card"><h2>产品系列 Top 10 库存占用趋势</h2><table id="trendSeriesTable" class="trend-table"></table></div>
       </section>
 
