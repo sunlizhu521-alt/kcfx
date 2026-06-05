@@ -1255,21 +1255,8 @@ input[type="file"]:disabled {
 }
 
 .over120-page .over120-toolbar {
-  align-items: flex-start;
-  flex-wrap: wrap;
   overflow: visible;
-  padding-bottom: 12px;
   z-index: 80;
-}
-
-.over120-page .over120-toolbar .multi-filter {
-  flex: 0 0 170px;
-  min-width: 150px;
-  max-width: 190px;
-}
-
-.over120-page .over120-toolbar input {
-  flex: 0 0 220px;
 }
 
 .over120-page .over120-toolbar .multi-filter-menu {
