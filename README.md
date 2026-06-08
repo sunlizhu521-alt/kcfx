@@ -13,13 +13,10 @@
 ## 主要页面
 
 - `receipt-summary.html`：供应链库存分析。
-- `over-120.html`：120天以上库存导航-模板。
-- `index.html`：库存分析看板-模板。
-- `inventory-trend.html`：库存趋势变化-模板。
 - `comparison.html`：表格对比分析。
-- `errors.html`：报错信息提示。
 - `fact-library.html`：事实表文件库。
 - `file-library.html`：维度表文件库。
+- `errors.html`：报错信息提示。
 
 ## 文件库口径
 
