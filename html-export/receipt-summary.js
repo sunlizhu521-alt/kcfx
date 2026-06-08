@@ -250,12 +250,11 @@ function renderSummary() {
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
       <td>${escapeHtml(row.warehouse)}</td>
-      <td class="num">${formatOptionalNumber(row.inventoryDays, 0)}</td>
       <td class="num">${formatNumber(row.endingQty, 3)}</td>
       <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
       <td class="num">${formatMoney(row.settlementAmount)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="6" class="empty">暂无数据</td></tr>`;
 }
 
 function renderDetailTableHeaderFilters(rows) {
@@ -384,7 +383,6 @@ function detailTableFilterValue(row, key) {
     materialCode: row.materialCode,
     materialName: row.materialName,
     warehouse: row.warehouse,
-    inventoryDays: formatOptionalNumber(row.inventoryDays, 0),
     endingQty: formatNumber(row.endingQty, 3),
     settlementPrice: formatNumber(row.settlementPrice, 6),
     settlementAmount: formatMoney(row.settlementAmount)
@@ -609,14 +607,13 @@ function updateChartTotal(id, total, formatter) {
 }
 
 function downloadCurrentRows() {
-  const headers = ["物料编码", "物料名称", "仓库", "库存天数", "0430结余库存数量", "结算价(含税)", "结算价金额"];
+  const headers = ["物料编码", "物料名称", "仓库", "0430结余库存数量", "结算价(含税)", "结算价金额"];
   const lines = [headers.join(",")];
   detailTableRows.forEach((row) => {
     lines.push([
       row.materialCode,
       row.materialName,
       row.warehouse,
-      row.inventoryDays,
       row.endingQty,
       row.settlementPrice,
       row.settlementAmount
