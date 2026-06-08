@@ -1217,6 +1217,8 @@ input[type="file"]:disabled {
 }
 
 .receipt-page .analysis-section-main {
+  z-index: 30;
+  overflow: visible;
   background:
     linear-gradient(135deg, rgba(0, 122, 255, .14), rgba(255, 255, 255, .76) 38%),
     linear-gradient(225deg, rgba(52, 199, 89, .12), rgba(255, 255, 255, .64) 42%);
@@ -1225,12 +1227,38 @@ input[type="file"]:disabled {
 .receipt-page .analysis-section-main .toolbar {
   position: relative;
   top: auto;
+  z-index: 220;
+  overflow: visible;
   margin-bottom: 12px;
   background: rgba(255, 255, 255, .84);
 }
 
+.receipt-page .analysis-section-main .primary-filter-toolbar .multi-filter {
+  z-index: 230;
+}
+
+.receipt-page .analysis-section-main .primary-filter-toolbar .multi-filter.open {
+  z-index: 260;
+}
+
+.receipt-page .analysis-section-main .primary-filter-toolbar .multi-filter-menu {
+  z-index: 300;
+}
+
+.receipt-page .analysis-section-main .receipt-metrics,
+.receipt-page .analysis-section-main .receipt-chart-grid {
+  position: relative;
+  z-index: 1;
+}
+
 .receipt-page .analysis-section-main .receipt-chart-grid {
   margin-bottom: 0;
+}
+
+.receipt-page .analysis-section-trend,
+.receipt-page .analysis-section-tables {
+  position: relative;
+  z-index: 1;
 }
 
 .receipt-page .analysis-section-tables {
