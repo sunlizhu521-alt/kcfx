@@ -34,7 +34,7 @@ const UNSALEABLE_WAREHOUSE_TYPES = new Set(["生产材料仓", "生成材料仓"
 const SALEABLE_RETURN_CATEGORIES = new Set(["二手商品", "全新换包装"]);
 const UNSALEABLE_RETURN_CATEGORIES = new Set(["健康办公", "其他/配件", "全新品"]);
 const LINKED_PRODUCT_FILTERS = [
-  { id: "saleStatusFilter", key: "saleStatus", allLabel: "全部可售状态", preferredOrder: SALE_STATUS_OPTIONS },
+  { id: "saleStatusFilter", key: "saleStatus", allLabel: "全部销售状态", preferredOrder: SALE_STATUS_OPTIONS },
   { id: "productCategoryFilter", key: "productCategory", allLabel: "全部销售产品分类" },
   { id: "productLineFilter", key: "productLine", allLabel: "全部销售产品线" },
   { id: "seriesFilter", key: "series", allLabel: "全部销售系列" }
