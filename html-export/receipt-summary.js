@@ -33,6 +33,12 @@ const SALEABLE_WAREHOUSE_TYPES = new Set(["销售出库仓", "销售供应商仓
 const UNSALEABLE_WAREHOUSE_TYPES = new Set(["生产材料仓", "生成材料仓", "系统集成仓", "销售海上在途仓", "销售售后配件仓", "样品/展厅仓", "样品展厅仓"]);
 const SALEABLE_RETURN_CATEGORIES = new Set(["二手商品", "全新换包装"]);
 const UNSALEABLE_RETURN_CATEGORIES = new Set(["健康办公", "其他/配件", "全新品"]);
+const LINKED_PRODUCT_FILTERS = [
+  { id: "saleStatusFilter", key: "saleStatus", allLabel: "全部可售状态", preferredOrder: SALE_STATUS_OPTIONS },
+  { id: "productCategoryFilter", key: "productCategory", allLabel: "全部销售产品分类" },
+  { id: "productLineFilter", key: "productLine", allLabel: "全部销售产品线" },
+  { id: "seriesFilter", key: "series", allLabel: "全部销售系列" }
+];
 let summaryRows = [];
 let filteredRows = [];
 let detailTableRows = [];
@@ -52,16 +58,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("click", handleDetailTableFilterClick);
   document.addEventListener("input", handleDetailTableFilterSearch);
   bindIfExists("#searchInput", "input", renderSummary);
-  bindIfExists("#productCategoryFilter", "change", () => {
-    populateProductLineFilter(summaryRows);
-    populateSeriesFilter(summaryRows);
-    renderSummary();
+  LINKED_PRODUCT_FILTERS.forEach(({ id }) => {
+    bindIfExists(`#${id}`, "change", () => {
+      populateLinkedProductFilters(summaryRows, id);
+      renderSummary();
+    });
   });
-  bindIfExists("#productLineFilter", "change", () => {
-    populateSeriesFilter(summaryRows);
-    renderSummary();
-  });
-  ["warehouseTypeFilter", "saleStatusFilter", "departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
+  ["warehouseTypeFilter", "departmentFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
     bindIfExists(`#${id}`, "change", renderSummary);
   });
   await refreshSummary();
@@ -150,8 +153,7 @@ function clearFilters() {
   clearSelect($("#departmentFilter"));
   clearSelect($("#productLineFilter"));
   clearSelect($("#seriesFilter"));
-  populateProductLineFilter(summaryRows);
-  populateSeriesFilter(summaryRows);
+  populateLinkedProductFilters(summaryRows);
   clearSelect($("#ageFilter"));
   clearSelect($("#warehouseLocationFilter"));
   $("#searchInput").value = "";
@@ -222,26 +224,29 @@ function buildSourceReminder(rows) {
 function populateFilters(rows, records = null) {
   const warehouseMaterialRows = records?.["dim-warehouse-material"]?.rows || [];
   fillSelect($("#warehouseTypeFilter"), "库存全链路", uniqueValues(rows, "warehouseType"));
-  fillSelect($("#saleStatusFilter"), "全部可售状态", SALE_STATUS_OPTIONS);
-  fillSelect($("#productCategoryFilter"), "全部销售产品分类", uniqueValues(rows, "productCategory"));
+  populateLinkedProductFilters(rows);
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
-  populateProductLineFilter(rows);
-  populateSeriesFilter(rows);
   fillSelect($("#ageFilter"), "全部库龄", AGE_BUCKETS);
   fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(rows, "warehouseLocation"));
 }
 
-function populateProductLineFilter(rows) {
-  const productCategories = getSelectValues($("#productCategoryFilter"));
-  const scopedRows = rows.filter((row) => matchSelect(row.productCategory, productCategories));
-  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(scopedRows, "productLine"));
+function populateLinkedProductFilters(rows, changedFilterId = "") {
+  LINKED_PRODUCT_FILTERS.forEach((filter) => {
+    const scopedRows = rows.filter((row) => matchLinkedProductFilters(row, filter.id));
+    const values = uniqueValues(scopedRows, filter.key);
+    fillSelect(
+      $(`#${filter.id}`),
+      filter.allLabel,
+      filter.preferredOrder ? sortByPreferredOrder(values, filter.preferredOrder) : values
+    );
+  });
 }
 
-function populateSeriesFilter(rows) {
-  const productCategories = getSelectValues($("#productCategoryFilter"));
-  const productLines = getSelectValues($("#productLineFilter"));
-  const scopedRows = rows.filter((row) => matchSelect(row.productCategory, productCategories) && matchSelect(row.productLine, productLines));
-  fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(scopedRows, "series"));
+function matchLinkedProductFilters(row, excludedFilterId = "") {
+  return LINKED_PRODUCT_FILTERS.every((filter) => {
+    if (filter.id === excludedFilterId) return true;
+    return matchSelect(row[filter.key], getSelectValues($(`#${filter.id}`)));
+  });
 }
 
 function renderSummary() {
@@ -987,6 +992,7 @@ function firstOptionalNumber(candidates) {
 function fillSelect(select, allLabel, values) {
   if (!select) return;
   const current = getSelectValues(select);
+  const selectedValues = values.filter((value) => current.includes(value));
   select.dataset.allLabel = allLabel;
   select.innerHTML = `
     <button class="multi-filter-button" type="button" aria-haspopup="listbox" aria-expanded="false">
@@ -994,12 +1000,12 @@ function fillSelect(select, allLabel, values) {
     </button>
     <div class="multi-filter-menu" role="listbox">
       <label class="multi-filter-option is-all">
-        <input type="checkbox" value="" data-all="true" ${current.length ? "" : "checked"}>
+        <input type="checkbox" value="" data-all="true" ${selectedValues.length ? "" : "checked"}>
         <span>全部</span>
       </label>
       ${values.map((value) => `
         <label class="multi-filter-option">
-          <input type="checkbox" value="${escapeHtml(value)}" ${current.includes(value) ? "checked" : ""}>
+          <input type="checkbox" value="${escapeHtml(value)}" ${selectedValues.includes(value) ? "checked" : ""}>
           <span>${escapeHtml(value)}</span>
         </label>
       `).join("")}
