@@ -28,6 +28,11 @@ const AGE_BUCKET_DEFINITIONS = [
   { label: "91-120天", candidates: ["91-120天数量", "91-120天库存数量", "91-120天结余库存数量", "91-120天库龄数量", "91-120天"] },
   { label: "120天以上", candidates: ["120天以上数量", "120天以上库存数量", "120天以上结余库存数量", "120天以上库龄数量", "120天及以上数量", "120天及以上库存数量", "120以上数量", "120天以上", "120天及以上", "120以上"] }
 ];
+const SALE_STATUS_OPTIONS = ["可售", "不可售"];
+const SALEABLE_WAREHOUSE_TYPES = new Set(["销售出库仓", "销售供应商仓", "生产成品仓", "生成成品仓"]);
+const UNSALEABLE_WAREHOUSE_TYPES = new Set(["生产材料仓", "生成材料仓", "系统集成仓", "销售海上在途仓", "销售售后配件仓", "样品/展厅仓", "样品展厅仓"]);
+const SALEABLE_RETURN_CATEGORIES = new Set(["二手商品", "全新换包装"]);
+const UNSALEABLE_RETURN_CATEGORIES = new Set(["健康办公", "其他/配件", "全新品"]);
 let summaryRows = [];
 let filteredRows = [];
 let detailTableRows = [];
@@ -56,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     populateSeriesFilter(summaryRows);
     renderSummary();
   });
-  ["warehouseTypeFilter", "departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
+  ["warehouseTypeFilter", "saleStatusFilter", "departmentFilter", "seriesFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
     bindIfExists(`#${id}`, "change", renderSummary);
   });
   await refreshSummary();
@@ -103,14 +108,18 @@ async function refreshSummary() {
     const department = lookupDepartment(warehouseMaterialMaps, row) || getDetailDepartment(row);
     recordDepartmentMatch(department, row);
     const product = productMap.get(materialCode) || {};
+    const productCategory = getDetailProductCategory(row) || product.productCategory || "";
+    const warehouseType = warehouseInfo.warehouseType || "";
+    const saleStatus = classifySaleStatus(warehouseType, productCategory);
     return {
       materialCode,
       materialName,
       department,
-      productCategory: getDetailProductCategory(row) || product.productCategory || "",
+      productCategory,
       productLine: getDetailProductLine(row) || product.productLine || "",
       series: getDetailSeries(row) || product.series || "",
-      warehouseType: warehouseInfo.warehouseType || "",
+      warehouseType,
+      saleStatus,
       warehouseLocation: warehouseInfo.warehouseLocation || "",
       warehouse,
       organization,
@@ -136,6 +145,7 @@ async function refreshSummary() {
 
 function clearFilters() {
   clearSelect($("#warehouseTypeFilter"));
+  clearSelect($("#saleStatusFilter"));
   clearSelect($("#productCategoryFilter"));
   clearSelect($("#departmentFilter"));
   clearSelect($("#productLineFilter"));
@@ -212,6 +222,7 @@ function buildSourceReminder(rows) {
 function populateFilters(rows, records = null) {
   const warehouseMaterialRows = records?.["dim-warehouse-material"]?.rows || [];
   fillSelect($("#warehouseTypeFilter"), "库存全链路", uniqueValues(rows, "warehouseType"));
+  fillSelect($("#saleStatusFilter"), "全部可售状态", SALE_STATUS_OPTIONS);
   fillSelect($("#productCategoryFilter"), "全部销售产品分类", uniqueValues(rows, "productCategory"));
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
   populateProductLineFilter(rows);
@@ -238,11 +249,12 @@ function renderSummary() {
   const ageBuckets = getSelectValues($("#ageFilter"));
   const selectedAgeLabels = getSelectedAgeBucketLabels(ageBuckets);
   filteredRows = summaryRows.filter((row) => {
-    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.productCategory, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
+    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.warehouseType, row.saleStatus, row.productCategory, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
       .some((value) => normalizeKey(value).includes(query));
     return hit
       && matchAgeBucket(row, ageBuckets)
       && matchSelect(row.warehouseType, getSelectValues($("#warehouseTypeFilter")))
+      && matchSelect(row.saleStatus, getSelectValues($("#saleStatusFilter")))
       && matchSelect(row.productCategory, getSelectValues($("#productCategoryFilter")))
       && matchSelect(row.department, getSelectValues($("#departmentFilter")))
       && matchSelect(row.productLine, getSelectValues($("#productLineFilter")))
@@ -754,6 +766,18 @@ function mapWarehousesByName(rows) {
     });
   }
   return map;
+}
+
+function classifySaleStatus(warehouseType, productCategory) {
+  const type = normalizeText(warehouseType);
+  const category = normalizeText(productCategory);
+  if (SALEABLE_WAREHOUSE_TYPES.has(type)) return "可售";
+  if (UNSALEABLE_WAREHOUSE_TYPES.has(type)) return "不可售";
+  if (type.includes("销售退货拆检仓")) {
+    if (SALEABLE_RETURN_CATEGORIES.has(category)) return "可售";
+    if (UNSALEABLE_RETURN_CATEGORIES.has(category)) return "不可售";
+  }
+  return "";
 }
 
 function mapWarehouseMaterialDimensions(rows) {
