@@ -31,7 +31,7 @@ const AGE_BUCKET_DEFINITIONS = [
 const SALE_STATUS_OPTIONS = ["可售", "不可售"];
 const SALEABLE_WAREHOUSE_TYPES = new Set(["销售出库仓", "销售供应商仓", "生产成品仓", "生成成品仓"]);
 const UNSALEABLE_WAREHOUSE_TYPES = new Set(["生产材料仓", "生成材料仓", "系统集成仓", "销售海上在途仓", "销售售后配件仓", "样品/展厅仓", "样品展厅仓"]);
-const SALEABLE_RETURN_CATEGORIES = new Set(["二手商品", "全新换包装"]);
+const SALEABLE_RETURN_CATEGORIES = new Set(["二手商品-九大产品新", "二手商品-其他/成品", "全新换包装-九大产品线"]);
 const UNSALEABLE_RETURN_CATEGORIES = new Set(["健康办公", "其他/配件", "全新品"]);
 const LINKED_PRODUCT_FILTERS = [
   { id: "saleStatusFilter", key: "saleStatus", allLabel: "全部销售状态", preferredOrder: SALE_STATUS_OPTIONS },
