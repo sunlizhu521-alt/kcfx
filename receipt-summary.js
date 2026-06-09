@@ -35,9 +35,10 @@ const SALEABLE_RETURN_CATEGORIES = new Set(["二手商品", "全新换包装"]);
 const UNSALEABLE_RETURN_CATEGORIES = new Set(["健康办公", "其他/配件", "全新品"]);
 const LINKED_PRODUCT_FILTERS = [
   { id: "saleStatusFilter", key: "saleStatus", allLabel: "全部销售状态", preferredOrder: SALE_STATUS_OPTIONS },
-  { id: "productCategoryFilter", key: "productCategory", allLabel: "全部销售产品分类" },
-  { id: "productLineFilter", key: "productLine", allLabel: "全部销售产品线" },
-  { id: "seriesFilter", key: "series", allLabel: "全部销售系列" }
+  { id: "productCategoryFilter", key: "productCategory", allLabel: "全部销售产品分类", lastValues: ["健康办公"] },
+  { id: "productLineFilter", key: "productLine", allLabel: "全部销售产品线", lastValues: ["健康办公"] },
+  { id: "seriesFilter", key: "series", allLabel: "全部销售系列" },
+  { id: "warehouseLocationFilter", key: "warehouseLocation", allLabel: "全部仓库位置" }
 ];
 let summaryRows = [];
 let filteredRows = [];
@@ -64,7 +65,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderSummary();
     });
   });
-  ["warehouseTypeFilter", "departmentFilter", "ageFilter", "warehouseLocationFilter"].forEach((id) => {
+  ["warehouseTypeFilter", "departmentFilter", "ageFilter"].forEach((id) => {
     bindIfExists(`#${id}`, "change", renderSummary);
   });
   await refreshSummary();
@@ -227,19 +228,29 @@ function populateFilters(rows, records = null) {
   populateLinkedProductFilters(rows);
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
   fillSelect($("#ageFilter"), "全部库龄", AGE_BUCKETS);
-  fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(rows, "warehouseLocation"));
 }
 
 function populateLinkedProductFilters(rows, changedFilterId = "") {
   LINKED_PRODUCT_FILTERS.forEach((filter) => {
     const scopedRows = rows.filter((row) => matchLinkedProductFilters(row, filter.id));
-    const values = uniqueValues(scopedRows, filter.key);
+    const values = sortFilterValues(uniqueValues(scopedRows, filter.key), filter);
     fillSelect(
       $(`#${filter.id}`),
       filter.allLabel,
-      filter.preferredOrder ? sortByPreferredOrder(values, filter.preferredOrder) : values
+      values
     );
   });
+}
+
+function sortFilterValues(values, filter) {
+  const preferredValues = filter.preferredOrder ? sortByPreferredOrder(values, filter.preferredOrder) : values;
+  const lastValues = filter.lastValues || [];
+  if (!lastValues.length) return preferredValues;
+  const lastSet = new Set(lastValues);
+  return [
+    ...preferredValues.filter((value) => !lastSet.has(value)),
+    ...preferredValues.filter((value) => lastSet.has(value))
+  ];
 }
 
 function matchLinkedProductFilters(row, excludedFilterId = "") {
