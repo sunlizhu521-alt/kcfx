@@ -120,6 +120,7 @@ async function refreshSummary() {
     const saleStatus = classifySaleStatus(warehouseType, productCategory);
     return {
       materialCode,
+      sku: product.sku || "",
       materialName,
       department,
       productCategory,
@@ -310,13 +311,14 @@ function renderSummary() {
   if (summaryBody) summaryBody.innerHTML = shown.length ? shown.map((row) => `
     <tr>
       <td>${escapeHtml(row.materialCode)}</td>
+      <td>${escapeHtml(row.sku)}</td>
       <td>${escapeHtml(row.materialName)}</td>
       <td>${escapeHtml(row.warehouse)}</td>
       <td class="num">${formatNumber(row.endingQty, 3)}</td>
       <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
       <td class="num">${formatMoney(row.settlementAmount)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="6" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
 }
 
 function renderDetailTableHeaderFilters(rows) {
@@ -443,6 +445,7 @@ function detailTableFilterValue(row, key) {
   const empty = "(空白)";
   const valueMap = {
     materialCode: row.materialCode,
+    sku: row.sku,
     materialName: row.materialName,
     warehouse: row.warehouse,
     endingQty: formatNumber(row.endingQty, 3),
@@ -669,11 +672,12 @@ function updateChartTotal(id, total, formatter) {
 }
 
 function downloadCurrentRows() {
-  const headers = ["物料编码", "物料名称", "仓库", "0430结余库存数量", "结算价(含税)", "结算价金额"];
+  const headers = ["物料编码", "SKU", "物料名称", "仓库", "0430结余库存数量", "结算价(含税)", "结算价金额"];
   const lines = [headers.join(",")];
   detailTableRows.forEach((row) => {
     lines.push([
       row.materialCode,
+      row.sku,
       row.materialName,
       row.warehouse,
       row.endingQty,
@@ -780,6 +784,7 @@ function mapProductsByMaterialCode(rows) {
     const materialCode = normalizeMaterialCode(firstText([firstValue(row, ["物料编码"]), nthValue(row, 1)]));
     if (!materialCode || map.has(materialCode)) continue;
     map.set(materialCode, {
+      sku: firstText([firstValue(row, ["SKU", "sku"]), nthValue(row, 3)]),
       productCategory: firstText([firstValue(row, ["销售产品分类", "产品分类", "销售产品类别", "产品类别", "品类"])]),
       productLine: firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
       series: firstText([firstValue(row, ["销售系列", "系列"]), nthValue(row, 8)])
