@@ -35,7 +35,7 @@ const SALEABLE_RETURN_CATEGORIES = new Set(["二手商品-九大产品新", "二
 const UNSALEABLE_RETURN_CATEGORIES = new Set(["健康办公", "其他/配件", "全新品"]);
 const LINKED_PRODUCT_FILTERS = [
   { id: "saleStatusFilter", key: "saleStatus", allLabel: "全部销售状态", preferredOrder: SALE_STATUS_OPTIONS },
-  { id: "productCategoryFilter", key: "productCategory", allLabel: "全部销售产品分类", lastValues: ["健康办公"] },
+  { id: "productCategoryFilter", key: "productCategory", allLabel: "全部销售产品分类", lastValues: ["健康办公"], requirePositiveAmount: true },
   { id: "productLineFilter", key: "productLine", allLabel: "全部销售产品线", lastValues: ["健康办公"] },
   { id: "seriesFilter", key: "series", allLabel: "全部销售系列" },
   { id: "warehouseLocationFilter", key: "warehouseLocation", allLabel: "全部仓库位置" }
@@ -66,7 +66,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
   ["warehouseTypeFilter", "departmentFilter", "ageFilter"].forEach((id) => {
-    bindIfExists(`#${id}`, "change", renderSummary);
+    bindIfExists(`#${id}`, "change", () => {
+      populateLinkedProductFilters(summaryRows);
+      renderSummary();
+    });
   });
   await refreshSummary();
 });
@@ -149,14 +152,10 @@ async function refreshSummary() {
 
 function clearFilters() {
   clearSelect($("#warehouseTypeFilter"));
-  clearSelect($("#saleStatusFilter"));
-  clearSelect($("#productCategoryFilter"));
   clearSelect($("#departmentFilter"));
-  clearSelect($("#productLineFilter"));
-  clearSelect($("#seriesFilter"));
-  populateLinkedProductFilters(summaryRows);
   clearSelect($("#ageFilter"));
-  clearSelect($("#warehouseLocationFilter"));
+  LINKED_PRODUCT_FILTERS.forEach(({ id }) => clearSelect($(`#${id}`)));
+  populateLinkedProductFilters(summaryRows);
   $("#searchInput").value = "";
   clearDetailTableFilters();
   renderSummary();
@@ -232,14 +231,32 @@ function populateFilters(rows, records = null) {
 
 function populateLinkedProductFilters(rows, changedFilterId = "") {
   LINKED_PRODUCT_FILTERS.forEach((filter) => {
-    const scopedRows = rows.filter((row) => matchLinkedProductFilters(row, filter.id));
+    const scopedRows = rows.filter((row) => matchLinkedProductFilters(row, filter.id) && matchNonLinkedFilters(row));
     const values = sortFilterValues(uniqueValues(scopedRows, filter.key), filter);
     fillSelect(
       $(`#${filter.id}`),
       filter.allLabel,
-      values
+      filter.requirePositiveAmount ? filterValuesWithPositiveAmount(values, scopedRows, filter.key) : values
     );
   });
+}
+
+function filterValuesWithPositiveAmount(values, rows, key) {
+  const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
+  const amountByValue = new Map();
+  rows.forEach((row) => {
+    const value = normalizeText(row[key]);
+    if (!value) return;
+    amountByValue.set(value, (amountByValue.get(value) || 0) + visibleAmount(row, selectedAgeLabels));
+  });
+  return values.filter((value) => Math.abs(Number(amountByValue.get(value)) || 0) > 0);
+}
+
+function matchNonLinkedFilters(row) {
+  const ageBuckets = getSelectValues($("#ageFilter"));
+  return matchAgeBucket(row, ageBuckets)
+    && matchSelect(row.warehouseType, getSelectValues($("#warehouseTypeFilter")))
+    && matchSelect(row.department, getSelectValues($("#departmentFilter")));
 }
 
 function sortFilterValues(values, filter) {
