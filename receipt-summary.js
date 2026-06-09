@@ -28,11 +28,13 @@ const AGE_BUCKET_DEFINITIONS = [
   { label: "91-120天", candidates: ["91-120天数量", "91-120天库存数量", "91-120天结余库存数量", "91-120天库龄数量", "91-120天"] },
   { label: "120天以上", candidates: ["120天以上数量", "120天以上库存数量", "120天以上结余库存数量", "120天以上库龄数量", "120天及以上数量", "120天及以上库存数量", "120以上数量", "120天以上", "120天及以上", "120以上"] }
 ];
-const SALE_STATUS_OPTIONS = ["可售-新品", "可售-已拆检", "不可售-未拆检"];
-const SALEABLE_WAREHOUSE_TYPES = new Set(["销售出库仓", "销售供应商仓", "生产成品仓", "生成成品仓"]);
-const UNSALEABLE_WAREHOUSE_TYPES = new Set(["生产材料仓", "生成材料仓", "系统集成仓", "销售海上在途仓", "销售售后配件仓", "样品/展厅仓", "样品展厅仓"]);
+const SALE_STATUS_OPTIONS = ["可售-全新品", "可售-已拆检", "不可售-未拆检", "不可售-原材料", "不可售-其他/集成/在途等"];
+const SALEABLE_NEW_WAREHOUSE_TYPES = new Set(["销售出库仓", "销售供应商仓", "生产成品仓"]);
+const RAW_MATERIAL_WAREHOUSE_TYPES = new Set(["生产材料仓", "生成材料仓"]);
+const OTHER_UNSALEABLE_WAREHOUSE_TYPES = new Set(["系统集成仓", "销售海上在途仓", "销售售后配件仓", "样品/展厅仓", "样品展厅仓"]);
 const SALEABLE_RETURN_CATEGORIES = new Set(["二手商品-九大产品新", "二手商品-其他/成品", "全新换包装-九大产品线"]);
-const UNSALEABLE_RETURN_CATEGORIES = new Set(["健康办公", "其他/配件", "全新品"]);
+const UNINSPECTED_RETURN_CATEGORIES = new Set(["全新品", "其他/成品"]);
+const OTHER_UNSALEABLE_RETURN_CATEGORIES = new Set(["健康办公", "其他/配件"]);
 const LINKED_PRODUCT_FILTERS = [
   { id: "saleStatusFilter", key: "saleStatus", allLabel: "全部销售状态", preferredOrder: SALE_STATUS_OPTIONS },
   { id: "productCategoryFilter", key: "productCategory", allLabel: "全部销售产品分类", lastValues: ["健康办公"], requirePositiveAmount: true },
@@ -809,11 +811,13 @@ function mapWarehousesByName(rows) {
 function classifySaleStatus(warehouseType, productCategory) {
   const type = normalizeText(warehouseType);
   const category = normalizeText(productCategory);
-  if (SALEABLE_WAREHOUSE_TYPES.has(type)) return "可售-新品";
-  if (UNSALEABLE_WAREHOUSE_TYPES.has(type)) return "不可售-未拆检";
+  if (SALEABLE_NEW_WAREHOUSE_TYPES.has(type)) return "可售-全新品";
+  if (RAW_MATERIAL_WAREHOUSE_TYPES.has(type)) return "不可售-原材料";
+  if (OTHER_UNSALEABLE_WAREHOUSE_TYPES.has(type)) return "不可售-其他/集成/在途等";
   if (type.includes("销售退货拆检仓")) {
     if (SALEABLE_RETURN_CATEGORIES.has(category)) return "可售-已拆检";
-    if (UNSALEABLE_RETURN_CATEGORIES.has(category)) return "不可售-未拆检";
+    if (UNINSPECTED_RETURN_CATEGORIES.has(category)) return "不可售-未拆检";
+    if (OTHER_UNSALEABLE_RETURN_CATEGORIES.has(category)) return "不可售-其他/集成/在途等";
   }
   return "";
 }
