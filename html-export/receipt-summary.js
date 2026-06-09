@@ -47,6 +47,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("click", handleDetailTableFilterClick);
   document.addEventListener("input", handleDetailTableFilterSearch);
   bindIfExists("#searchInput", "input", renderSummary);
+  bindIfExists("#productCategoryFilter", "change", () => {
+    populateProductLineFilter(summaryRows);
+    populateSeriesFilter(summaryRows);
+    renderSummary();
+  });
   bindIfExists("#productLineFilter", "change", () => {
     populateSeriesFilter(summaryRows);
     renderSummary();
@@ -102,6 +107,7 @@ async function refreshSummary() {
       materialCode,
       materialName,
       department,
+      productCategory: getDetailProductCategory(row) || product.productCategory || "",
       productLine: getDetailProductLine(row) || product.productLine || "",
       series: getDetailSeries(row) || product.series || "",
       warehouseType: warehouseInfo.warehouseType || "",
@@ -130,10 +136,12 @@ async function refreshSummary() {
 
 function clearFilters() {
   clearSelect($("#warehouseTypeFilter"));
+  clearSelect($("#productCategoryFilter"));
   clearSelect($("#departmentFilter"));
   clearSelect($("#productLineFilter"));
-  populateSeriesFilter(summaryRows);
   clearSelect($("#seriesFilter"));
+  populateProductLineFilter(summaryRows);
+  populateSeriesFilter(summaryRows);
   clearSelect($("#ageFilter"));
   clearSelect($("#warehouseLocationFilter"));
   $("#searchInput").value = "";
@@ -204,16 +212,24 @@ function buildSourceReminder(rows) {
 function populateFilters(rows, records = null) {
   const warehouseMaterialRows = records?.["dim-warehouse-material"]?.rows || [];
   fillSelect($("#warehouseTypeFilter"), "库存全链路", uniqueValues(rows, "warehouseType"));
+  fillSelect($("#productCategoryFilter"), "全部销售产品分类", uniqueValues(rows, "productCategory"));
   fillSelect($("#departmentFilter"), "全部事业部", sortByPreferredOrder(uniquePhysicalColumnValues(warehouseMaterialRows, 7), DEPARTMENT_ORDER));
-  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
+  populateProductLineFilter(rows);
   populateSeriesFilter(rows);
   fillSelect($("#ageFilter"), "全部库龄", AGE_BUCKETS);
   fillSelect($("#warehouseLocationFilter"), "全部仓库位置", uniqueValues(rows, "warehouseLocation"));
 }
 
+function populateProductLineFilter(rows) {
+  const productCategories = getSelectValues($("#productCategoryFilter"));
+  const scopedRows = rows.filter((row) => matchSelect(row.productCategory, productCategories));
+  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(scopedRows, "productLine"));
+}
+
 function populateSeriesFilter(rows) {
+  const productCategories = getSelectValues($("#productCategoryFilter"));
   const productLines = getSelectValues($("#productLineFilter"));
-  const scopedRows = rows.filter((row) => matchSelect(row.productLine, productLines));
+  const scopedRows = rows.filter((row) => matchSelect(row.productCategory, productCategories) && matchSelect(row.productLine, productLines));
   fillSelect($("#seriesFilter"), "全部销售系列", uniqueValues(scopedRows, "series"));
 }
 
@@ -222,11 +238,12 @@ function renderSummary() {
   const ageBuckets = getSelectValues($("#ageFilter"));
   const selectedAgeLabels = getSelectedAgeBucketLabels(ageBuckets);
   filteredRows = summaryRows.filter((row) => {
-    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
+    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.productCategory, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
       .some((value) => normalizeKey(value).includes(query));
     return hit
       && matchAgeBucket(row, ageBuckets)
       && matchSelect(row.warehouseType, getSelectValues($("#warehouseTypeFilter")))
+      && matchSelect(row.productCategory, getSelectValues($("#productCategoryFilter")))
       && matchSelect(row.department, getSelectValues($("#departmentFilter")))
       && matchSelect(row.productLine, getSelectValues($("#productLineFilter")))
       && matchSelect(row.series, getSelectValues($("#seriesFilter")))
@@ -718,6 +735,7 @@ function mapProductsByMaterialCode(rows) {
     const materialCode = normalizeMaterialCode(firstText([firstValue(row, ["物料编码"]), nthValue(row, 1)]));
     if (!materialCode || map.has(materialCode)) continue;
     map.set(materialCode, {
+      productCategory: firstText([firstValue(row, ["销售产品分类", "产品分类", "销售产品类别", "产品类别", "品类"])]),
       productLine: firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
       series: firstText([firstValue(row, ["销售系列", "系列"]), nthValue(row, 8)])
     });
@@ -778,6 +796,10 @@ function getDetailOrganization(row) {
 
 function getDetailMaterialName(row) {
   return normalizeText(firstValue(row, ["物料名称", "货品名称", "商品名称", "金蝶名称"]));
+}
+
+function getDetailProductCategory(row) {
+  return normalizeText(firstValue(row, ["销售产品分类", "产品分类", "销售产品类别", "产品类别", "品类"]));
 }
 
 function getDetailEndingQty(row) {
