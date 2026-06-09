@@ -28,7 +28,7 @@ const AGE_BUCKET_DEFINITIONS = [
   { label: "91-120天", candidates: ["91-120天数量", "91-120天库存数量", "91-120天结余库存数量", "91-120天库龄数量", "91-120天"] },
   { label: "120天以上", candidates: ["120天以上数量", "120天以上库存数量", "120天以上结余库存数量", "120天以上库龄数量", "120天及以上数量", "120天及以上库存数量", "120以上数量", "120天以上", "120天及以上", "120以上"] }
 ];
-const SALE_STATUS_OPTIONS = ["可售-全新品", "可售-已拆检", "不可售-未拆检", "不可售-原材料", "不可售-其他/集成/在途等"];
+const SALE_STATUS_OPTIONS = ["可售-全新品", "可售-已拆检", "不可售-未拆检", "不可售-原材料", "不可售-其他/集成/在途/配件等"];
 const SALEABLE_NEW_WAREHOUSE_TYPES = new Set(["销售出库仓", "销售供应商仓", "生产成品仓"]);
 const RAW_MATERIAL_WAREHOUSE_TYPES = new Set(["生产材料仓", "生成材料仓"]);
 const OTHER_UNSALEABLE_WAREHOUSE_TYPES = new Set(["系统集成仓", "销售海上在途仓", "销售售后配件仓", "样品/展厅仓", "样品展厅仓"]);
@@ -813,11 +813,11 @@ function classifySaleStatus(warehouseType, productCategory) {
   const category = normalizeText(productCategory);
   if (SALEABLE_NEW_WAREHOUSE_TYPES.has(type)) return "可售-全新品";
   if (RAW_MATERIAL_WAREHOUSE_TYPES.has(type)) return "不可售-原材料";
-  if (OTHER_UNSALEABLE_WAREHOUSE_TYPES.has(type)) return "不可售-其他/集成/在途等";
+  if (OTHER_UNSALEABLE_WAREHOUSE_TYPES.has(type)) return "不可售-其他/集成/在途/配件等";
   if (type.includes("销售退货拆检仓")) {
     if (SALEABLE_RETURN_CATEGORIES.has(category)) return "可售-已拆检";
     if (UNINSPECTED_RETURN_CATEGORIES.has(category)) return "不可售-未拆检";
-    if (OTHER_UNSALEABLE_RETURN_CATEGORIES.has(category)) return "不可售-其他/集成/在途等";
+    if (OTHER_UNSALEABLE_RETURN_CATEGORIES.has(category)) return "不可售-其他/集成/在途/配件等";
   }
   return "";
 }
