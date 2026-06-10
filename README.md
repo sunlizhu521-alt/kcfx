@@ -6,7 +6,7 @@
 
 - `data/kcfx-library/manifest.json` 默认保持空记录。
 - 不提交解析后的事实表、维度表 JSON 数据。
-- 同事打开链接后，需要在“库存数据文件”和“维度表文件库”重新上传并应用最新 Excel。
+- 同事打开链接后，需要在“库存数据文件”、“销售数据文件”和“维度表文件库”重新上传并应用最新 Excel。
 - 各看板页面优先读取浏览器 IndexedDB 中当前已应用的文件库记录。
 - 页面加载时会清理旧版本 GitHub 共享包留下的缓存记录，但不会清理用户自己上传的本地记录。
 
@@ -15,12 +15,13 @@
 - `receipt-summary.html`：供应链库存分析。
 - `comparison.html`：表格对比分析。
 - `fact-library.html`：库存数据文件。
+- `sales-library.html`：销售数据文件。
 - `file-library.html`：维度表文件库。
 - `errors.html`：报错信息提示。
 
 ## 文件库口径
 
-事实表和维度表都通过浏览器端 SheetJS 解析，并保存到 IndexedDB：
+库存数据文件、销售数据文件和维度表文件都通过浏览器端 SheetJS 解析，并保存到 IndexedDB：
 
 ```text
 IndexedDB: kcfx-inventory-analysis-file-library/files

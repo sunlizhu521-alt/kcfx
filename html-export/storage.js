@@ -140,10 +140,13 @@ const FACT_SLOTS = [
     expectedName: "收发汇总表6月",
     sheetHint: "",
     description: "预留事实表槽位。"
-  },
+  }
+];
+
+const SALES_SLOTS = [
   {
-    id: "fact-sales",
-    type: "fact",
+    id: "sales-data",
+    type: "sales",
     title: "销售数据文件",
     expectedName: "销售数据文件",
     sheetHint: "",
@@ -151,7 +154,7 @@ const FACT_SLOTS = [
   }
 ];
 
-const ALL_SLOTS = [...FACT_SLOTS, ...DIMENSION_SLOTS];
+const ALL_SLOTS = [...FACT_SLOTS, ...DIMENSION_SLOTS, ...SALES_SLOTS];
 const SLOT_BY_ID = Object.fromEntries(ALL_SLOTS.map((slot) => [slot.id, slot]));
 
 function openIndexedDbByName(dbName) {

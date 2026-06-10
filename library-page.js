@@ -44,14 +44,30 @@ function pageSlots() {
 }
 
 function pageLabels() {
-  const isDimension = pageType() === "dimension";
-  return {
-    eyebrow: isDimension ? "DIMENSION FILES" : "FACT FILES",
-    summaryTitle: isDimension ? "月度维度表文件库" : "月度库存数据文件",
-    slotLabel: isDimension ? "DIMENSION SLOT" : "FACT SLOT",
-    emptyAction: isDimension ? "上传维度文件" : "上传库存数据文件",
-    savedLabel: isDimension ? "维度文件已保存" : "库存数据文件已保存"
+  const labels = {
+    dimension: {
+      eyebrow: "DIMENSION FILES",
+      summaryTitle: "月度维度表文件库",
+      slotLabel: "DIMENSION SLOT",
+      emptyAction: "上传维度文件",
+      savedLabel: "维度文件已保存"
+    },
+    fact: {
+      eyebrow: "INVENTORY FILES",
+      summaryTitle: "月度库存数据文件",
+      slotLabel: "INVENTORY SLOT",
+      emptyAction: "上传库存数据文件",
+      savedLabel: "库存数据文件已保存"
+    },
+    sales: {
+      eyebrow: "SALES FILES",
+      summaryTitle: "销售数据文件",
+      slotLabel: "SALES SLOT",
+      emptyAction: "上传销售数据文件",
+      savedLabel: "销售数据文件已保存"
+    }
   };
+  return labels[pageType()] || labels.fact;
 }
 
 async function renderLibrary() {

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>库存分析看板 库存数据文件</title>
+  <title>库存分析看板 销售数据文件</title>
   <link rel="stylesheet" href="styles.css?v=20260606a">
 </head>
-<body data-library-type="fact">
+<body data-library-type="sales">
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
@@ -16,8 +16,8 @@
       <nav class="nav">
         <a href="receipt-summary.html">供应链库存分析</a>
         <a href="comparison.html">表格对比分析</a>
-        <a class="active" href="fact-library.html">库存数据文件</a>
-        <a href="sales-library.html">销售数据文件</a>
+        <a href="fact-library.html">库存数据文件</a>
+        <a class="active" href="sales-library.html">销售数据文件</a>
         <a href="file-library.html">维度表文件库</a>
         <a href="errors.html">报错信息提示</a>
       </nav>
@@ -26,8 +26,8 @@
     <main class="content">
       <header class="topbar">
         <div>
-          <h1>库存数据文件</h1>
-          <p>上传库存分析和收发汇总数据文件。看板会按对应槽位读取并应用。</p>
+          <h1>销售数据文件</h1>
+          <p>上传销售数据文件。后续销售分析或库存联动分析会按该槽位读取并应用。</p>
         </div>
         <button id="applyAllBtn" class="secondary" type="button">一键全部应用刷新</button>
       </header>
@@ -35,15 +35,15 @@
       <section class="library-summary">
         <div class="summary-head">
           <div>
-            <span id="libraryEyebrow" class="summary-eyebrow">FACT FILES</span>
-            <h2 id="libraryTitle">月度库存数据文件</h2>
+            <span id="libraryEyebrow" class="summary-eyebrow">SALES FILES</span>
+            <h2 id="libraryTitle">销售数据文件</h2>
           </div>
-          <span id="savedBadge" class="saved-badge">库存数据文件已保存</span>
+          <span id="savedBadge" class="saved-badge">销售数据文件已保存</span>
         </div>
         <div class="summary-metrics">
-          <div><span>库存文件上限</span><strong id="slotLimit">0</strong></div>
-          <div><span>已上传库存文件</span><strong id="uploadedCount">0</strong></div>
-          <div><span>已应用库存文件</span><strong id="appliedCount">0</strong></div>
+          <div><span>销售文件上限</span><strong id="slotLimit">0</strong></div>
+          <div><span>已上传销售文件</span><strong id="uploadedCount">0</strong></div>
+          <div><span>已应用销售文件</span><strong id="appliedCount">0</strong></div>
           <div><span>最近更新</span><strong id="latestUpdate">-</strong></div>
         </div>
         <div class="toolbar">
