@@ -40,8 +40,8 @@ const DIMENSION_SLOTS = [
   {
     id: "dim-customer-material",
     type: "dimension",
-    title: "维度 5",
-    expectedName: "维度 5",
+    title: "店铺名称汇总（金蝶&领星&简称）",
+    expectedName: "店铺名称汇总（金蝶&领星&简称）",
     sheetHint: "",
     description: "预留维度槽位。"
   },
@@ -455,6 +455,9 @@ function buildParseDiagnostics(parsed) {
 }
 
 async function readExcelFile(file, slot) {
+  if (typeof XLSX === "undefined") {
+    throw new Error("Excel 解析组件未加载，请刷新页面后重试。");
+  }
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
   const parsed = parseWorkbookRows(workbook, slot);
