@@ -317,7 +317,7 @@ function renderSummary() {
       && matchSelect(row.warehouseLocation, selections.linked.warehouseLocationFilter);
   });
   const visibleAmount = sumVisibleAmount(filteredRows, selectedAgeLabels);
-  $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 2);
+  $("#qtyTotal").textContent = formatSupplyChainQtyWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels));
   $("#amountTotal").textContent = formatMoneyWithYi(visibleAmount);
   $("#valueGapTotal").textContent = formatMoneyWithYi(visibleAmount - closedInventoryValue);
   renderSummaryTables(filteredRows, selectedAgeLabels);
@@ -1239,6 +1239,10 @@ function formatNumberWithYi(value, decimals = 2) {
     ? `${formatFixedNumber(yiValue, 2)}亿`
     : `${formatFixedNumber(numeric / 10000, 2)}万`;
   return `${formatFixedNumber(numeric, decimals)}（${unitText}）`;
+}
+
+function formatSupplyChainQtyWithYi(value) {
+  return formatNumberWithYi(value, 2);
 }
 
 function formatMoneyWithYi(value) {
