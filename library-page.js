@@ -32,7 +32,7 @@ async function refreshAll() {
     }
   }
   await renderLibrary();
-  if (appliedCount) window.alert("应用成功");
+  setLibraryStatus(appliedCount ? `应用成功：已应用 ${appliedCount} 个文件。` : "当前没有需要应用的文件。");
 }
 
 function pageType() {
@@ -305,7 +305,9 @@ async function applySlot(slotId) {
   if (!nextRecord) return;
   await saveRecord(nextRecord);
   await renderLibrary();
-  window.alert("应用成功");
+  const status = $(`#status-${slotId}`);
+  if (status) status.textContent = "应用成功，当前页面和看板会读取这份文件。";
+  setLibraryStatus(`应用成功：${SLOT_BY_ID[slotId]?.title || slotId} 已更新。`);
 }
 
 async function clearSlot(slotId) {
@@ -353,4 +355,9 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#039;"
   }[char]));
+}
+
+function setLibraryStatus(message) {
+  const status = $("#sharedStatus");
+  if (status) status.textContent = message;
 }
