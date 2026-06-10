@@ -47,10 +47,10 @@ function pageLabels() {
   const isDimension = pageType() === "dimension";
   return {
     eyebrow: isDimension ? "DIMENSION FILES" : "FACT FILES",
-    summaryTitle: isDimension ? "月度维度表文件库" : "月度事实表文件库",
+    summaryTitle: isDimension ? "月度维度表文件库" : "月度库存数据文件",
     slotLabel: isDimension ? "DIMENSION SLOT" : "FACT SLOT",
-    emptyAction: isDimension ? "上传维度文件" : "上传事实表文件",
-    savedLabel: isDimension ? "维度文件已保存" : "事实表已保存"
+    emptyAction: isDimension ? "上传维度文件" : "上传库存数据文件",
+    savedLabel: isDimension ? "维度文件已保存" : "库存数据文件已保存"
   };
 }
 

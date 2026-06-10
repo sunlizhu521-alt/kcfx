@@ -58,7 +58,7 @@ async function refreshOver120() {
   renderSourcePanel(detailRecord);
   if (!detailRecord) {
     allRows = [];
-    $("#over120Status").textContent = "缺少库存分析月份表，请先到事实表文件库上传并应用。";
+    $("#over120Status").textContent = "缺少库存分析月份表，请先到库存数据文件上传并应用。";
     populateFilters([], records);
     renderPage();
     return;

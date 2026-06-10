@@ -140,6 +140,14 @@ const FACT_SLOTS = [
     expectedName: "收发汇总表6月",
     sheetHint: "",
     description: "预留事实表槽位。"
+  },
+  {
+    id: "fact-sales",
+    type: "fact",
+    title: "销售数据文件",
+    expectedName: "销售数据文件",
+    sheetHint: "",
+    description: "用于上传销售数据文件，后续销售分析或库存联动分析可引用。"
   }
 ];
 

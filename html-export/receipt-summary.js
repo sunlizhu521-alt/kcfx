@@ -88,7 +88,7 @@ async function refreshSummary() {
   renderSourcePanel(detailRecord, []);
   if (!detailRecord) {
     summaryRows = [];
-    $("#summaryStatus").textContent = "缺少库存分析月份表，请先到事实表文件库上传并应用。";
+    $("#summaryStatus").textContent = "缺少库存分析月份表，请先到库存数据文件上传并应用。";
     populateFilters([]);
     renderSummary();
     scheduleDeferredTrendLoad();
