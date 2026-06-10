@@ -2,10 +2,11 @@ const TREND_MONTHS = [
   { id: "fact-3", label: "1月" },
   { id: "fact-4", label: "2月" },
   { id: "fact-5", label: "3月" },
-  { id: "fact-6", label: "4月" }
+  { id: "fact-6", label: "4月" },
+  { id: "fact-7", label: "5月" }
 ];
 
-const TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de"];
+const TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f"];
 const TREND_TOP_LIMIT = 8;
 const TREND_FILTERS = [
   { id: "warehouseTypeTrendFilter", field: "warehouseType", allLabel: "库存全链路", sortByName: true },
@@ -48,7 +49,7 @@ function renderTrendDashboard(records) {
   const fallbackPricedRows = monthSummaries.reduce((total, item) => total + item.fallbackPricedRows, 0);
 
   currentTrendMonthSummaries = monthSummaries;
-  setTrendStatus(`已读取 ${loaded}/4 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，结算价有效 ${formatNumber(pricedRows, 0)} 行（本表P列 ${formatNumber(directPricedRows, 0)} 行，补价 ${formatNumber(fallbackPricedRows, 0)} 行），K列数量合计 ${formatQuantity(totalQty)}，K×P库存占用合计 ${formatMoneyWan(totalValue)}。`);
+  setTrendStatus(`已读取 ${loaded}/${TREND_MONTHS.length} 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，结算价有效 ${formatNumber(pricedRows, 0)} 行（本表P列 ${formatNumber(directPricedRows, 0)} 行，补价 ${formatNumber(fallbackPricedRows, 0)} 行），K列数量合计 ${formatQuantity(totalQty)}，K×P库存占用合计 ${formatMoneyWan(totalValue)}。`);
   populateTrendFilters(monthSummaries);
   renderTrendCharts();
   renderTrendSourcePanel(monthSummaries, records);
@@ -474,7 +475,7 @@ function renderTrendSourcePanel(monthSummaries, records) {
   ].map(([label, record]) => `<div>${label}：${record ? `${escapeHtml(record.fileName || "-")}，${formatRecordTime(record.appliedAt || record.savedAt)}` : "未引用"}</div>`);
   sourceEl.innerHTML = `
     <strong>趋势图口径</strong>
-    <div>事实表取收发汇总表1月-4月，第4行为表头；数量取K列求和；库存占用优先按本表K列数量×P列结算价(含税)计算，本表没有P列时按物料编码使用库存分析月份表的结算价(含税)补价；每张表最后一行汇总数据不参与计算。</div>
+    <div>事实表取收发汇总表1月-5月，第4行为表头；数量取K列求和；库存占用优先按本表K列数量×P列结算价(含税)计算，本表没有P列时按物料编码使用库存分析月份表的结算价(含税)补价；每张表最后一行汇总数据不参与计算。</div>
     <div>事业部：事实表A列+D列+B列匹配仓库物料事业部对照表F列，取G列。</div>
     <div>产品：事实表B列匹配商品分类维表A列，取G列销售产品线。</div>
     <div>仓库位置：事实表D列匹配仓库维表B列，取H列仓库位置。</div>

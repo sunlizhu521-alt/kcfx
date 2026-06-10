@@ -20,13 +20,14 @@ const DEPARTMENT_ORDER = [
   "供应商仓（后续划分事业部）"
 ];
 const COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f", "#5ac8fa", "#5856d6", "#30d158", "#bf5af2", "#ff6b35", "#64d2ff", "#8e8e93"];
-const AGE_BUCKETS = ["0-30天", "31-60天", "61-90天", "91-120天", "120天以上"];
+const AGE_BUCKETS = ["0-30天", "31-60天", "61-90天", "91-120天", "121-150天", "150天以上"];
 const AGE_BUCKET_DEFINITIONS = [
   { label: "0-30天", candidates: ["0-30天数量", "0-30天库存数量", "0-30天结余库存数量", "0-30天库龄数量", "0-30天"] },
   { label: "31-60天", candidates: ["31-60天数量", "31-60天库存数量", "31-60天结余库存数量", "31-60天库龄数量", "31-60天"] },
   { label: "61-90天", candidates: ["61-90天数量", "61-90天库存数量", "61-90天结余库存数量", "61-90天库龄数量", "61-90天"] },
   { label: "91-120天", candidates: ["91-120天数量", "91-120天库存数量", "91-120天结余库存数量", "91-120天库龄数量", "91-120天"] },
-  { label: "120天以上", candidates: ["120天以上数量", "120天以上库存数量", "120天以上结余库存数量", "120天以上库龄数量", "120天及以上数量", "120天及以上库存数量", "120以上数量", "120天以上", "120天及以上", "120以上"] }
+  { label: "121-150天", candidates: ["121-150天数量", "121-150天库存数量", "121-150天结余库存数量", "121-150天库龄数量", "121-150数量", "121-150天", "121-150"] },
+  { label: "150天以上", candidates: ["150天以上数量", "150天以上库存数量", "150天以上结余库存数量", "150天以上库龄数量", "150天及以上数量", "150天及以上库存数量", "150以上数量", "150天以上", "150天及以上", "150以上"] }
 ];
 const SALE_STATUS_OPTIONS = ["可售-全新品", "可售-已拆检", "不可售-未拆检", "不可售-原材料", "不可售-集成/在途/配件等"];
 const SALEABLE_NEW_WAREHOUSE_TYPES = new Set(["销售出库仓", "销售供应商仓", "生产成品仓"]);
@@ -107,10 +108,11 @@ async function refreshSummary() {
     const materialName = getDetailMaterialName(row);
     const endingQty = getDetailEndingQty(row);
     const inventoryDays = getDetailInventoryDays(row);
-    const settlementPrice = getDetailSettlementPrice(row);
     const pmcType = getPmcInventoryType(row);
     const pmcBasis = getPmcBasis(row);
     const pmcReason = getPmcReason(row);
+    const product = productMap.get(materialCode) || {};
+    const settlementPrice = getDetailSettlementPrice(row, product);
     const ageQuantities = getAgeQuantities(row);
     const ageSettlementAmounts = Object.fromEntries(
       Object.entries(ageQuantities).map(([label, qty]) => [label, qty * settlementPrice])
@@ -118,8 +120,7 @@ async function refreshSummary() {
     const warehouseInfo = warehouseMap.get(warehouse) || {};
     const department = lookupDepartment(warehouseMaterialMaps, row) || getDetailDepartment(row);
     recordDepartmentMatch(department, row);
-    const product = productMap.get(materialCode) || {};
-    const productCategory = getDetailProductCategory(row) || product.productCategory || "";
+    const productCategory = product.productCategory || "";
     const warehouseType = warehouseInfo.warehouseType || "";
     const saleStatus = classifySaleStatus(warehouseType, productCategory);
     return {
@@ -128,8 +129,8 @@ async function refreshSummary() {
       materialName,
       department,
       productCategory,
-      productLine: getDetailProductLine(row) || product.productLine || "",
-      series: getDetailSeries(row) || product.series || "",
+      productLine: product.productLine || "",
+      series: product.series || "",
       warehouseType,
       saleStatus,
       warehouseLocation: warehouseInfo.warehouseLocation || "",
@@ -489,10 +490,8 @@ function renderUnclassifiedRows(rows, selectedAgeLabels = []) {
       <td>${escapeHtml(row.warehouseLocation || "未分类")}</td>
       <td class="num">${formatNumber(visibleQuantity(row, selectedAgeLabels), 3)}</td>
       <td class="num">${formatMoney(visibleAmount(row, selectedAgeLabels))}</td>
-      <td>${escapeHtml(row.pmcBasis)}</td>
-      <td>${escapeHtml(row.pmcReason)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="10" class="empty">暂无未分类明细</td></tr>`;
+  `).join("") : `<tr><td colspan="8" class="empty">暂无未分类明细</td></tr>`;
 }
 
 function renderAmountCharts(rows, selectedAgeLabel = "") {
@@ -627,7 +626,8 @@ function getAgeBucketLabel(value) {
   if (days <= 60) return "31-60天";
   if (days <= 90) return "61-90天";
   if (days <= 120) return "91-120天";
-  return "120天以上";
+  if (days <= 150) return "121-150天";
+  return "150天以上";
 }
 
 function renderBars(id, rows, totalId = "") {
@@ -740,7 +740,7 @@ function downloadSeriesSummary() {
 
 function downloadUnclassifiedRows() {
   const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
-  const headers = ["缺失项", "物料编码", "物料名称", "仓库", "销售产品线", "仓库位置", "0430结余库存数量", "结算价金额", "判断依据（PMC口径）", "问题原因（PMC口径）"];
+  const headers = ["缺失项", "物料编码", "物料名称", "仓库", "销售产品线", "仓库位置", "0430结余库存数量", "结算价金额"];
   const lines = [headers.join(",")];
   getUnclassifiedRows(filteredRows).forEach((row) => {
     lines.push([
@@ -751,9 +751,7 @@ function downloadUnclassifiedRows() {
       row.productLine || "未分类",
       row.warehouseLocation || "未分类",
       visibleQuantity(row, selectedAgeLabels),
-      visibleAmount(row, selectedAgeLabels),
-      row.pmcBasis,
-      row.pmcReason
+      visibleAmount(row, selectedAgeLabels)
     ].map(csvCell).join(","));
   });
   downloadCsv(`未分类明细表_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.csv`, lines);
@@ -807,7 +805,12 @@ function mapProductsByMaterialCode(rows) {
       sku: firstText([firstValue(row, ["SKU", "sku"]), nthValue(row, 3)]),
       productCategory: firstText([firstValue(row, ["销售产品分类", "产品分类", "销售产品类别", "产品类别", "品类"])]),
       productLine: firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]),
-      series: firstText([firstValue(row, ["销售系列", "系列"]), nthValue(row, 8)])
+      series: firstText([firstValue(row, ["销售系列", "系列"]), nthValue(row, 8)]),
+      settlementPrice: firstNumber([
+        firstValue(row, ["结算价(含税)", "结算价（含税）", "结算价含税", "结算价", "内部结算价", "26年内部结算价", "2026年内部结算价"]),
+        firstValueByHeaderIncludes(row, ["结算价"]),
+        nthValue(row, 9)
+      ])
     });
   }
   return map;
@@ -888,6 +891,9 @@ function getDetailProductCategory(row) {
 
 function getDetailEndingQty(row) {
   return firstNumber([
+    firstValue(row, ["合计库存数量", "合计数量", "合计"]),
+    firstValueByHeaderIncludes(row, ["合计", "库存", "数量"]),
+    firstValueByHeaderIncludes(row, ["合计", "数量"]),
     firstValue(row, ["0430结余库存数量", "4月30日结余库存数量", "结余库存数量"]),
     firstValueByHeaderIncludes(row, ["0430", "结余", "库存", "数量"]),
     firstValueByHeaderIncludes(row, ["结余", "库存", "数量"])
@@ -917,11 +923,9 @@ function getAgeQuantity(row, definition) {
   ]) || 0;
 }
 
-function getDetailSettlementPrice(row) {
-  return firstNumber([
-    nthValue(row, 16),
-    firstValue(row, ["结算价(含税)", "结算价（含税）", "P列结算价(含税)", "P列结算价（含税）"])
-  ]);
+function getDetailSettlementPrice(row, product = {}) {
+  const mappedPrice = Number(product.settlementPrice) || 0;
+  return mappedPrice;
 }
 
 function getClosedInventoryQty(row) {
@@ -958,24 +962,15 @@ function getDetailDepartment(row) {
 }
 
 function getPmcInventoryType(row) {
-  return normalizeText(firstText([
-    nthValue(row, 30),
-    firstValue(row, ["库存类型判断（PMC口径）", "库存类型判断(PMC口径)", "库存类型判断", "AD列"])
-  ]));
+  return "";
 }
 
 function getPmcBasis(row) {
-  return normalizeText(firstText([
-    nthValue(row, 31),
-    firstValue(row, ["判断依据（PMC口径）", "判断依据(PMC口径)", "判断依据"])
-  ]));
+  return "";
 }
 
 function getPmcReason(row) {
-  return normalizeText(firstText([
-    nthValue(row, 32),
-    firstValue(row, ["问题原因（PMC口径）", "问题原因(PMC口径)", "问题原因"])
-  ]));
+  return "";
 }
 
 function getWarehouseMaterialDepartment(row) {
@@ -1192,7 +1187,8 @@ function getSelectedAgeBucketLabel(bucket) {
   if (bucket === "31-60") return "31-60天";
   if (bucket === "61-90") return "61-90天";
   if (bucket === "91-120") return "91-120天";
-  if (bucket === "120+") return "120天以上";
+  if (bucket === "121-150") return "121-150天";
+  if (bucket === "150+") return "150天以上";
   return "";
 }
 
@@ -1316,7 +1312,7 @@ function escapeHtml(value) {
 function scheduleDeferredTrendLoad() {
   if (window.__kcfxTrendScriptScheduled || !document.querySelector("#inventoryValueTrendChart")) return;
   window.__kcfxTrendScriptScheduled = true;
-  const load = () => loadScriptOnce("inventory-trend.js?v=20260605i");
+  const load = () => loadScriptOnce("inventory-trend.js?v=20260610a");
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(load, { timeout: 2500 });
   } else {
