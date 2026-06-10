@@ -384,10 +384,17 @@ function parseWorkbookRows(workbook, slot) {
     blankrows: false,
     range: slot.skipRows || 0
   });
+  const rawMatrix = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    defval: "",
+    raw: true,
+    blankrows: false,
+    range: slot.skipRows || 0
+  });
   const headers = (matrix[0] || []).map((value, index) => normalizeHeaderCell(value, index));
   const rows = matrix.slice(1)
     .filter((values) => Array.isArray(values) && values.some((value) => normalizeText(value) !== ""))
-    .map((values) => rowFromHeaderValues(headers, values));
+    .map((values, index) => rowFromHeaderValues(headers, values, rawMatrix[index + 1] || []));
   return {
     sheetName,
     headers,
@@ -405,18 +412,19 @@ function normalizeHeaderCell(value, index) {
   return text || `__EMPTY_${index + 1}`;
 }
 
-function rowFromHeaderValues(headers, values) {
+function rowFromHeaderValues(headers, values, rawValues = []) {
   const row = {};
   headers.forEach((header, index) => {
-    row[header] = normalizeCellValue(values[index]);
+    row[header] = normalizeCellValue(values[index], rawValues[index]);
   });
   return row;
 }
 
-function normalizeCellValue(value) {
+function normalizeCellValue(value, rawValue = value) {
   if (value === null || value === undefined) return "";
   if (typeof value === "number" && !Number.isFinite(value)) return "";
   if (typeof value === "string" && value.startsWith("#")) return "";
+  if (typeof rawValue === "number" && Number.isFinite(rawValue) && !Number.isInteger(rawValue)) return rawValue;
   return value;
 }
 
