@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 报错信息提示</title>
-  <link rel="stylesheet" href="styles.css?v=20260601f">
+  <link rel="stylesheet" href="styles.css?v=20260610b">
 </head>
 <body>
   <div class="app-shell">
@@ -26,7 +26,7 @@
       <header class="topbar">
         <div>
           <h1>报错信息提示</h1>
-          <p>根据关账后库存事实表中有库存数量的物料编码，检查核心维表是否缺失映射。</p>
+          <p>分别根据关账后库存事实表、库存分析月份表中有库存数量的物料编码，检查核心维表是否缺失映射。</p>
         </div>
         <div class="status-pill" id="checkStatus">正在读取文件库...</div>
       </header>
@@ -36,12 +36,17 @@
         <button id="downloadAllBtn" class="secondary" type="button">一键下载</button>
       </section>
 
+      <section class="error-source-title">
+        <h2>根据关账后库存事实表</h2>
+        <p>数量取关账后库存事实表有库存的物料和仓库。</p>
+      </section>
+
       <section class="metrics error-metrics">
-        <div class="metric-card"><span>有库存物料数</span><strong id="stockMaterialCount">0</strong></div>
-        <div class="metric-card"><span>商品分类缺失</span><strong id="productMissingCount">0</strong></div>
-        <div class="metric-card"><span>事业部对照缺失</span><strong id="divisionMissingCount">0</strong></div>
-        <div class="metric-card"><span>仓库对照缺失</span><strong id="warehouseMissingCount">0</strong></div>
-        <div class="metric-card"><span>结算价缺失</span><strong id="settlementMissingCount">0</strong></div>
+        <div class="metric-card"><span>有库存物料数</span><strong id="closedStockMaterialCount">0</strong></div>
+        <div class="metric-card"><span>商品分类缺失</span><strong id="closedProductMissingCount">0</strong></div>
+        <div class="metric-card"><span>事业部对照缺失</span><strong id="closedDivisionMissingCount">0</strong></div>
+        <div class="metric-card"><span>仓库对照缺失</span><strong id="closedWarehouseMissingCount">0</strong></div>
+        <div class="metric-card"><span>结算价缺失</span><strong id="closedSettlementMissingCount">0</strong></div>
       </section>
 
       <section class="error-section">
@@ -56,7 +61,7 @@
                 <th>数量</th>
               </tr>
             </thead>
-            <tbody id="productMissingRows"></tbody>
+            <tbody id="closedProductMissingRows"></tbody>
           </table>
         </div>
       </section>
@@ -73,7 +78,7 @@
                 <th>数量</th>
               </tr>
             </thead>
-            <tbody id="divisionMissingRows"></tbody>
+            <tbody id="closedDivisionMissingRows"></tbody>
           </table>
         </div>
       </section>
@@ -88,7 +93,7 @@
                 <th>数量</th>
               </tr>
             </thead>
-            <tbody id="warehouseMissingRows"></tbody>
+            <tbody id="closedWarehouseMissingRows"></tbody>
           </table>
         </div>
       </section>
@@ -105,7 +110,86 @@
                 <th>数量</th>
               </tr>
             </thead>
-            <tbody id="settlementMissingRows"></tbody>
+            <tbody id="closedSettlementMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="error-source-title">
+        <h2>根据库存分析月份表</h2>
+        <p>数量取库存分析月份表的合计库存数量；结算价、销售产品线、销售系列通过物料编码匹配商品分类维表；事业部按 D列使用组织 + C列仓库 + A列物料编码 匹配仓库物料事业部对照表 F列。</p>
+      </section>
+
+      <section class="metrics error-metrics">
+        <div class="metric-card"><span>有库存物料数</span><strong id="detailStockMaterialCount">0</strong></div>
+        <div class="metric-card"><span>商品分类缺失</span><strong id="detailProductMissingCount">0</strong></div>
+        <div class="metric-card"><span>事业部对照缺失</span><strong id="detailDivisionMissingCount">0</strong></div>
+        <div class="metric-card"><span>仓库对照缺失</span><strong id="detailWarehouseMissingCount">0</strong></div>
+        <div class="metric-card"><span>结算价缺失</span><strong id="detailSettlementMissingCount">0</strong></div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title">有库存商品维度表没有信息</div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>物料编码</th>
+                <th>SKU</th>
+                <th>物料名称</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="detailProductMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title">有库存仓库物料事业部对照表没有信息</div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>物料编码</th>
+                <th>SKU</th>
+                <th>物料名称</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="detailDivisionMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title">有库存仓库、金蝶、旺店通、领星没有信息</div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>仓库</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="detailWarehouseMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title">有库存没有结算价（含税）的物料</div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>物料编码</th>
+                <th>物料名称</th>
+                <th>销售产品线</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="detailSettlementMissingRows"></tbody>
           </table>
         </div>
       </section>
@@ -115,6 +199,6 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="storage.js?v=20260602g"></script>
   <script src="shared-library.js?v=20260605c"></script>
-  <script src="errors.js?v=20260601d"></script>
+  <script src="errors.js?v=20260610b"></script>
 </body>
 </html>

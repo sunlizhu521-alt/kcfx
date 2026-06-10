@@ -1055,6 +1055,27 @@ input[type="file"]:disabled {
   margin-top: 16px;
 }
 
+.error-source-title {
+  margin: 18px 0 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f7fbff;
+}
+
+.error-source-title h2 {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.error-source-title p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -1605,6 +1626,11 @@ input[type="file"]:disabled {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.trend-bars-vertical.trend-one-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .trend-bars-vertical.two-categories {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1629,6 +1655,18 @@ input[type="file"]:disabled {
   padding: 26px 14px 18px;
   border-bottom: 1px solid #d8e3ee;
   overflow: visible;
+}
+
+.trend-one-row .trend-bar-group {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(var(--trend-month-count, 5), minmax(0, 1fr));
+  white-space: nowrap;
+}
+
+.trend-one-row .trend-bar-wrap {
+  min-width: 0;
 }
 
 .trend-bars-vertical.single-category .trend-bar-group {

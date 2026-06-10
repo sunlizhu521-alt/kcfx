@@ -378,11 +378,12 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
     values: TREND_MONTHS.map((month) => getTrendMonthAggregateValue(monthSummaries, month.label, metric, selections))
   }));
   const max = Math.max(...valuesByCategory.flatMap((item) => item.values), 1);
+  const orderedMonths = TREND_MONTHS.map((month) => month.label).join("、");
   container.innerHTML = `
     <div class="trend-legend">
       ${TREND_MONTHS.map((month, index) => `<span><i style="background:${TREND_COLORS[index]}"></i>${month.label}</span>`).join("")}
     </div>
-    <div class="trend-bars-vertical ${trendCategoryDensityClass(valuesByCategory.length)}" style="--trend-month-count:${TREND_MONTHS.length}">
+    <div class="trend-bars-vertical trend-one-row ${trendCategoryDensityClass(valuesByCategory.length)}" style="--trend-month-count:${TREND_MONTHS.length}" aria-label="月份顺序：${escapeHtml(orderedMonths)}">
       ${valuesByCategory.map((category) => `
         <div class="trend-category" title="${escapeHtml(category.name)}">
           <div class="trend-bar-group">
