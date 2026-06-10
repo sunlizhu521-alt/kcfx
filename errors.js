@@ -8,6 +8,9 @@ let currentErrorTables = {
 document.addEventListener("DOMContentLoaded", async () => {
   $("#refreshBtn").addEventListener("click", runErrorChecks);
   $("#downloadAllBtn").addEventListener("click", downloadAllErrorTables);
+  document.querySelectorAll("[data-download-error]").forEach((button) => {
+    button.addEventListener("click", () => downloadSingleErrorTable(button.dataset.downloadError));
+  });
   await loadSharedLibrary({ statusEl: $("#checkStatus") });
   await runErrorChecks();
 });
@@ -346,29 +349,63 @@ function downloadAllErrorTables() {
   downloadCheckGroup("库存分析月份表", stamp, currentErrorTables.detail);
 }
 
+const ERROR_DOWNLOAD_CONFIG = {
+  productMissing: {
+    name: "商品维度缺失表",
+    columns: [
+      ["materialCode", "物料编码"],
+      ["sku", "SKU"],
+      ["materialName", "物料名称"],
+      ["qty", "数量"]
+    ]
+  },
+  divisionMissing: {
+    name: "仓库与物料维度表缺失",
+    columns: [
+      ["materialCode", "物料编码"],
+      ["sku", "SKU"],
+      ["materialName", "物料名称"],
+      ["qty", "数量"]
+    ]
+  },
+  warehouseMissing: {
+    name: "仓库名称",
+    columns: [
+      ["warehouse", "仓库"],
+      ["qty", "数量"]
+    ]
+  },
+  settlementMissing: {
+    name: "结算价缺失表",
+    columns: [
+      ["materialCode", "物料编码"],
+      ["materialName", "物料名称"],
+      ["productLine", "销售产品线"],
+      ["qty", "数量"]
+    ]
+  }
+};
+
+function downloadSingleErrorTable(key) {
+  if (typeof XLSX === "undefined") {
+    window.alert("下载组件未加载，请刷新页面后重试。");
+    return;
+  }
+  const [source, tableName] = String(key || "").split(".");
+  const result = currentErrorTables[source];
+  const config = ERROR_DOWNLOAD_CONFIG[tableName];
+  if (!result || !config) {
+    window.alert("未找到对应的报错明细。");
+    return;
+  }
+  const sourceLabel = source === "closed" ? "关账后库存事实表" : "库存分析月份表";
+  downloadRowsAsWorkbook(`${sourceLabel}-${config.name}`, downloadTimestamp(), result[tableName] || [], config.columns);
+}
+
 function downloadCheckGroup(label, stamp, result) {
-  downloadRowsAsWorkbook(`${label}-商品维度缺失表`, stamp, result.productMissing, [
-    ["materialCode", "物料编码"],
-    ["sku", "SKU"],
-    ["materialName", "物料名称"],
-    ["qty", "数量"]
-  ]);
-  downloadRowsAsWorkbook(`${label}-仓库与物料维度表缺失`, stamp, result.divisionMissing, [
-    ["materialCode", "物料编码"],
-    ["sku", "SKU"],
-    ["materialName", "物料名称"],
-    ["qty", "数量"]
-  ]);
-  downloadRowsAsWorkbook(`${label}-仓库名称`, stamp, result.warehouseMissing, [
-    ["warehouse", "仓库"],
-    ["qty", "数量"]
-  ]);
-  downloadRowsAsWorkbook(`${label}-结算价缺失表`, stamp, result.settlementMissing, [
-    ["materialCode", "物料编码"],
-    ["materialName", "物料名称"],
-    ["productLine", "销售产品线"],
-    ["qty", "数量"]
-  ]);
+  for (const [tableName, config] of Object.entries(ERROR_DOWNLOAD_CONFIG)) {
+    downloadRowsAsWorkbook(`${label}-${config.name}`, stamp, result[tableName] || [], config.columns);
+  }
 }
 
 function downloadRowsAsWorkbook(prefix, stamp, rows, columns) {
