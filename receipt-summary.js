@@ -49,6 +49,7 @@ let detailTableBaseRows = [];
 const detailTableFilters = {};
 let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 let closedInventoryValue = 0;
+let summarySearchTimer = 0;
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindIfExists("#refreshBtn", "click", clearFilters);
@@ -60,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("click", closeMultiFilters);
   document.addEventListener("click", handleDetailTableFilterClick);
   document.addEventListener("input", handleDetailTableFilterSearch);
-  bindIfExists("#searchInput", "input", renderSummary);
+  bindIfExists("#searchInput", "input", scheduleRenderSummary);
   LINKED_PRODUCT_FILTERS.forEach(({ id }) => {
     bindIfExists(`#${id}`, "change", () => {
       populateLinkedProductFilters(summaryRows, id);
@@ -90,6 +91,7 @@ async function refreshSummary() {
     $("#summaryStatus").textContent = "缺少库存分析月份表，请先到事实表文件库上传并应用。";
     populateFilters([]);
     renderSummary();
+    scheduleDeferredTrendLoad();
     return;
   }
 
@@ -151,6 +153,7 @@ async function refreshSummary() {
   const diagnostic = departmentMatchDiagnostics.sample ? `，未匹配样例 ${departmentMatchDiagnostics.sample}` : "";
   $("#summaryStatus").textContent = buildSummaryStatus(summaryRows.length, departmentMatchDiagnostics.matched, diagnostic, records);
   renderSummary();
+  scheduleDeferredTrendLoad();
 }
 
 function clearFilters() {
@@ -233,19 +236,19 @@ function populateFilters(rows, records = null) {
 }
 
 function populateLinkedProductFilters(rows, changedFilterId = "") {
+  const selections = getSummaryFilterSelections();
   LINKED_PRODUCT_FILTERS.forEach((filter) => {
-    const scopedRows = rows.filter((row) => matchLinkedProductFilters(row, filter.id) && matchNonLinkedFilters(row));
+    const scopedRows = rows.filter((row) => matchLinkedProductFilters(row, filter.id, selections) && matchNonLinkedFilters(row, selections));
     const values = sortFilterValues(uniqueValues(scopedRows, filter.key), filter);
     fillSelect(
       $(`#${filter.id}`),
       filter.allLabel,
-      filter.requirePositiveAmount ? filterValuesWithPositiveAmount(values, scopedRows, filter.key) : values
+      filter.requirePositiveAmount ? filterValuesWithPositiveAmount(values, scopedRows, filter.key, selections.selectedAgeLabels) : values
     );
   });
 }
 
-function filterValuesWithPositiveAmount(values, rows, key) {
-  const selectedAgeLabels = getSelectedAgeBucketLabels(getSelectValues($("#ageFilter")));
+function filterValuesWithPositiveAmount(values, rows, key, selectedAgeLabels = []) {
   const amountByValue = new Map();
   rows.forEach((row) => {
     const value = normalizeText(row[key]);
@@ -255,11 +258,10 @@ function filterValuesWithPositiveAmount(values, rows, key) {
   return values.filter((value) => Math.abs(Number(amountByValue.get(value)) || 0) > 0);
 }
 
-function matchNonLinkedFilters(row) {
-  const ageBuckets = getSelectValues($("#ageFilter"));
-  return matchAgeBucket(row, ageBuckets)
-    && matchSelect(row.warehouseType, getSelectValues($("#warehouseTypeFilter")))
-    && matchSelect(row.department, getSelectValues($("#departmentFilter")));
+function matchNonLinkedFilters(row, selections = getSummaryFilterSelections()) {
+  return matchAgeLabels(row, selections.selectedAgeLabels)
+    && matchSelect(row.warehouseType, selections.warehouseTypes)
+    && matchSelect(row.department, selections.departments);
 }
 
 function sortFilterValues(values, filter) {
@@ -273,29 +275,45 @@ function sortFilterValues(values, filter) {
   ];
 }
 
-function matchLinkedProductFilters(row, excludedFilterId = "") {
+function matchLinkedProductFilters(row, excludedFilterId = "", selections = getSummaryFilterSelections()) {
   return LINKED_PRODUCT_FILTERS.every((filter) => {
     if (filter.id === excludedFilterId) return true;
-    return matchSelect(row[filter.key], getSelectValues($(`#${filter.id}`)));
+    return matchSelect(row[filter.key], selections.linked[filter.id] || []);
   });
 }
 
-function renderSummary() {
-  const query = normalizeKey($("#searchInput").value);
+function getSummaryFilterSelections() {
   const ageBuckets = getSelectValues($("#ageFilter"));
-  const selectedAgeLabels = getSelectedAgeBucketLabels(ageBuckets);
+  return {
+    query: normalizeKey($("#searchInput")?.value || ""),
+    ageBuckets,
+    selectedAgeLabels: getSelectedAgeBucketLabels(ageBuckets),
+    warehouseTypes: getSelectValues($("#warehouseTypeFilter")),
+    departments: getSelectValues($("#departmentFilter")),
+    linked: Object.fromEntries(LINKED_PRODUCT_FILTERS.map((filter) => [filter.id, getSelectValues($(`#${filter.id}`))]))
+  };
+}
+
+function scheduleRenderSummary() {
+  window.clearTimeout(summarySearchTimer);
+  summarySearchTimer = window.setTimeout(renderSummary, 120);
+}
+
+function renderSummary() {
+  const selections = getSummaryFilterSelections();
+  const selectedAgeLabels = selections.selectedAgeLabels;
   filteredRows = summaryRows.filter((row) => {
-    const hit = !query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.warehouseType, row.saleStatus, row.productCategory, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
-      .some((value) => normalizeKey(value).includes(query));
+    const hit = !selections.query || [row.materialCode, row.materialName, row.warehouse, row.organization, row.department, row.warehouseType, row.saleStatus, row.productCategory, row.productLine, row.series, row.pmcType, row.pmcBasis, row.pmcReason]
+      .some((value) => normalizeKey(value).includes(selections.query));
     return hit
-      && matchAgeBucket(row, ageBuckets)
-      && matchSelect(row.warehouseType, getSelectValues($("#warehouseTypeFilter")))
-      && matchSelect(row.saleStatus, getSelectValues($("#saleStatusFilter")))
-      && matchSelect(row.productCategory, getSelectValues($("#productCategoryFilter")))
-      && matchSelect(row.department, getSelectValues($("#departmentFilter")))
-      && matchSelect(row.productLine, getSelectValues($("#productLineFilter")))
-      && matchSelect(row.series, getSelectValues($("#seriesFilter")))
-      && matchSelect(row.warehouseLocation, getSelectValues($("#warehouseLocationFilter")));
+      && matchAgeLabels(row, selectedAgeLabels)
+      && matchSelect(row.warehouseType, selections.warehouseTypes)
+      && matchSelect(row.department, selections.departments)
+      && matchSelect(row.saleStatus, selections.linked.saleStatusFilter)
+      && matchSelect(row.productCategory, selections.linked.productCategoryFilter)
+      && matchSelect(row.productLine, selections.linked.productLineFilter)
+      && matchSelect(row.series, selections.linked.seriesFilter)
+      && matchSelect(row.warehouseLocation, selections.linked.warehouseLocationFilter);
   });
   const visibleAmount = sumVisibleAmount(filteredRows, selectedAgeLabels);
   $("#qtyTotal").textContent = formatNumberWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels), 2);
@@ -1160,6 +1178,10 @@ function matchSelect(value, selected) {
 
 function matchAgeBucket(row, buckets) {
   const labels = getSelectedAgeBucketLabels(buckets);
+  return matchAgeLabels(row, labels);
+}
+
+function matchAgeLabels(row, labels) {
   if (!labels.length) return true;
   return labels.some((label) => (Number(row.ageQuantities?.[label]) || 0) !== 0);
 }
@@ -1289,4 +1311,23 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#039;"
   }[char]));
+}
+
+function scheduleDeferredTrendLoad() {
+  if (window.__kcfxTrendScriptScheduled || !document.querySelector("#inventoryValueTrendChart")) return;
+  window.__kcfxTrendScriptScheduled = true;
+  const load = () => loadScriptOnce("inventory-trend.js?v=20260605i");
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(load, { timeout: 2500 });
+  } else {
+    window.setTimeout(load, 500);
+  }
+}
+
+function loadScriptOnce(src) {
+  if ([...document.scripts].some((script) => script.src.includes(src))) return;
+  const script = document.createElement("script");
+  script.src = src;
+  script.async = true;
+  document.body.appendChild(script);
 }

@@ -1,8 +1,21 @@
 const KC_FILE_LIBRARY_MANIFEST = "data/kcfx-library/manifest.json";
+let kcSharedLibraryLoadPromise = null;
 
 async function loadSharedLibrary(options = {}) {
   const statusEl = options.statusEl || null;
-  return loadKcfxFileLibrary(statusEl);
+  if (!kcSharedLibraryLoadPromise) kcSharedLibraryLoadPromise = loadKcfxFileLibrary(null);
+  const result = await kcSharedLibraryLoadPromise;
+  if (statusEl) renderSharedLibraryStatus(statusEl, result);
+  return result;
+}
+
+function renderSharedLibraryStatus(statusEl, result) {
+  if (!result?.ok) {
+    statusEl.textContent = `文件库未加载：${result?.error?.message || "未知错误"}`;
+    return;
+  }
+  const entries = Object.entries(result.manifest?.records || {});
+  statusEl.textContent = buildSharedLibraryStatus(result.imported, result.cleared, entries.length);
 }
 
 async function loadKcfxFileLibrary(statusEl) {

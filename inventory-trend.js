@@ -15,9 +15,12 @@ const TREND_FILTERS = [
 ];
 let trendUnclassifiedRows = [];
 let currentTrendMonthSummaries = [];
+let trendDashboardInitialized = false;
 
-document.addEventListener("DOMContentLoaded", async () => {
+async function initTrendDashboard() {
+  if (trendDashboardInitialized) return;
   if (!document.querySelector("#inventoryValueTrendChart")) return;
+  trendDashboardInitialized = true;
   const statusEl = document.querySelector("#trendSummaryStatus") || document.querySelector("#summaryStatus");
   document.querySelector("#downloadTrendUnclassifiedBtn")?.addEventListener("click", downloadTrendUnclassifiedRows);
   document.querySelector("#clearTrendFiltersBtn")?.addEventListener("click", clearTrendFilters);
@@ -25,7 +28,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadSharedLibrary({ statusEl });
   const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
   renderTrendDashboard(records);
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initTrendDashboard);
+} else {
+  initTrendDashboard();
+}
 
 function renderTrendDashboard(records) {
   const maps = buildTrendDimensionMaps(records);
