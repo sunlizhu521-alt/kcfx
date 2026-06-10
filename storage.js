@@ -32,8 +32,8 @@ const DIMENSION_SLOTS = [
   {
     id: "dim-store-name",
     type: "dimension",
-    title: "维度 4",
-    expectedName: "维度 4",
+    title: "客户与物料对照表",
+    expectedName: "客户与物料对照表",
     sheetHint: "",
     description: "预留维度槽位。"
   },
