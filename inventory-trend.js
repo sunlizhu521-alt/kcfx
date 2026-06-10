@@ -382,7 +382,7 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
     <div class="trend-legend">
       ${TREND_MONTHS.map((month, index) => `<span><i style="background:${TREND_COLORS[index]}"></i>${month.label}</span>`).join("")}
     </div>
-    <div class="trend-bars-vertical ${trendCategoryDensityClass(valuesByCategory.length)}">
+    <div class="trend-bars-vertical ${trendCategoryDensityClass(valuesByCategory.length)}" style="--trend-month-count:${TREND_MONTHS.length}">
       ${valuesByCategory.map((category) => `
         <div class="trend-category" title="${escapeHtml(category.name)}">
           <div class="trend-bar-group">
@@ -390,6 +390,7 @@ function renderVerticalTrendChart(chartId, totalId, monthSummaries, field, fallb
               <div class="trend-bar-wrap" title="${TREND_MONTHS[index].label} ${escapeHtml(category.name)} ${formatValue(value)} ${formatTrendMoM(value, category.values[index - 1])}">
                 <span class="trend-bar-value">${escapeHtml(formatTrendBarValue(value, category.values[index - 1], formatShortValue))}</span>
                 <div class="trend-bar" style="height:${Math.max(2, value / max * 100)}%;background:${TREND_COLORS[index]}"></div>
+                <span class="trend-month-label">${escapeHtml(TREND_MONTHS[index].label)}</span>
               </div>
             `).join("")}
           </div>

@@ -1562,11 +1562,12 @@ input[type="file"]:disabled {
 
 .trend-panel {
   min-height: 380px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .vertical-trend-chart {
   min-height: 310px;
+  overflow: visible;
 }
 
 .trend-legend {
@@ -1596,7 +1597,8 @@ input[type="file"]:disabled {
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 8px;
   align-items: end;
-  height: 270px;
+  height: 285px;
+  overflow: visible;
 }
 
 .trend-bars-vertical.single-category {
@@ -1613,24 +1615,25 @@ input[type="file"]:disabled {
 
 .trend-category {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) 38px;
+  grid-template-rows: minmax(0, 1fr) 32px;
   min-width: 0;
   height: 100%;
 }
 
 .trend-bar-group {
   display: grid;
-  grid-template-columns: repeat(4, minmax(12px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(var(--trend-month-count, 5), minmax(18px, 1fr));
+  gap: clamp(6px, .9vw, 14px);
   align-items: end;
   min-height: 0;
-  padding: 22px 12px 0;
+  padding: 26px 14px 18px;
   border-bottom: 1px solid #d8e3ee;
+  overflow: visible;
 }
 
 .trend-bars-vertical.single-category .trend-bar-group {
-  gap: 18px;
-  padding-inline: 36px;
+  gap: clamp(10px, 1.4vw, 22px);
+  padding-inline: clamp(18px, 3vw, 48px);
 }
 
 .trend-bar-wrap {
@@ -1640,6 +1643,7 @@ input[type="file"]:disabled {
   justify-content: center;
   height: 100%;
   min-width: 0;
+  overflow: visible;
 }
 
 .trend-bar {
@@ -1657,6 +1661,18 @@ input[type="file"]:disabled {
   color: #51677e;
   font-size: clamp(7px, .45vw, 9px);
   font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.trend-month-label {
+  position: absolute;
+  left: 50%;
+  bottom: -17px;
+  transform: translateX(-50%);
+  color: #52667b;
+  font-size: 10px;
+  font-weight: 800;
   line-height: 1;
   white-space: nowrap;
 }
