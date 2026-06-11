@@ -29,7 +29,10 @@
           <h1>销售数据文件</h1>
           <p>上传销售数据文件。后续销售分析或库存联动分析会按该槽位读取并应用。</p>
         </div>
-        <button id="applyAllBtn" class="secondary" type="button">一键全部应用刷新</button>
+        <div class="topbar-actions">
+          <button id="applyAllBtn" class="secondary" type="button">一键全部应用刷新</button>
+          <button id="clearCacheBtn" class="danger" type="button">清除缓存</button>
+        </div>
       </header>
 
       <section class="library-summary">
@@ -62,6 +65,6 @@
   <script src="vendor/xlsx.full.min.js?v=20260611a"></script>
   <script src="storage.js?v=20260611d"></script>
   <script src="shared-library.js?v=20260605c"></script>
-  <script src="library-page.js?v=20260611c"></script>
+  <script src="library-page.js?v=20260611d"></script>
 </body>
 </html>

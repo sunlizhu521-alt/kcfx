@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 function bindToolbar() {
   $("#refreshBtn").addEventListener("click", refreshAll);
   $("#applyAllBtn").addEventListener("click", refreshAll);
+  $("#clearCacheBtn")?.addEventListener("click", clearAllLibraryCache);
   $("#downloadSharedBtn").addEventListener("click", downloadSharedLibrary);
   $("#importSharedBtn")?.addEventListener("click", () => $("#importSharedInput")?.click());
   $("#importSharedInput")?.addEventListener("change", importSharedLibraryFile);
@@ -314,6 +315,16 @@ async function clearSlot(slotId) {
   if (!window.confirm(`确认删除：${SLOT_BY_ID[slotId]?.title || slotId}？删除后刷新不会再从库存分析看板文件库自动恢复。`)) return;
   await deleteRecord(slotId);
   await renderLibrary();
+}
+
+async function clearAllLibraryCache() {
+  if (!window.confirm("确认清除当前浏览器里的全部文件库缓存？清除后需要重新上传库存数据文件、销售数据文件和维度表文件。")) return;
+  setLibraryStatus("正在清除浏览器文件库缓存...");
+  for (const slot of ALL_SLOTS) {
+    await deleteRecord(slot.id);
+  }
+  await renderLibrary();
+  setLibraryStatus("缓存已清除，请重新上传文件并应用刷新。");
 }
 
 function recordReferencePath(record) {

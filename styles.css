@@ -142,6 +142,13 @@ select {
   margin-bottom: 18px;
 }
 
+.topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .topbar h1 {
   margin: 0;
   font-size: 26px;
