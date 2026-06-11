@@ -265,16 +265,25 @@ function getAllRecords() {
 
 async function getActiveRecords() {
   const records = await getAllRecords();
-  return records.filter((record) => record.appliedAt && !isDeletedRecord(record));
+  return records
+    .map((record) => {
+      const latest = getLatestUploadedRecord(record);
+      if (!latest) return null;
+      return {
+        ...latest,
+        appliedAt: latest.appliedAt || record?.appliedAt || latest.savedAt || ""
+      };
+    })
+    .filter((record) => record?.appliedAt && !isDeletedRecord(record));
 }
 
 function getDisplayRecord(record) {
   if (!record || isDeletedRecord(record)) return null;
-  return record.pending || record;
+  return getLatestUploadedRecord(record);
 }
 
 function hasPendingRecord(record) {
-  return !isDeletedRecord(record) && Boolean(record?.pending);
+  return !isDeletedRecord(record) && Boolean(record?.pending) && getLatestUploadedRecord(record) === record.pending;
 }
 
 function isDeletedRecord(record) {
@@ -283,11 +292,30 @@ function isDeletedRecord(record) {
 
 function promotePendingRecord(record) {
   if (isDeletedRecord(record)) return null;
-  const source = record?.pending || record;
+  const source = getLatestUploadedRecord(record);
   if (!source) return null;
   const next = { ...source, appliedAt: new Date().toISOString() };
   delete next.pending;
   return next;
+}
+
+function getLatestUploadedRecord(record) {
+  if (!record || isDeletedRecord(record)) return null;
+  const current = { ...record };
+  delete current.pending;
+  const pending = record.pending && !isDeletedRecord(record.pending) ? record.pending : null;
+  if (!pending) return current;
+  return recordTime(pending) >= recordTime(current) ? pending : current;
+}
+
+function recordTime(record) {
+  const candidates = [
+    Date.parse(record?.savedAt || 0),
+    Number(record?.lastModified || 0),
+    Date.parse(record?.appliedAt || 0),
+    Date.parse(record?.sharedSavedAt || 0)
+  ].filter((time) => Number.isFinite(time) && time > 0);
+  return candidates.length ? Math.max(...candidates) : 0;
 }
 
 function saveRecord(record) {

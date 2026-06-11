@@ -3,6 +3,7 @@ let kcSharedLibraryLoadPromise = null;
 
 async function loadSharedLibrary(options = {}) {
   const statusEl = options.statusEl || null;
+  if (options.force) kcSharedLibraryLoadPromise = null;
   if (!kcSharedLibraryLoadPromise) kcSharedLibraryLoadPromise = loadKcfxFileLibrary(null);
   const result = await kcSharedLibraryLoadPromise;
   if (statusEl) renderSharedLibraryStatus(statusEl, result);

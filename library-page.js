@@ -16,7 +16,7 @@ function bindToolbar() {
 }
 
 async function refreshAll() {
-  await loadSharedLibrary({ statusEl: $("#sharedStatus") });
+  await loadSharedLibrary({ statusEl: $("#sharedStatus"), force: true });
   const records = Object.fromEntries((await getAllRecords()).map((record) => [record.id, record]));
   const applicableSlots = pageSlots().filter((slot) => getDisplayRecord(records[slot.id]));
   const count = applicableSlots.length;
@@ -252,13 +252,8 @@ async function saveSlot(slotId) {
     status.textContent = "正在解析文件...";
     const record = await readExcelFile(file, slot);
     if (!record.rows.length) throw new Error("文件未解析到有效行。");
-    const existing = await getRecord(slotId);
-    if (existing?.appliedAt) {
-      await saveRecord({ ...existing, pending: { ...record, appliedAt: "" } });
-    } else {
-      await saveRecord({ ...record, appliedAt: "" });
-    }
-    status.textContent = "已保存到文件库，状态为待应用。点击应用刷新后，看板才会读取这份文件。";
+    await saveRecord({ ...record, appliedAt: new Date().toISOString() });
+    status.textContent = "已保存并强制应用最新上传文件，刷新后看板也会读取这份文件。";
     await renderLibrary();
   } catch (error) {
     status.textContent = `解析失败：${error.message}`;
@@ -282,13 +277,8 @@ async function saveSlotFile(slotId, file) {
     status.textContent = "正在解析文件...";
     const record = await readExcelFile(file, slot);
     if (!record.rows.length) throw new Error("文件未解析到有效行。");
-    const existing = await getRecord(slotId);
-    if (existing?.appliedAt) {
-      await saveRecord({ ...existing, pending: { ...record, appliedAt: "" } });
-    } else {
-      await saveRecord({ ...record, appliedAt: "" });
-    }
-    status.textContent = "已保存到文件库，状态为待应用。点击应用刷新后，看板才会读取这份文件。";
+    await saveRecord({ ...record, appliedAt: new Date().toISOString() });
+    status.textContent = "已保存并强制应用最新上传文件，刷新后看板也会读取这份文件。";
     await renderLibrary();
   } catch (error) {
     status.textContent = `解析失败：${error.message}`;
