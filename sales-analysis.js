@@ -14,7 +14,7 @@ const SALES_INVENTORY_TREND_FILTERS = [
   { id: "salesInventoryWarehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "全部仓库位置" }
 ];
 const SALES_FILTERS = [
-  { id: "salesMonthFilter", field: "salesMonth", allLabel: "全部销售月份", type: "month" },
+  { id: "salesMonthFilter", field: "salesMonth", allLabel: "全部销售月份", type: "monthPicker" },
   { id: "salesOrgFilter", field: "salesOrg", allLabel: "全部销售部门" },
   { id: "customerFilter", field: "productLine", allLabel: "全部销售产品线" },
   { id: "productLineFilter", field: "productSeries", allLabel: "全部销售系列" },
@@ -108,7 +108,7 @@ function refreshSalesFilterOptions(rows = salesRows) {
   SALES_FILTERS.forEach((filter) => {
     const options = linkedFilterOptions(rows, SALES_FILTERS, filter, selections, filter.limit);
     const current = (selections[filter.id] || []).filter((value) => options.includes(value));
-    if (filter.type === "month") fillMonthInput($(`#${filter.id}`), filter.allLabel, options, current);
+    if (filter.type === "monthPicker") fillMonthPicker($(`#${filter.id}`), filter.allLabel, options, current);
     else fillSelect($(`#${filter.id}`), filter.allLabel, options, current);
   });
   isRefreshingFilters = false;
@@ -455,28 +455,76 @@ function clearFilters() {
   renderSalesAnalysis();
 }
 
-function fillMonthInput(input, allLabel, values, selectedValuesOverride = null) {
-  if (!input) return;
-  const selectedSource = Array.isArray(selectedValuesOverride) ? selectedValuesOverride : getMonthValues(input);
-  const validMonths = values
-    .map((value) => normalizeText(value))
-    .filter((value) => /^\d{4}-\d{2}$/.test(value))
-    .sort((a, b) => a.localeCompare(b));
-  const selected = selectedSource.find((value) => validMonths.includes(value)) || "";
-  input.dataset.allLabel = allLabel;
-  input.min = validMonths[0] || "";
-  input.max = validMonths[validMonths.length - 1] || "";
-  input.value = selected;
-  input.title = selected || allLabel;
+function fillMonthPicker(picker, allLabel, values, selectedValuesOverride = null) {
+  if (!picker) return;
+  const validMonths = uniqueMonths(values);
+  const selectedSource = Array.isArray(selectedValuesOverride) ? selectedValuesOverride : getMonthPickerValues(picker);
+  const selectedValues = selectedSource.filter((value) => validMonths.includes(value));
+  if (!selectedValues.length && validMonths.length) selectedValues.push(validMonths[validMonths.length - 1]);
+  const years = uniqueYears(validMonths);
+  const latestMonth = selectedValues[selectedValues.length - 1] || validMonths[validMonths.length - 1] || "";
+  const latestYear = latestMonth ? latestMonth.slice(0, 4) : String(new Date().getFullYear());
+  const requestedYear = picker.dataset.year || latestYear;
+  const year = years.includes(requestedYear) ? requestedYear : latestYear;
+  picker.dataset.allLabel = allLabel;
+  picker.dataset.validMonths = validMonths.join("|");
+  picker.dataset.values = selectedValues.join("|");
+  picker.dataset.year = year;
+  picker.innerHTML = `
+    <button class="month-picker-button" type="button" aria-haspopup="listbox" aria-expanded="false"><span>${escapeHtml(monthPickerLabel(selectedValues, allLabel))}</span></button>
+    <div class="month-picker-menu" role="listbox">
+      <div class="month-picker-header">
+        <button class="month-nav" type="button" data-year-offset="-1" ${hasAdjacentYear(years, year, -1) ? "" : "disabled"}>‹</button>
+        <strong>${escapeHtml(year)}年</strong>
+        <button class="month-nav" type="button" data-year-offset="1" ${hasAdjacentYear(years, year, 1) ? "" : "disabled"}>›</button>
+      </div>
+      <div class="month-picker-grid">
+        ${Array.from({ length: 12 }, (_, index) => {
+          const month = `${year}-${String(index + 1).padStart(2, "0")}`;
+          const enabled = validMonths.includes(month);
+          const checked = selectedValues.includes(month);
+          return `
+            <label class="month-picker-option ${enabled ? "" : "disabled"}">
+              <input type="checkbox" value="${month}" ${checked ? "checked" : ""} ${enabled ? "" : "disabled"}>
+              <span>${index + 1}月</span>
+            </label>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+  picker.querySelector(".month-picker-button")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleMonthPicker(picker);
+  });
+  picker.querySelector(".month-picker-menu")?.addEventListener("click", (event) => event.stopPropagation());
+  picker.querySelectorAll("[data-year-offset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextYear = adjacentYear(years, picker.dataset.year || year, Number(button.dataset.yearOffset));
+      if (!nextYear) return;
+      picker.dataset.year = nextYear;
+      fillMonthPicker(picker, allLabel, validMonths, getMonthPickerValues(picker));
+      picker.classList.add("open");
+      picker.querySelector(".month-picker-button")?.setAttribute("aria-expanded", "true");
+    });
+  });
+  picker.querySelectorAll(".month-picker-option input").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      const selected = getMonthPickerValues(picker);
+      if (!selected.length) checkbox.checked = true;
+      const finalSelected = getMonthPickerValues(picker);
+      picker.dataset.values = finalSelected.join("|");
+      updateMonthPickerLabel(picker, allLabel);
+      picker.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
+  updateMonthPickerLabel(picker, allLabel);
 }
 
 function clearFilter(filter) {
   const element = $(`#${filter.id}`);
-  if (filter.type === "month") {
-    if (element) {
-      element.value = "";
-      element.title = filter.allLabel || "";
-    }
+  if (filter.type === "monthPicker") {
+    clearMonthPicker(element);
     return;
   }
   clearSelect(element);
@@ -484,13 +532,80 @@ function clearFilter(filter) {
 
 function getFilterValues(filter) {
   const element = $(`#${filter.id}`);
-  if (filter.type === "month") return getMonthValues(element);
+  if (filter.type === "monthPicker") return getMonthPickerValues(element);
   return getSelectValues(element);
 }
 
-function getMonthValues(input) {
-  const value = normalizeText(input?.value || "");
-  return value ? [value] : [];
+function clearMonthPicker(picker) {
+  if (!picker) return;
+  const validMonths = uniqueMonths((picker.dataset.validMonths || "").split("|"));
+  const latest = validMonths[validMonths.length - 1] || "";
+  picker.dataset.values = latest;
+  picker.dataset.year = latest ? latest.slice(0, 4) : "";
+  picker.querySelectorAll(".month-picker-option input").forEach((input) => {
+    input.checked = input.value === latest;
+  });
+  updateMonthPickerLabel(picker, picker.dataset.allLabel || "");
+}
+
+function getMonthPickerValues(picker) {
+  if (!picker) return [];
+  const stored = (picker.dataset.values || "").split("|").map(normalizeText).filter(Boolean);
+  const inputs = [...picker.querySelectorAll(".month-picker-option input")];
+  if (!inputs.length) return stored;
+  const visibleMonths = inputs.map((input) => normalizeText(input.value)).filter(Boolean);
+  const checked = inputs.filter((input) => input.checked)
+    .map((input) => normalizeText(input.value))
+    .filter(Boolean);
+  return [...new Set([
+    ...stored.filter((value) => !visibleMonths.includes(value)),
+    ...checked
+  ])].sort((a, b) => a.localeCompare(b));
+}
+
+function updateMonthPickerLabel(picker, allLabel) {
+  const buttonText = picker?.querySelector(".month-picker-button span");
+  if (!buttonText) return;
+  const values = getMonthPickerValues(picker);
+  buttonText.textContent = monthPickerLabel(values, allLabel);
+}
+
+function monthPickerLabel(values, allLabel) {
+  if (!values.length) return allLabel;
+  if (values.length === 1) return formatMonthLabel(values[0]);
+  if (values.length === 2) return values.map(formatMonthLabel).join("、");
+  return `已选${values.length}个月`;
+}
+
+function formatMonthLabel(value) {
+  const [year, month] = normalizeText(value).split("-");
+  return year && month ? `${year}年${Number(month)}月` : value;
+}
+
+function uniqueMonths(values) {
+  return [...new Set(values.map(normalizeText).filter((value) => /^\d{4}-\d{2}$/.test(value)))]
+    .sort((a, b) => a.localeCompare(b));
+}
+
+function uniqueYears(months) {
+  return [...new Set(months.map((month) => month.slice(0, 4)))].sort((a, b) => a.localeCompare(b));
+}
+
+function adjacentYear(years, currentYear, offset) {
+  const index = years.indexOf(currentYear);
+  if (index < 0) return "";
+  return years[index + offset] || "";
+}
+
+function hasAdjacentYear(years, currentYear, offset) {
+  return Boolean(adjacentYear(years, currentYear, offset));
+}
+
+function toggleMonthPicker(picker) {
+  const willOpen = !picker.classList.contains("open");
+  closeMultiFilters();
+  picker.classList.toggle("open", willOpen);
+  picker.querySelector(".month-picker-button")?.setAttribute("aria-expanded", willOpen ? "true" : "false");
 }
 
 function fillSelect(select, allLabel, values, selectedValuesOverride = null) {
@@ -580,10 +695,14 @@ function toggleMultiFilter(select) {
 }
 
 function closeMultiFilters(event) {
-  if (event?.target?.closest?.(".multi-filter")) return;
+  if (event?.target?.closest?.(".multi-filter, .month-picker")) return;
   document.querySelectorAll(".multi-filter.open").forEach((select) => {
     select.classList.remove("open");
     select.querySelector(".multi-filter-button")?.setAttribute("aria-expanded", "false");
+  });
+  document.querySelectorAll(".month-picker.open").forEach((picker) => {
+    picker.classList.remove("open");
+    picker.querySelector(".month-picker-button")?.setAttribute("aria-expanded", "false");
   });
 }
 
