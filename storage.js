@@ -434,14 +434,7 @@ function parseWorkbookRows(workbook, slot) {
     blankrows: true,
     range: 0
   });
-  const rawMatrix = xlsx.utils.sheet_to_json(sheet, {
-    header: 1,
-    defval: "",
-    raw: true,
-    blankrows: true,
-    range: 0
-  });
-  const candidates = parseHeaderCandidates(matrix, rawMatrix, slot);
+  const candidates = parseHeaderCandidates(matrix, slot);
   const selected = chooseHeaderCandidate(candidates, slot);
   return {
     sheetName,
@@ -458,9 +451,9 @@ function parseWorkbookRows(workbook, slot) {
   };
 }
 
-function parseHeaderCandidates(matrix, rawMatrix, slot = {}) {
+function parseHeaderCandidates(matrix, slot = {}) {
   return headerRowCandidates(slot, matrix.length)
-    .map((rowIndex) => parseRowsFromHeaderIndex(matrix, rawMatrix, rowIndex, slot))
+    .map((rowIndex) => parseRowsFromHeaderIndex(matrix, rowIndex, slot))
     .filter(Boolean);
 }
 
@@ -473,12 +466,12 @@ function headerRowCandidates(slot = {}, matrixLength = 0) {
     .filter((index) => Number.isInteger(index) && index >= 0 && index < Math.max(matrixLength, 1));
 }
 
-function parseRowsFromHeaderIndex(matrix, rawMatrix, headerIndex, slot = {}) {
+function parseRowsFromHeaderIndex(matrix, headerIndex, slot = {}) {
   const headerValues = matrix[headerIndex] || [];
   const headers = headerValues.map((value, index) => normalizeHeaderCell(value, index));
   const rows = matrix.slice(headerIndex + 1)
     .filter((values) => Array.isArray(values) && values.some((value) => normalizeText(value) !== ""))
-    .map((values, index) => rowFromHeaderValues(headers, values, rawMatrix[headerIndex + index + 1] || []));
+    .map((values) => rowFromHeaderValues(headers, values));
   const score = scoreHeaderCandidate(headers, rows, headerIndex, slot);
   return {
     headerRowIndex: headerIndex,
@@ -586,8 +579,21 @@ function buildParseDiagnostics(parsed) {
 async function readExcelFile(file, slot) {
   const xlsx = await ensureXlsxLoaded();
   const buffer = await readFileBuffer(file);
-  const workbook = xlsx.read(buffer, { type: "array", cellDates: true });
-  const parsed = parseWorkbookRows(workbook, slot);
+  let workbook;
+  let parsed;
+  try {
+    workbook = xlsx.read(buffer, {
+      type: "array",
+      cellDates: true,
+      dense: true,
+      cellHTML: false,
+      cellNF: false,
+      cellStyles: false
+    });
+    parsed = parseWorkbookRows(workbook, slot);
+  } catch (error) {
+    throw normalizeExcelParseError(error, file);
+  }
   return {
     id: slot.id,
     type: slot.type,
@@ -603,14 +609,39 @@ async function readExcelFile(file, slot) {
   };
 }
 
-function readFileBuffer(file) {
-  if (file?.arrayBuffer) return file.arrayBuffer();
+async function readFileBuffer(file) {
+  try {
+    if (file?.arrayBuffer) return await file.arrayBuffer();
+    return await readFileBufferWithFileReader(file);
+  } catch (error) {
+    throw normalizeExcelParseError(error, file);
+  }
+}
+
+function readFileBufferWithFileReader(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => reject(reader.error || new Error("文件读取失败。"));
     reader.readAsArrayBuffer(file);
   });
+}
+
+function normalizeExcelParseError(error, file) {
+  const message = error?.message || String(error || "未知错误");
+  if (/Array buffer allocation failed|allocation failed|out of memory|memory/i.test(message)) {
+    const fileSize = formatFileSizeForError(file?.size || 0);
+    return new Error(`浏览器内存不足，无法一次性读取这个文件${fileSize ? `（${fileSize}）` : ""}。建议先在 Excel 中另存为 .xlsx、删除无用工作表/空白区域，或拆分后再上传。原始错误：${message}`);
+  }
+  return error instanceof Error ? error : new Error(message);
+}
+
+function formatFileSizeForError(bytes) {
+  const numeric = Number(bytes) || 0;
+  if (!numeric) return "";
+  if (numeric >= 1024 * 1024) return `${(numeric / 1024 / 1024).toFixed(1)} MB`;
+  if (numeric >= 1024) return `${(numeric / 1024).toFixed(1)} KB`;
+  return `${numeric} B`;
 }
 
 function getXlsxLib() {

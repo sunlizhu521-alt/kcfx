@@ -291,6 +291,9 @@ function isAcceptedLibraryFile(file) {
 
 function formatUploadError(error) {
   const message = error?.message || String(error || "未知错误");
+  if (/内存不足|Array buffer allocation failed|allocation failed|out of memory|memory/i.test(message)) {
+    return `解析失败：${message}`;
+  }
   if (/XLSX|解析组件|sheet_to_json|Excel/i.test(message)) {
     return `解析失败：Excel 解析组件未正常加载或文件格式无法识别。请点击“清除缓存”后刷新页面，再重新上传 .xlsx/.xlsm/.xls/.csv 文件。原始错误：${message}`;
   }
