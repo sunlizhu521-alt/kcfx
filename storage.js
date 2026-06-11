@@ -2,7 +2,9 @@ const KC_DB_NAME = "kcfx-inventory-analysis-file-library";
 const KC_LEGACY_DB_NAMES = ["kcfx-dashboard"];
 const KC_DB_VERSION = 1;
 const KC_STORE = "files";
+const KC_XLSX_SCRIPT_URL = "vendor/xlsx.full.min.js?v=20260611b";
 let kcfxMigrationPromise = null;
+let kcfxXlsxLoadPromise = null;
 
 const DIMENSION_SLOTS = [
   {
@@ -420,16 +422,17 @@ function pickSheetName(workbook, slot = {}) {
 }
 
 function parseWorkbookRows(workbook, slot) {
+  const xlsx = getXlsxLib();
   const sheetName = pickSheetName(workbook, slot);
   const sheet = workbook.Sheets[sheetName];
-  const matrix = XLSX.utils.sheet_to_json(sheet, {
+  const matrix = xlsx.utils.sheet_to_json(sheet, {
     header: 1,
     defval: "",
     raw: false,
     blankrows: false,
     range: slot.skipRows || 0
   });
-  const rawMatrix = XLSX.utils.sheet_to_json(sheet, {
+  const rawMatrix = xlsx.utils.sheet_to_json(sheet, {
     header: 1,
     defval: "",
     raw: true,
@@ -495,11 +498,9 @@ function buildParseDiagnostics(parsed) {
 }
 
 async function readExcelFile(file, slot) {
-  if (typeof XLSX === "undefined") {
-    throw new Error("Excel 解析组件未加载，请刷新页面后重试。");
-  }
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+  const xlsx = await ensureXlsxLoaded();
+  const buffer = await readFileBuffer(file);
+  const workbook = xlsx.read(buffer, { type: "array", cellDates: true });
   const parsed = parseWorkbookRows(workbook, slot);
   return {
     id: slot.id,
@@ -514,6 +515,47 @@ async function readExcelFile(file, slot) {
     parseDiagnostics: buildParseDiagnostics(parsed),
     rows: parsed.rows
   };
+}
+
+function readFileBuffer(file) {
+  if (file?.arrayBuffer) return file.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error("文件读取失败。"));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function getXlsxLib() {
+  return globalThis.XLSX || null;
+}
+
+async function ensureXlsxLoaded() {
+  const loaded = getXlsxLib();
+  if (loaded?.read && loaded?.utils?.sheet_to_json) return loaded;
+  if (!kcfxXlsxLoadPromise) {
+    kcfxXlsxLoadPromise = loadXlsxScript();
+  }
+  await kcfxXlsxLoadPromise;
+  const reloaded = getXlsxLib();
+  if (reloaded?.read && reloaded?.utils?.sheet_to_json) return reloaded;
+  throw new Error("Excel 解析组件未加载成功，请清除当前页面缓存后刷新重试。");
+}
+
+function loadXlsxScript() {
+  return new Promise((resolve, reject) => {
+    if (typeof document === "undefined") {
+      reject(new Error("当前浏览器环境不支持加载 Excel 解析组件。"));
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = `${KC_XLSX_SCRIPT_URL}&retry=${Date.now()}`;
+    script.async = false;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Excel 解析组件加载失败，请检查网络后刷新页面。"));
+    document.head.appendChild(script);
+  });
 }
 
 function recordIsNewer(shared, local) {

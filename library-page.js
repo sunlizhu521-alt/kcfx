@@ -256,7 +256,7 @@ async function saveSlot(slotId) {
     status.textContent = "已保存并强制应用最新上传文件，刷新后看板也会读取这份文件。";
     await renderLibrary();
   } catch (error) {
-    status.textContent = `解析失败：${error.message}`;
+    status.textContent = formatUploadError(error);
   }
 }
 
@@ -281,12 +281,20 @@ async function saveSlotFile(slotId, file) {
     status.textContent = "已保存并强制应用最新上传文件，刷新后看板也会读取这份文件。";
     await renderLibrary();
   } catch (error) {
-    status.textContent = `解析失败：${error.message}`;
+    status.textContent = formatUploadError(error);
   }
 }
 
 function isAcceptedLibraryFile(file) {
   return /\.(xlsx|xlsm|xls|csv)$/i.test(file?.name || "");
+}
+
+function formatUploadError(error) {
+  const message = error?.message || String(error || "未知错误");
+  if (/XLSX|解析组件|sheet_to_json|Excel/i.test(message)) {
+    return `解析失败：Excel 解析组件未正常加载或文件格式无法识别。请点击“清除缓存”后刷新页面，再重新上传 .xlsx/.xlsm/.xls/.csv 文件。原始错误：${message}`;
+  }
+  return `解析失败：${message}`;
 }
 
 async function applySlot(slotId) {
