@@ -410,9 +410,15 @@ function mapCustomerMaterialKeys(rows) {
 function mapStoreNames(rows) {
   const map = new Map();
   for (const row of rows) {
-    const raw = normalizeText(nthValue(row, 2));
-    const value = normalizeStoreName(raw);
-    if (value && !map.has(value)) map.set(value, raw);
+    const candidates = [
+      nthValue(row, 2),
+      firstValue(row, ["金蝶", "金蝶名称", "店铺名称", "店铺", "客户名称", "客户", "公司名称", "全称"])
+    ];
+    for (const candidate of candidates) {
+      const raw = normalizeText(candidate);
+      const value = normalizeStoreName(raw);
+      if (value && !map.has(value)) map.set(value, raw);
+    }
   }
   return map;
 }

@@ -415,7 +415,12 @@ function parseWorkbookRows(workbook, slot) {
 
 function nthValue(row, oneBasedIndex) {
   const index = oneBasedIndex - 1;
-  return Object.values(row || {})[index] ?? "";
+  if (Array.isArray(row?.__cells)) {
+    return row.__cells[index] ?? "";
+  }
+  return Object.entries(row || {})
+    .filter(([key]) => key !== "__cells")
+    .map(([, value]) => value)[index] ?? "";
 }
 
 function normalizeHeaderCell(value, index) {
@@ -424,9 +429,10 @@ function normalizeHeaderCell(value, index) {
 }
 
 function rowFromHeaderValues(headers, values, rawValues = []) {
-  const row = {};
+  const normalizedValues = values.map((value, index) => normalizeCellValue(value, rawValues[index]));
+  const row = { __cells: normalizedValues };
   headers.forEach((header, index) => {
-    row[header] = normalizeCellValue(values[index], rawValues[index]);
+    row[header] = normalizedValues[index];
   });
   return row;
 }
