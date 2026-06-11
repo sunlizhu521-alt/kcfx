@@ -18,7 +18,7 @@ const SALES_FILTERS = [
   { id: "salesOrgFilter", field: "salesOrg", allLabel: "全部销售部门" },
   { id: "customerFilter", field: "productLine", allLabel: "全部销售产品线" },
   { id: "productLineFilter", field: "productSeries", allLabel: "全部销售系列" },
-  { id: "materialFilter", field: "materialCode", allLabel: "型号", limit: 300 }
+  { id: "materialFilter", field: "model", allLabel: "型号", limit: 300 }
 ];
 const SALES_INVENTORY_TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f"];
 
@@ -63,6 +63,7 @@ async function refreshSalesAnalysis() {
     const materialCode = getSalesMaterialCode(row);
     const customer = getSalesCustomerName(row);
     const product = productMap.get(materialCode) || {};
+    const model = product.model || "";
     const qty = getSalesReceivableQty(row);
     const storeInfo = storeMap.get(normalizeStoreNameForSales(customer)) || null;
     const salesDepartmentKey = getSalesDepartmentKey(row);
@@ -73,13 +74,14 @@ async function refreshSalesAnalysis() {
       storeShortName: storeInfo?.shortName || customer,
       salesDepartmentKey,
       materialCode,
+      model,
       materialName: getSalesMaterialName(row) || product.materialName || "",
       productLine: product.productLine || "",
       productSeries: product.productSeries || "",
       qty,
       storeMatchStatus: storeInfo ? "已匹配" : "未匹配"
     };
-  }).filter((row) => row.customer || row.materialCode || row.qty);
+  }).filter((row) => row.customer || row.materialCode || row.model || row.qty);
 
   populateFilters(salesRows);
   $("#salesStatus").textContent = buildStatusText(salesRecord, salesRows);
@@ -113,7 +115,7 @@ function renderSalesAnalysis() {
   filteredRows = salesRows.filter((row) => {
     if (!rowMatchesSelections(row, SALES_FILTERS, selections)) return false;
     if (search) {
-      const haystack = [row.customer, row.storeShortName, row.materialCode, row.materialName, row.salesOrg].join(" ").toLowerCase();
+      const haystack = [row.customer, row.storeShortName, row.model, row.materialCode, row.materialName, row.salesOrg].join(" ").toLowerCase();
       if (!haystack.includes(search)) return false;
     }
     return true;
@@ -124,7 +126,7 @@ function renderSalesAnalysis() {
   renderBars("salesOrgQtyChart", groupSum(filteredRows, "storeShortName", 10), "salesOrgQtyTotal");
   renderBars("productLineQtyChart", groupSum(filteredRows, "productLine", 10), "productLineQtyTotal");
   renderBars("materialQtyChart", groupSum(filteredRows, "productSeries", 10), "materialQtyTotal");
-  renderBars("storeMatchQtyChart", groupSum(filteredRows, "materialCode", 10), "storeMatchQtyTotal");
+  renderBars("storeMatchQtyChart", groupSum(filteredRows, "model", 10), "storeMatchQtyTotal");
   renderTable(filteredRows);
 }
 
@@ -142,7 +144,7 @@ function renderTable(rows) {
       <td>${escapeHtml(row.salesMonth)}</td>
       <td>${escapeHtml(row.salesOrg)}</td>
       <td>${escapeHtml(row.customer)}</td>
-      <td>${escapeHtml(row.materialCode)}</td>
+      <td>${escapeHtml(row.model)}</td>
       <td>${escapeHtml(row.materialName)}</td>
       <td>${escapeHtml(row.productLine)}</td>
       <td>${escapeHtml(row.productSeries)}</td>
@@ -548,6 +550,7 @@ function mapProducts(rows) {
     const materialCode = normalizeMaterialCode(firstText([firstValue(row, ["物料编码"]), nthValue(row, 1)]));
     if (!materialCode || map.has(materialCode)) continue;
     map.set(materialCode, {
+      model: normalizeText(nthValue(row, 16)),
       materialName: normalizeText(firstText([firstValue(row, ["金蝶名称", "物料名称", "货品名称"]), nthValue(row, 4)])),
       productLine: normalizeText(firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)])),
       productSeries: normalizeText(firstText([firstValue(row, ["销售系列", "产品系列", "系列"]), nthValue(row, 8)]))
@@ -751,7 +754,7 @@ function downloadCurrentRows() {
     row.salesMonth,
     row.salesOrg,
     row.customer,
-    row.materialCode,
+    row.model,
     row.materialName,
     row.productLine,
     row.productSeries,
