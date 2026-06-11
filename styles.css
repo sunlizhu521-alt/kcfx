@@ -211,6 +211,30 @@ select {
   max-width: 220px;
 }
 
+.month-filter {
+  flex: 0 1 180px;
+  min-width: 170px;
+  max-width: 190px;
+  min-height: 34px;
+  border: 1px solid #b8c4d3;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.month-filter:hover {
+  border-color: #1f4e78;
+}
+
+.month-filter:focus {
+  outline: none;
+  border-color: #1f4e78;
+  box-shadow: 0 0 0 2px rgba(31, 78, 120, .12);
+}
+
 .multi-filter-button {
   width: 100%;
   min-height: 34px;

@@ -14,7 +14,7 @@ const SALES_INVENTORY_TREND_FILTERS = [
   { id: "salesInventoryWarehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "全部仓库位置" }
 ];
 const SALES_FILTERS = [
-  { id: "salesMonthFilter", field: "salesMonth", allLabel: "全部销售月份" },
+  { id: "salesMonthFilter", field: "salesMonth", allLabel: "全部销售月份", type: "month" },
   { id: "salesOrgFilter", field: "salesOrg", allLabel: "全部销售部门" },
   { id: "customerFilter", field: "productLine", allLabel: "全部销售产品线" },
   { id: "productLineFilter", field: "productSeries", allLabel: "全部销售系列" },
@@ -104,7 +104,8 @@ function refreshSalesFilterOptions(rows = salesRows) {
   SALES_FILTERS.forEach((filter) => {
     const options = linkedFilterOptions(rows, SALES_FILTERS, filter, selections, filter.limit);
     const current = (selections[filter.id] || []).filter((value) => options.includes(value));
-    fillSelect($(`#${filter.id}`), filter.allLabel, options, current);
+    if (filter.type === "month") fillMonthInput($(`#${filter.id}`), filter.allLabel, options, current);
+    else fillSelect($(`#${filter.id}`), filter.allLabel, options, current);
   });
   isRefreshingFilters = false;
 }
@@ -317,7 +318,7 @@ function linkedFilterOptions(rows, filters, targetFilter, selections, limit = 30
 }
 
 function getFilterSelections(filters) {
-  return Object.fromEntries(filters.map((filter) => [filter.id, getSelectValues($(`#${filter.id}`))]));
+  return Object.fromEntries(filters.map((filter) => [filter.id, getFilterValues(filter)]));
 }
 
 function rowMatchesFilters(row, filters, excludedFilterId = "") {
@@ -444,10 +445,48 @@ function formatSalesInventoryTrendShortMoneyWan(value) {
 }
 
 function clearFilters() {
-  SALES_FILTERS.forEach((filter) => clearSelect($(`#${filter.id}`)));
+  SALES_FILTERS.forEach((filter) => clearFilter(filter));
   if ($("#searchInput")) $("#searchInput").value = "";
   refreshSalesFilterOptions();
   renderSalesAnalysis();
+}
+
+function fillMonthInput(input, allLabel, values, selectedValuesOverride = null) {
+  if (!input) return;
+  const selectedSource = Array.isArray(selectedValuesOverride) ? selectedValuesOverride : getMonthValues(input);
+  const validMonths = values
+    .map((value) => normalizeText(value))
+    .filter((value) => /^\d{4}-\d{2}$/.test(value))
+    .sort((a, b) => a.localeCompare(b));
+  const selected = selectedSource.find((value) => validMonths.includes(value)) || "";
+  input.dataset.allLabel = allLabel;
+  input.min = validMonths[0] || "";
+  input.max = validMonths[validMonths.length - 1] || "";
+  input.value = selected;
+  input.title = selected || allLabel;
+}
+
+function clearFilter(filter) {
+  const element = $(`#${filter.id}`);
+  if (filter.type === "month") {
+    if (element) {
+      element.value = "";
+      element.title = filter.allLabel || "";
+    }
+    return;
+  }
+  clearSelect(element);
+}
+
+function getFilterValues(filter) {
+  const element = $(`#${filter.id}`);
+  if (filter.type === "month") return getMonthValues(element);
+  return getSelectValues(element);
+}
+
+function getMonthValues(input) {
+  const value = normalizeText(input?.value || "");
+  return value ? [value] : [];
 }
 
 function fillSelect(select, allLabel, values, selectedValuesOverride = null) {
