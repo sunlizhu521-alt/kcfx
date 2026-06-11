@@ -2,7 +2,8 @@ const $ = (selector) => document.querySelector(selector);
 
 let currentErrorTables = {
   closed: emptyErrorResult(),
-  detail: emptyErrorResult()
+  detail: emptyErrorResult(),
+  sales: emptySalesErrorResult()
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -20,14 +21,17 @@ async function runErrorChecks() {
   const maps = buildDimensionMaps(records);
   const closed = buildClosedInventoryChecks(records, maps);
   const detail = buildInventoryMonthChecks(records, maps);
+  const sales = buildSalesDataChecks(records, maps);
 
-  currentErrorTables = { closed, detail };
+  currentErrorTables = { closed, detail, sales };
   renderCheckGroup("closed", closed);
   renderCheckGroup("detail", detail);
+  renderSalesCheckGroup(sales);
 
   const messages = [
     closed.message || `关账后库存事实表：有库存物料 ${formatNumber(closed.stockMaterials.length)} 个，缺失 ${formatNumber(totalMissingCount(closed))} 项`,
-    detail.message || `库存分析月份表：有库存物料 ${formatNumber(detail.stockMaterials.length)} 个，缺失 ${formatNumber(totalMissingCount(detail))} 项`
+    detail.message || `库存分析月份表：有库存物料 ${formatNumber(detail.stockMaterials.length)} 个，缺失 ${formatNumber(totalMissingCount(detail))} 项`,
+    sales.message || `销售数据文件：销售物料 ${formatNumber(sales.stockMaterials.length)} 个，缺失 ${formatNumber(totalMissingCount(sales))} 项`
   ];
   $("#checkStatus").textContent = `检查完成：${new Date().toLocaleString("zh-CN")}；${messages.join("；")}`;
 }
@@ -43,16 +47,29 @@ function emptyErrorResult(message = "") {
   };
 }
 
+function emptySalesErrorResult(message = "") {
+  return {
+    ...emptyErrorResult(message),
+    salesRows: [],
+    customerMaterialMissing: [],
+    storeMissing: []
+  };
+}
+
 function buildDimensionMaps(records) {
   const productMap = mapProduct(records["dim-product"]?.rows || []);
   const divisionRows = records["dim-warehouse-material"]?.rows || [];
   const warehouseRows = records["dim-warehouse"]?.rows || [];
+  const customerMaterialRows = records["dim-store-name"]?.rows || [];
+  const storeRows = records["dim-customer-material"]?.rows || [];
   return {
     productMap,
     divisionMaterialCodes: mapDivisionMaterialCodes(divisionRows),
     divisionDepartmentKeys: mapDivisionDepartmentKeys(divisionRows),
     divisionWarehouses: mapDivisionWarehouses(divisionRows),
-    warehouseNames: mapWarehouseNames(warehouseRows)
+    warehouseNames: mapWarehouseNames(warehouseRows),
+    customerMaterialKeys: mapCustomerMaterialKeys(customerMaterialRows),
+    storeNames: mapStoreNames(storeRows)
   };
 }
 
@@ -110,12 +127,36 @@ function buildInventoryMonthChecks(records, maps) {
   };
 }
 
+function buildSalesDataChecks(records, maps) {
+  const sales = records["sales-data"];
+  if (!sales) return emptySalesErrorResult("销售数据文件：未引用");
+
+  const rows = (sales.rows || []).filter((row) => getSalesMaterialCode(row) || getSalesStoreName(row) || getSalesCustomerName(row));
+  const stockMaterials = summarizeSalesMaterials(rows);
+  const productMissing = stockMaterials.filter((item) => !maps.productMap.has(item.materialCode));
+  const customerMaterialMissing = summarizeSalesCustomerMaterialMissing(rows, maps.customerMaterialKeys, maps.productMap);
+  const storeMissing = summarizeSalesStoreMissing(rows, maps.storeNames);
+
+  return {
+    ...emptySalesErrorResult(),
+    salesRows: rows,
+    stockMaterials,
+    productMissing: productMissing.map((item) => enrichMissingRow(item, maps.productMap)),
+    customerMaterialMissing,
+    storeMissing
+  };
+}
+
 function summarizeClosedStockMaterials(rows) {
   return summarizeByMaterial(rows, getClosedMaterialCode, getClosedMaterialName, getClosedStockQty);
 }
 
 function summarizeDetailStockMaterials(rows) {
   return summarizeByMaterial(rows, getDetailMaterialCode, getDetailMaterialName, getDetailStockQty);
+}
+
+function summarizeSalesMaterials(rows) {
+  return summarizeByMaterial(rows, getSalesMaterialCode, getSalesMaterialName, getSalesQty);
 }
 
 function summarizeByMaterial(rows, materialGetter, nameGetter, qtyGetter) {
@@ -187,6 +228,46 @@ function summarizeDetailDivisionMissing(rows, departmentKeys, productMap) {
   return [...map.values()]
     .map((item) => enrichMissingRow(item, productMap))
     .sort((a, b) => b.qty - a.qty || a.materialCode.localeCompare(b.materialCode, "zh-CN"));
+}
+
+function summarizeSalesCustomerMaterialMissing(rows, customerMaterialKeys, productMap) {
+  const map = new Map();
+  for (const row of rows) {
+    const materialCode = getSalesMaterialCode(row);
+    const customer = getSalesCustomerName(row) || getSalesStoreName(row);
+    if (!materialCode || !customer) continue;
+    const key = makeCustomerMaterialKey(customer, materialCode);
+    if (customerMaterialKeys.has(key)) continue;
+    const mapKey = `${normalizeStoreName(customer)}|${materialCode}`;
+    if (!map.has(mapKey)) {
+      map.set(mapKey, {
+        customer,
+        materialCode,
+        sku: normalizeText(firstValue(row, ["SKU"])),
+        materialName: getSalesMaterialName(row),
+        qty: 0
+      });
+    }
+    const item = map.get(mapKey);
+    item.qty += getSalesQty(row);
+    if (!item.materialName) item.materialName = getSalesMaterialName(row);
+  }
+  return [...map.values()]
+    .map((item) => enrichSalesCustomerRow(item, productMap))
+    .sort((a, b) => b.qty - a.qty || a.customer.localeCompare(b.customer, "zh-CN") || a.materialCode.localeCompare(b.materialCode, "zh-CN"));
+}
+
+function summarizeSalesStoreMissing(rows, storeNames) {
+  const map = new Map();
+  for (const row of rows) {
+    const store = getSalesStoreName(row) || getSalesCustomerName(row);
+    if (!store) continue;
+    if (storeNames.has(normalizeStoreName(store))) continue;
+    const key = normalizeStoreName(store);
+    if (!map.has(key)) map.set(key, { store, qty: 0 });
+    map.get(key).qty += getSalesQty(row);
+  }
+  return [...map.values()].sort((a, b) => b.qty - a.qty || a.store.localeCompare(b.store, "zh-CN"));
 }
 
 function mapProduct(rows) {
@@ -275,6 +356,43 @@ function mapWarehouseNames(rows) {
   return set;
 }
 
+function mapCustomerMaterialKeys(rows) {
+  const set = new Set();
+  for (const row of rows) {
+    const materialCode = normalizeMaterialCode(firstText([
+      firstValue(row, ["物料编码", "货品编码", "商品编码", "SKU"]),
+      nthValue(row, 2),
+      nthValue(row, 3)
+    ]));
+    const customer = normalizeText(firstText([
+      firstValue(row, ["客户", "客户名称", "渠道", "店铺", "店铺名称", "店铺简称", "简称", "金蝶客户", "领星客户"]),
+      nthValue(row, 1)
+    ]));
+    const explicitKey = normalizeCustomerMaterialKey(firstText([
+      firstValue(row, ["匹配键", "客户物料键", "客户物料匹配键", "客户+物料", "店铺物料键"])
+    ]));
+    if (explicitKey) set.add(explicitKey);
+    if (materialCode && customer) set.add(makeCustomerMaterialKey(customer, materialCode));
+  }
+  return set;
+}
+
+function mapStoreNames(rows) {
+  const set = new Set();
+  const aliases = ["店铺名称", "店铺", "店铺简称", "简称", "金蝶名称", "金蝶店铺", "金蝶店铺名称", "领星名称", "领星店铺", "领星店铺名称", "平台店铺"];
+  for (const row of rows) {
+    for (const alias of aliases) {
+      const value = normalizeStoreName(firstValue(row, [alias]));
+      if (value) set.add(value);
+    }
+    for (let index = 1; index <= 8; index += 1) {
+      const value = normalizeStoreName(nthValue(row, index));
+      if (value) set.add(value);
+    }
+  }
+  return set;
+}
+
 function enrichMissingRow(item, productMap) {
   const product = productMap.get(item.materialCode) || {};
   return {
@@ -286,12 +404,34 @@ function enrichMissingRow(item, productMap) {
   };
 }
 
+function enrichSalesCustomerRow(item, productMap) {
+  const product = productMap.get(item.materialCode) || {};
+  return {
+    customer: item.customer,
+    materialCode: item.materialCode,
+    sku: item.sku || product.sku || "",
+    materialName: item.materialName || product.materialName || "",
+    qty: item.qty
+  };
+}
+
 function renderCheckGroup(prefix, result) {
   renderMetrics(prefix, result);
   renderRows(`#${prefix}ProductMissingRows`, result.productMissing);
   renderRows(`#${prefix}DivisionMissingRows`, result.divisionMissing);
   renderWarehouseRows(`#${prefix}WarehouseMissingRows`, result.warehouseMissing);
   renderSettlementRows(`#${prefix}SettlementMissingRows`, result.settlementMissing);
+}
+
+function renderSalesCheckGroup(result) {
+  $("#salesRowCount").textContent = formatNumber(result.salesRows.length);
+  $("#salesStockMaterialCount").textContent = formatNumber(result.stockMaterials.length);
+  $("#salesProductMissingCount").textContent = formatNumber(result.productMissing.length);
+  $("#salesCustomerMaterialMissingCount").textContent = formatNumber(result.customerMaterialMissing.length);
+  $("#salesStoreMissingCount").textContent = formatNumber(result.storeMissing.length);
+  renderRows("#salesProductMissingRows", result.productMissing);
+  renderSalesCustomerRows("#salesCustomerMaterialMissingRows", result.customerMaterialMissing);
+  renderSalesStoreRows("#salesStoreMissingRows", result.storeMissing);
 }
 
 function renderMetrics(prefix, result) {
@@ -339,18 +479,45 @@ function renderSettlementRows(selector, rows) {
   `).join("") : `<tr><td colspan="4" class="empty">暂无缺失数据</td></tr>`;
 }
 
+function renderSalesCustomerRows(selector, rows) {
+  const tbody = $(selector);
+  if (!tbody) return;
+  tbody.innerHTML = rows.length ? rows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.customer)}</td>
+      <td>${escapeHtml(row.materialCode)}</td>
+      <td>${escapeHtml(row.sku)}</td>
+      <td>${escapeHtml(row.materialName)}</td>
+      <td class="num">${formatNumber(row.qty)}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="5" class="empty">暂无缺失数据</td></tr>`;
+}
+
+function renderSalesStoreRows(selector, rows) {
+  const tbody = $(selector);
+  if (!tbody) return;
+  tbody.innerHTML = rows.length ? rows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.store)}</td>
+      <td class="num">${formatNumber(row.qty)}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="2" class="empty">暂无缺失数据</td></tr>`;
+}
+
 function downloadAllErrorTables() {
   if (typeof XLSX === "undefined") {
     window.alert("下载组件未加载，请刷新页面后重试。");
     return;
   }
   const stamp = downloadTimestamp();
-  downloadCheckGroup("关账后库存事实表", stamp, currentErrorTables.closed);
-  downloadCheckGroup("库存分析月份表", stamp, currentErrorTables.detail);
+  downloadCheckGroup("closed", stamp, currentErrorTables.closed);
+  downloadCheckGroup("detail", stamp, currentErrorTables.detail);
+  downloadCheckGroup("sales", stamp, currentErrorTables.sales);
 }
 
 const ERROR_DOWNLOAD_CONFIG = {
   productMissing: {
+    sources: ["closed", "detail", "sales"],
     name: "商品维度缺失表",
     columns: [
       ["materialCode", "物料编码"],
@@ -360,6 +527,7 @@ const ERROR_DOWNLOAD_CONFIG = {
     ]
   },
   divisionMissing: {
+    sources: ["closed", "detail"],
     name: "仓库与物料维度表缺失",
     columns: [
       ["materialCode", "物料编码"],
@@ -369,6 +537,7 @@ const ERROR_DOWNLOAD_CONFIG = {
     ]
   },
   warehouseMissing: {
+    sources: ["closed", "detail"],
     name: "仓库名称",
     columns: [
       ["warehouse", "仓库"],
@@ -376,11 +545,31 @@ const ERROR_DOWNLOAD_CONFIG = {
     ]
   },
   settlementMissing: {
+    sources: ["closed", "detail"],
     name: "结算价缺失表",
     columns: [
       ["materialCode", "物料编码"],
       ["materialName", "物料名称"],
       ["productLine", "销售产品线"],
+      ["qty", "数量"]
+    ]
+  },
+  customerMaterialMissing: {
+    sources: ["sales"],
+    name: "客户与物料对照缺失表",
+    columns: [
+      ["customer", "客户/店铺"],
+      ["materialCode", "物料编码"],
+      ["sku", "SKU"],
+      ["materialName", "物料名称"],
+      ["qty", "数量"]
+    ]
+  },
+  storeMissing: {
+    sources: ["sales"],
+    name: "店铺名称汇总缺失表",
+    columns: [
+      ["store", "店铺名称"],
       ["qty", "数量"]
     ]
   }
@@ -394,18 +583,26 @@ function downloadSingleErrorTable(key) {
   const [source, tableName] = String(key || "").split(".");
   const result = currentErrorTables[source];
   const config = ERROR_DOWNLOAD_CONFIG[tableName];
-  if (!result || !config) {
+  if (!result || !config || !config.sources.includes(source)) {
     window.alert("未找到对应的报错明细。");
     return;
   }
-  const sourceLabel = source === "closed" ? "关账后库存事实表" : "库存分析月份表";
-  downloadRowsAsWorkbook(`${sourceLabel}-${config.name}`, downloadTimestamp(), result[tableName] || [], config.columns);
+  downloadRowsAsWorkbook(`${errorSourceLabel(source)}-${config.name}`, downloadTimestamp(), result[tableName] || [], config.columns);
 }
 
-function downloadCheckGroup(label, stamp, result) {
+function downloadCheckGroup(source, stamp, result) {
   for (const [tableName, config] of Object.entries(ERROR_DOWNLOAD_CONFIG)) {
-    downloadRowsAsWorkbook(`${label}-${config.name}`, stamp, result[tableName] || [], config.columns);
+    if (!config.sources.includes(source)) continue;
+    downloadRowsAsWorkbook(`${errorSourceLabel(source)}-${config.name}`, stamp, result[tableName] || [], config.columns);
   }
+}
+
+function errorSourceLabel(source) {
+  return {
+    closed: "关账后库存事实表",
+    detail: "库存分析月份表",
+    sales: "销售数据文件"
+  }[source] || "报错信息";
 }
 
 function downloadRowsAsWorkbook(prefix, stamp, rows, columns) {
@@ -475,6 +672,51 @@ function getDetailStockQty(row) {
   ]);
 }
 
+function getSalesMaterialCode(row) {
+  return normalizeMaterialCode(firstText([
+    firstValue(row, ["物料编码", "货品编码", "商品编码", "产品编码", "SKU", "MSKU", "SellerSKU", "平台SKU"]),
+    firstValueByHeaderIncludes(row, ["物料", "编码"]),
+    firstValueByHeaderIncludes(row, ["商品", "编码"]),
+    nthValue(row, 1)
+  ]));
+}
+
+function getSalesMaterialName(row) {
+  return normalizeText(firstText([
+    firstValue(row, ["物料名称", "货品名称", "商品名称", "产品名称", "金蝶名称", "品名"]),
+    firstValueByHeaderIncludes(row, ["物料", "名称"]),
+    firstValueByHeaderIncludes(row, ["商品", "名称"])
+  ]));
+}
+
+function getSalesCustomerName(row) {
+  return normalizeText(firstText([
+    firstValue(row, ["客户", "客户名称", "渠道", "渠道名称", "销售渠道", "买家", "买家名称"]),
+    firstValueByHeaderIncludes(row, ["客户"]),
+    firstValueByHeaderIncludes(row, ["渠道"])
+  ]));
+}
+
+function getSalesStoreName(row) {
+  return normalizeText(firstText([
+    firstValue(row, ["店铺", "店铺名称", "店铺简称", "平台店铺", "领星店铺", "金蝶店铺", "店铺名", "简称"]),
+    firstValueByHeaderIncludes(row, ["店铺"]),
+    firstValueByHeaderIncludes(row, ["简称"])
+  ]));
+}
+
+function getSalesQty(row) {
+  const value = firstNumber([
+    firstValue(row, ["销售数量", "销量", "数量", "订单数量", "发货数量", "出库数量", "已售数量", "件数"]),
+    firstValueByHeaderIncludes(row, ["销售", "数量"]),
+    firstValueByHeaderIncludes(row, ["订单", "数量"]),
+    firstValueByHeaderIncludes(row, ["发货", "数量"]),
+    firstValueByHeaderIncludes(row, ["出库", "数量"]),
+    firstValueByHeaderIncludes(row, ["销量"])
+  ]);
+  return value > 0 ? value : 1;
+}
+
 function makeDetailDepartmentKey(row) {
   return normalizeDepartmentKey([
     getDetailOrganization(row),
@@ -485,6 +727,18 @@ function makeDetailDepartmentKey(row) {
 
 function normalizeDepartmentKey(value) {
   return normalizeMaterialCode(value).replace(/&/g, "").toLowerCase();
+}
+
+function makeCustomerMaterialKey(customer, materialCode) {
+  return normalizeCustomerMaterialKey(`${customer}${materialCode}`);
+}
+
+function normalizeCustomerMaterialKey(value) {
+  return normalizeKey(value).replace(/&/g, "").toLowerCase();
+}
+
+function normalizeStoreName(value) {
+  return normalizeKey(value).replace(/&/g, "").toLowerCase();
 }
 
 function firstText(candidates) {
@@ -505,7 +759,12 @@ function firstNumber(candidates) {
 }
 
 function totalMissingCount(result) {
-  return result.productMissing.length + result.divisionMissing.length + result.warehouseMissing.length + result.settlementMissing.length;
+  return result.productMissing.length
+    + result.divisionMissing.length
+    + result.warehouseMissing.length
+    + result.settlementMissing.length
+    + (result.customerMaterialMissing?.length || 0)
+    + (result.storeMissing?.length || 0);
 }
 
 function downloadTimestamp() {

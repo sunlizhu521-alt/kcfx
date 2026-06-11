@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>库存分析看板 报错信息提示</title>
-  <link rel="stylesheet" href="styles.css?v=20260610b">
+  <link rel="stylesheet" href="styles.css?v=20260611a">
 </head>
 <body>
   <div class="app-shell">
@@ -27,7 +27,7 @@
       <header class="topbar">
         <div>
           <h1>报错信息提示</h1>
-          <p>分别根据关账后库存事实表、库存分析月份表中有库存数量的物料编码，检查核心维表是否缺失映射。</p>
+          <p>分别根据关账后库存事实表、库存分析月份表、销售数据文件检查核心维表是否缺失映射。</p>
         </div>
         <div class="status-pill" id="checkStatus">正在读取文件库...</div>
       </header>
@@ -37,6 +37,7 @@
         <button id="downloadAllBtn" class="secondary" type="button">一键下载</button>
       </section>
 
+      <section class="error-source-panel">
       <section class="error-source-title">
         <h2>根据关账后库存事实表</h2>
         <p>数量取关账后库存事实表有库存的物料和仓库。</p>
@@ -127,7 +128,9 @@
           </table>
         </div>
       </section>
+      </section>
 
+      <section class="error-source-panel">
       <section class="error-source-title">
         <h2>根据库存分析月份表</h2>
         <p>数量取库存分析月份表的合计库存数量；结算价、销售产品线、销售系列通过物料编码匹配商品分类维表；事业部按 D列使用组织 + C列仓库 + A列物料编码 匹配仓库物料事业部对照表 F列。</p>
@@ -218,12 +221,87 @@
           </table>
         </div>
       </section>
+      </section>
+
+      <section class="error-source-panel">
+      <section class="error-source-title">
+        <h2>根据销售数据文件</h2>
+        <p>按销售数据文件中的物料编码、客户/店铺名称，检查商品分类维表、客户与物料对照表、店铺名称汇总（金蝶&领星&简称）是否缺失映射。</p>
+      </section>
+
+      <section class="metrics error-metrics sales-error-metrics">
+        <div class="metric-card"><span>销售记录数</span><strong id="salesRowCount">0</strong></div>
+        <div class="metric-card"><span>销售物料数</span><strong id="salesStockMaterialCount">0</strong></div>
+        <div class="metric-card"><span>商品分类缺失</span><strong id="salesProductMissingCount">0</strong></div>
+        <div class="metric-card"><span>客户物料缺失</span><strong id="salesCustomerMaterialMissingCount">0</strong></div>
+        <div class="metric-card"><span>店铺名称缺失</span><strong id="salesStoreMissingCount">0</strong></div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title-row">
+          <div class="table-title">销售数据商品维度表没有信息</div>
+          <button class="secondary compact-button" type="button" data-download-error="sales.productMissing">下载</button>
+        </div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>物料编码</th>
+                <th>SKU</th>
+                <th>物料名称</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="salesProductMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title-row">
+          <div class="table-title">销售数据客户与物料对照表没有信息</div>
+          <button class="secondary compact-button" type="button" data-download-error="sales.customerMaterialMissing">下载</button>
+        </div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>客户/店铺</th>
+                <th>物料编码</th>
+                <th>SKU</th>
+                <th>物料名称</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="salesCustomerMaterialMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="error-section">
+        <div class="table-title-row">
+          <div class="table-title">销售数据店铺名称汇总没有信息</div>
+          <button class="secondary compact-button" type="button" data-download-error="sales.storeMissing">下载</button>
+        </div>
+        <div class="table-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>店铺名称</th>
+                <th>数量</th>
+              </tr>
+            </thead>
+            <tbody id="salesStoreMissingRows"></tbody>
+          </table>
+        </div>
+      </section>
+      </section>
     </main>
   </div>
 
   <script src="vendor/xlsx.full.min.js?v=20260611a"></script>
   <script src="storage.js?v=20260611d"></script>
   <script src="shared-library.js?v=20260605c"></script>
-  <script src="errors.js?v=20260611c"></script>
+  <script src="errors.js?v=20260611d"></script>
 </body>
 </html>

@@ -1055,12 +1055,28 @@ input[type="file"]:disabled {
   margin-top: 16px;
 }
 
+.error-source-panel {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #c9d8e5;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f8fbfe 0%, #eef5fa 100%);
+}
+
+.error-source-panel + .error-source-panel {
+  margin-top: 26px;
+}
+
+.error-source-panel .error-section {
+  margin-top: 14px;
+}
+
 .error-source-title {
-  margin: 18px 0 10px;
+  margin: 0 0 12px;
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f7fbff;
+  background: #ffffff;
 }
 
 .error-source-title h2 {
