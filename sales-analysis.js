@@ -3,6 +3,7 @@ const COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f", "#5ac8fa"
 const SALES_INVENTORY_TREND_FILTERS = [
   { id: "salesInventoryMonthTrendFilter", field: "salesMonth", allLabel: "全部销售月份", type: "monthPicker", matchMonthNumber: true, defaultAll: true },
   { id: "salesInventoryOrgTrendFilter", field: "salesOrg", allLabel: "全部销售部门" },
+  { id: "salesInventoryStoreShortNameTrendFilter", field: "storeShortName", allLabel: "店铺简称（日常汇报沟通简称）" },
   { id: "salesInventoryProductTrendFilter", field: "productLine", allLabel: "全部销售产品线" },
   { id: "salesInventorySeriesTrendFilter", field: "productSeries", allLabel: "全部销售系列" },
   { id: "salesInventoryModelTrendFilter", field: "model", allLabel: "型号", limit: 300 }
@@ -10,6 +11,7 @@ const SALES_INVENTORY_TREND_FILTERS = [
 const SALES_FILTERS = [
   { id: "salesMonthFilter", field: "salesMonth", allLabel: "全部销售月份", type: "monthPicker" },
   { id: "salesOrgFilter", field: "salesOrg", allLabel: "全部销售部门" },
+  { id: "salesStoreShortNameFilter", field: "storeShortName", allLabel: "店铺简称（日常汇报沟通简称）" },
   { id: "customerFilter", field: "productLine", allLabel: "全部销售产品线" },
   { id: "productLineFilter", field: "productSeries", allLabel: "全部销售系列" },
   { id: "materialFilter", field: "model", allLabel: "型号", limit: 300 }
