@@ -152,7 +152,7 @@ function buildSalesDataChecks(records, maps) {
   const sales = records["sales-data"];
   if (!sales) return emptySalesErrorResult("销售数据文件：未引用");
 
-  const rows = (sales.rows || []).filter((row) => getSalesMaterialCode(row) || getSalesStoreName(row) || getSalesCustomerName(row));
+  const rows = (sales.rows || []).filter((row) => getSalesMaterialCode(row) || getSalesStoreName(row) || getSalesStoreNameForStoreSummary(row) || getSalesCustomerName(row));
   const salesStoreValues = collectSalesStoreValues(rows);
   const stockMaterials = summarizeSalesMaterials(rows);
   const productMissing = stockMaterials.filter((item) => !maps.productMap.has(item.materialCode));
@@ -552,7 +552,7 @@ function renderSalesStoreDiagnostic(diagnostic = {}) {
   const panel = $("#salesStoreDiagnostic");
   if (!panel) return;
   panel.innerHTML = `
-    <span>店铺名称来源：销售数据文件 A列</span>
+    <span>店铺名称来源：销售数据文件 B列</span>
     <span>数量来源：销售数据文件 I列（应收数量）</span>
     <span>比对维表：维度表文件库 - 店铺名称汇总（金蝶&领星&简称）</span>
     <span>比对列：店铺名称汇总（金蝶&领星&简称） B列</span>
@@ -763,7 +763,7 @@ function getSalesStoreName(row) {
 }
 
 function getSalesStoreNameForStoreSummary(row) {
-  return normalizeText(nthValue(row, 1));
+  return normalizeText(nthValue(row, 2));
 }
 
 function getSalesReceivableQty(row) {
