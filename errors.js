@@ -260,7 +260,7 @@ function summarizeSalesCustomerMaterialMissing(rows, customerMaterialKeys, produ
 function summarizeSalesStoreMissing(rows, storeNames) {
   const map = new Map();
   for (const row of rows) {
-    const store = getSalesStoreName(row) || getSalesCustomerName(row);
+    const store = getSalesStoreNameForStoreSummary(row);
     if (!store) continue;
     if (storeNames.has(normalizeStoreName(store))) continue;
     const key = normalizeStoreName(store);
@@ -379,16 +379,9 @@ function mapCustomerMaterialKeys(rows) {
 
 function mapStoreNames(rows) {
   const set = new Set();
-  const aliases = ["店铺名称", "店铺", "店铺简称", "简称", "金蝶名称", "金蝶店铺", "金蝶店铺名称", "领星名称", "领星店铺", "领星店铺名称", "平台店铺"];
   for (const row of rows) {
-    for (const alias of aliases) {
-      const value = normalizeStoreName(firstValue(row, [alias]));
-      if (value) set.add(value);
-    }
-    for (let index = 1; index <= 8; index += 1) {
-      const value = normalizeStoreName(nthValue(row, index));
-      if (value) set.add(value);
-    }
+    const value = normalizeStoreName(nthValue(row, 2));
+    if (value) set.add(value);
   }
   return set;
 }
@@ -703,6 +696,10 @@ function getSalesStoreName(row) {
     firstValueByHeaderIncludes(row, ["店铺"]),
     firstValueByHeaderIncludes(row, ["简称"])
   ]));
+}
+
+function getSalesStoreNameForStoreSummary(row) {
+  return normalizeText(nthValue(row, 1));
 }
 
 function getSalesQty(row) {
