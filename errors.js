@@ -554,6 +554,11 @@ function renderSalesStoreDiagnostic(diagnostic = {}) {
   const salesSamples = (diagnostic.salesSamples || []).join(" / ") || "-";
   const dimSamples = (diagnostic.dimSamples || []).join(" / ") || "-";
   panel.innerHTML = `
+    <span>店铺名称来源：销售数据文件 A列</span>
+    <span>数量来源：销售数据文件 I列（应收数量）</span>
+    <span>比对维表：维度表文件库 - 店铺名称汇总（金蝶&领星&简称）</span>
+    <span>比对列：店铺名称汇总（金蝶&领星&简称） B列</span>
+    <span>需要维护：维度表文件库的店铺名称汇总（金蝶&领星&简称）</span>
     <span>销售A列店铺数：${formatNumber(diagnostic.salesCount || 0)}</span>
     <span>维表B列店铺数：${formatNumber(diagnostic.dimCount || 0)}</span>
     <span>命中：${formatNumber(diagnostic.hitCount || 0)}</span>
