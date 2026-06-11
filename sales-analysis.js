@@ -388,8 +388,9 @@ function renderSalesTrendMonthGroup(month, grouped, max) {
           const value = grouped.get(`${year}-${month}`) || 0;
           return `
             <div class="trend-bar-wrap trend-yoy-bar-wrap" title="${year}年${monthLabel} ${escapeHtml(formatQuantity(value))}">
-              <span class="trend-bar-value">${escapeHtml(formatQuantity(value))}</span>
-              <div class="trend-bar" style="height:${Math.max(value ? 2 : 0, value / max * 100)}%;background:${SALES_INVENTORY_TREND_YEAR_COLORS[year]}"></div>
+              <div class="trend-bar" style="height:${Math.max(value ? 2 : 0, value / max * 100)}%;background:${SALES_INVENTORY_TREND_YEAR_COLORS[year]}">
+                <span class="trend-bar-value">${escapeHtml(formatQuantity(value))}</span>
+              </div>
               <span class="trend-year-label">${year.slice(2)}</span>
             </div>
           `;
