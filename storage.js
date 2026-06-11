@@ -578,22 +578,35 @@ function buildParseDiagnostics(parsed) {
 
 async function readExcelFile(file, slot) {
   const xlsx = await ensureXlsxLoaded();
-  const buffer = await readFileBuffer(file);
-  let workbook;
-  let parsed;
+  const attempts = [];
   try {
-    workbook = xlsx.read(buffer, {
-      type: "array",
-      cellDates: true,
-      dense: true,
-      cellHTML: false,
-      cellNF: false,
-      cellStyles: false
-    });
-    parsed = parseWorkbookRows(workbook, slot);
+    const buffer = await readFileBuffer(file);
+    return buildFileRecord(file, slot, parseWorkbookInput(xlsx, buffer, "array", slot), "array", attempts);
   } catch (error) {
-    throw normalizeExcelParseError(error, file);
+    attempts.push(`array：${error?.message || error}`);
+    try {
+      const base64 = await readFileBase64(file);
+      return buildFileRecord(file, slot, parseWorkbookInput(xlsx, base64, "base64", slot), "base64", attempts);
+    } catch (fallbackError) {
+      attempts.push(`base64：${fallbackError?.message || fallbackError}`);
+      throw normalizeExcelParseError(fallbackError, file, attempts);
+    }
   }
+}
+
+function parseWorkbookInput(xlsx, data, type, slot) {
+  const workbook = xlsx.read(data, {
+    type,
+    cellDates: true,
+    dense: true,
+    cellHTML: false,
+    cellNF: false,
+    cellStyles: false
+  });
+  return parseWorkbookRows(workbook, slot);
+}
+
+function buildFileRecord(file, slot, parsed, readMode, attempts = []) {
   return {
     id: slot.id,
     type: slot.type,
@@ -604,18 +617,18 @@ async function readExcelFile(file, slot) {
     lastModified: file.lastModified,
     savedAt: new Date().toISOString(),
     sheetName: parsed.sheetName,
-    parseDiagnostics: buildParseDiagnostics(parsed),
+    parseDiagnostics: {
+      ...buildParseDiagnostics(parsed),
+      readMode,
+      fallbackAttempts: attempts
+    },
     rows: parsed.rows
   };
 }
 
 async function readFileBuffer(file) {
-  try {
-    if (file?.arrayBuffer) return await file.arrayBuffer();
-    return await readFileBufferWithFileReader(file);
-  } catch (error) {
-    throw normalizeExcelParseError(error, file);
-  }
+  if (file?.arrayBuffer) return await file.arrayBuffer();
+  return await readFileBufferWithFileReader(file);
 }
 
 function readFileBufferWithFileReader(file) {
@@ -627,11 +640,32 @@ function readFileBufferWithFileReader(file) {
   });
 }
 
-function normalizeExcelParseError(error, file) {
+function readFileBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const commaIndex = result.indexOf(",");
+      resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error || new Error("文件读取失败。"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function normalizeExcelParseError(error, file, attempts = []) {
   const message = error?.message || String(error || "未知错误");
+  const fileSize = formatFileSizeForError(file?.size || 0);
+  const attemptsText = attempts.length ? `；尝试路径：${attempts.join("；")}` : "";
   if (/Array buffer allocation failed|allocation failed|out of memory|memory/i.test(message)) {
-    const fileSize = formatFileSizeForError(file?.size || 0);
-    return new Error(`浏览器内存不足，无法一次性读取这个文件${fileSize ? `（${fileSize}）` : ""}。建议先在 Excel 中另存为 .xlsx、删除无用工作表/空白区域，或拆分后再上传。原始错误：${message}`);
+    const smallFile = Number(file?.size || 0) > 0 && Number(file?.size || 0) < 5 * 1024 * 1024;
+    if (smallFile) {
+      return new Error(`浏览器解析这个小文件${fileSize ? `（${fileSize}）` : ""}时触发内存分配异常，通常是工作簿格式或声明的使用区域异常，不是文件大小本身。请用 Excel 打开后另存为标准 .xlsx，删除隐藏空白行列/无用工作表后再上传。原始错误：${message}${attemptsText}`);
+    }
+    return new Error(`浏览器内存不足，无法一次性读取这个文件${fileSize ? `（${fileSize}）` : ""}。建议先在 Excel 中另存为 .xlsx、删除无用工作表/空白区域，或拆分后再上传。原始错误：${message}${attemptsText}`);
+  }
+  if (attempts.length) {
+    return new Error(`${message}${attemptsText}`);
   }
   return error instanceof Error ? error : new Error(message);
 }

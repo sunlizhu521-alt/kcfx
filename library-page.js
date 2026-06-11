@@ -343,13 +343,14 @@ function renderParseDiagnostics(record) {
     .slice(0, 5)
     .map((item) => `第${item.headerRowNumber}行 ${item.rowCount}行`)
     .join("；");
+  const readModeText = diagnostics.readMode ? `；读取模式：${diagnostics.readMode}` : "";
   const gSamples = (diagnostics.gSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
   const hSamples = (diagnostics.hSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
   const adSamples = (diagnostics.adSamples || []).map((item) => normalizeText(item) || "-").join(" / ");
   return `
     <div class="slot-info parse-info">
       <span>解析诊断</span>
-      <strong>Sheet：${escapeHtml(diagnostics.sheetName || "-")}；表头：第${escapeHtml(diagnostics.headerRowNumber || 1)}行；G列：${escapeHtml(diagnostics.gHeader || "-")}；H列：${escapeHtml(diagnostics.hHeader || "-")}；AD列：${escapeHtml(diagnostics.adHeader || "-")}</strong>
+      <strong>Sheet：${escapeHtml(diagnostics.sheetName || "-")}；表头：第${escapeHtml(diagnostics.headerRowNumber || 1)}行${escapeHtml(readModeText)}；G列：${escapeHtml(diagnostics.gHeader || "-")}；H列：${escapeHtml(diagnostics.hHeader || "-")}；AD列：${escapeHtml(diagnostics.adHeader || "-")}</strong>
       <em>前12字段：${escapeHtml(headerText || "-")}</em>
       <em>兜底尝试：${escapeHtml(attemptedText || "-")}</em>
       <em>G列样例：${escapeHtml(gSamples || "-")}</em>
