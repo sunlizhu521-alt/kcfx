@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>库存分析看板 销售数据分析</title>
+  <link rel="stylesheet" href="styles.css?v=20260610c">
+</head>
+<body class="receipt-page">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>库存分析看板</strong>
+        <span>供应链维护更新</span>
+      </div>
+      <nav class="nav">
+        <a href="receipt-summary.html">供应链库存分析</a>
+        <a class="active" href="sales-analysis.html">销售数据分析</a>
+        <a href="comparison.html">表格对比分析</a>
+        <a href="fact-library.html">库存数据文件</a>
+        <a href="sales-library.html">销售数据文件</a>
+        <a href="file-library.html">维度表文件库</a>
+        <a href="errors.html">报错信息提示</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <h1>销售数据分析-模板</h1>
+          <p id="salesStatus" class="status-line">正在读取销售数据文件...</p>
+        </div>
+      </header>
+
+      <section class="analysis-section analysis-section-main">
+        <div class="analysis-section-title">销售数据分析</div>
+        <section class="toolbar primary-filter-toolbar">
+          <div id="salesOrgFilter" class="multi-filter"></div>
+          <div id="customerFilter" class="multi-filter"></div>
+          <div id="productLineFilter" class="multi-filter"></div>
+          <div id="materialFilter" class="multi-filter"></div>
+          <div id="storeMatchFilter" class="multi-filter"></div>
+          <input id="searchInput" placeholder="客户名称 / 物料编码 / 物料名称">
+          <button id="clearFiltersBtn" type="button">清除所有筛选</button>
+        </section>
+
+        <section class="metrics comparison-metrics receipt-metrics">
+          <div class="metric-card"><span>销售记录数</span><strong id="salesRowTotal">0</strong></div>
+          <div class="metric-card"><span>应收数量合计</span><strong id="salesQtyTotal">0.00</strong></div>
+          <div class="metric-card"><span>客户数量</span><strong id="customerTotal">0</strong></div>
+          <div class="metric-card"><span>销售物料数</span><strong id="materialTotal">0</strong></div>
+          <div class="metric-card"><span>店铺名称汇总缺失</span><strong id="storeMissingTotal">0</strong></div>
+        </section>
+
+        <section class="dashboard-grid receipt-chart-grid">
+          <div class="panel">
+            <h2>客户应收数量排行 <span id="customerQtyTotal" class="chart-total"></span></h2>
+            <div id="customerQtyChart" class="chart-bars"></div>
+          </div>
+          <div class="panel">
+            <h2>销售组织应收数量 <span id="salesOrgQtyTotal" class="chart-total"></span></h2>
+            <div id="salesOrgQtyChart" class="chart-bars"></div>
+          </div>
+          <div class="panel">
+            <h2>产品线应收数量 <span id="productLineQtyTotal" class="chart-total"></span></h2>
+            <div id="productLineQtyChart" class="chart-bars"></div>
+          </div>
+          <div class="panel">
+            <h2>物料应收数量 Top 10 <span id="materialQtyTotal" class="chart-total"></span></h2>
+            <div id="materialQtyChart" class="chart-bars"></div>
+          </div>
+          <div class="panel">
+            <h2>店铺名称汇总匹配状态 <span id="storeMatchQtyTotal" class="chart-total"></span></h2>
+            <div id="storeMatchQtyChart" class="chart-bars"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="analysis-section analysis-section-tables">
+        <div class="analysis-section-title">销售数据明细表</div>
+        <section class="table-panel">
+          <div class="table-title-row">
+            <div class="table-title">销售数据文件明细</div>
+            <button id="downloadBtn" class="secondary compact-button" type="button">下载</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>销售组织</th>
+                <th>客户名称</th>
+                <th>物料编码</th>
+                <th>物料名称</th>
+                <th>销售产品线</th>
+                <th>应收数量</th>
+                <th>店铺名称汇总匹配</th>
+              </tr>
+            </thead>
+            <tbody id="salesRows"></tbody>
+          </table>
+        </section>
+      </section>
+
+      <div id="sourcePanel" class="data-source-panel"></div>
+    </main>
+  </div>
+
+  <script src="storage.js?v=20260611g"></script>
+  <script src="shared-library.js?v=20260611a"></script>
+  <script src="sales-analysis.js?v=20260611a"></script>
+</body>
+</html>
