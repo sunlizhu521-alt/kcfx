@@ -62,6 +62,7 @@ function buildDimensionMaps(records) {
   const warehouseRows = records["dim-warehouse"]?.rows || [];
   const customerMaterialRows = records["dim-store-name"]?.rows || [];
   const storeRows = resolveStoreSummaryRows(records);
+  const storeNameMap = mapStoreNames(storeRows);
   return {
     productMap,
     divisionMaterialCodes: mapDivisionMaterialCodes(divisionRows),
@@ -69,7 +70,8 @@ function buildDimensionMaps(records) {
     divisionWarehouses: mapDivisionWarehouses(divisionRows),
     warehouseNames: mapWarehouseNames(warehouseRows),
     customerMaterialKeys: mapCustomerMaterialKeys(customerMaterialRows),
-    storeNames: mapStoreNames(storeRows)
+    storeNames: new Set(storeNameMap.keys()),
+    storeNameSamples: [...storeNameMap.values()].slice(0, 8)
   };
 }
 
@@ -151,6 +153,7 @@ function buildSalesDataChecks(records, maps) {
   if (!sales) return emptySalesErrorResult("销售数据文件：未引用");
 
   const rows = (sales.rows || []).filter((row) => getSalesMaterialCode(row) || getSalesStoreName(row) || getSalesCustomerName(row));
+  const salesStoreValues = collectSalesStoreValues(rows);
   const stockMaterials = summarizeSalesMaterials(rows);
   const productMissing = stockMaterials.filter((item) => !maps.productMap.has(item.materialCode));
   const customerMaterialMissing = summarizeSalesCustomerMaterialMissing(rows, maps.customerMaterialKeys, maps.productMap);
@@ -162,7 +165,33 @@ function buildSalesDataChecks(records, maps) {
     stockMaterials,
     productMissing: productMissing.map((item) => enrichMissingRow(item, maps.productMap)),
     customerMaterialMissing,
-    storeMissing
+    storeMissing,
+    storeDiagnostic: buildSalesStoreDiagnostic(salesStoreValues, maps.storeNames, maps.storeNameSamples)
+  };
+}
+
+function collectSalesStoreValues(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const store = getSalesStoreNameForStoreSummary(row);
+    const normalized = normalizeStoreName(store);
+    if (!store || !normalized) continue;
+    if (!map.has(normalized)) map.set(normalized, { raw: store, normalized, qty: 0 });
+    map.get(normalized).qty += getSalesReceivableQty(row);
+  }
+  return [...map.values()].sort((a, b) => b.qty - a.qty || a.raw.localeCompare(b.raw, "zh-CN"));
+}
+
+function buildSalesStoreDiagnostic(salesStoreValues, storeNames, storeNameSamples = []) {
+  const hitCount = salesStoreValues.filter((item) => storeNames.has(item.normalized)).length;
+  const missingCount = salesStoreValues.length - hitCount;
+  return {
+    salesCount: salesStoreValues.length,
+    dimCount: storeNames.size,
+    hitCount,
+    missingCount,
+    salesSamples: salesStoreValues.slice(0, 8).map((item) => item.raw),
+    dimSamples: storeNameSamples
   };
 }
 
@@ -281,9 +310,10 @@ function summarizeSalesStoreMissing(rows, storeNames) {
   for (const row of rows) {
     const store = getSalesStoreNameForStoreSummary(row);
     if (!store) continue;
-    if (storeNames.has(normalizeStoreName(store))) continue;
-    const key = normalizeStoreName(store);
-    if (!map.has(key)) map.set(key, { store, qty: 0 });
+    const normalized = normalizeStoreName(store);
+    if (storeNames.has(normalized)) continue;
+    const key = normalized;
+    if (!map.has(key)) map.set(key, { store, normalized, qty: 0 });
     map.get(key).qty += getSalesReceivableQty(row);
   }
   return [...map.values()].sort((a, b) => b.qty - a.qty || a.store.localeCompare(b.store, "zh-CN"));
@@ -397,12 +427,13 @@ function mapCustomerMaterialKeys(rows) {
 }
 
 function mapStoreNames(rows) {
-  const set = new Set();
+  const map = new Map();
   for (const row of rows) {
-    const value = normalizeStoreName(nthValue(row, 2));
-    if (value) set.add(value);
+    const raw = normalizeText(nthValue(row, 2));
+    const value = normalizeStoreName(raw);
+    if (value && !map.has(value)) map.set(value, raw);
   }
-  return set;
+  return map;
 }
 
 function enrichMissingRow(item, productMap) {
@@ -444,6 +475,7 @@ function renderSalesCheckGroup(result) {
   renderRows("#salesProductMissingRows", result.productMissing);
   renderSalesCustomerRows("#salesCustomerMaterialMissingRows", result.customerMaterialMissing);
   renderSalesStoreRows("#salesStoreMissingRows", result.storeMissing);
+  renderSalesStoreDiagnostic(result.storeDiagnostic);
 }
 
 function renderMetrics(prefix, result) {
@@ -516,6 +548,21 @@ function renderSalesStoreRows(selector, rows) {
   `).join("") : `<tr><td colspan="2" class="empty">暂无缺失数据</td></tr>`;
 }
 
+function renderSalesStoreDiagnostic(diagnostic = {}) {
+  const panel = $("#salesStoreDiagnostic");
+  if (!panel) return;
+  const salesSamples = (diagnostic.salesSamples || []).join(" / ") || "-";
+  const dimSamples = (diagnostic.dimSamples || []).join(" / ") || "-";
+  panel.innerHTML = `
+    <span>销售A列店铺数：${formatNumber(diagnostic.salesCount || 0)}</span>
+    <span>维表B列店铺数：${formatNumber(diagnostic.dimCount || 0)}</span>
+    <span>命中：${formatNumber(diagnostic.hitCount || 0)}</span>
+    <span>缺失：${formatNumber(diagnostic.missingCount || 0)}</span>
+    <span>销售A列样例：${escapeHtml(salesSamples)}</span>
+    <span>维表B列样例：${escapeHtml(dimSamples)}</span>
+  `;
+}
+
 function downloadAllErrorTables() {
   if (typeof XLSX === "undefined") {
     window.alert("下载组件未加载，请刷新页面后重试。");
@@ -582,6 +629,7 @@ const ERROR_DOWNLOAD_CONFIG = {
     name: "店铺名称汇总缺失表",
     columns: [
       ["store", "店铺名称"],
+      ["normalized", "规范化店铺名称"],
       ["qty", "数量"]
     ]
   }
