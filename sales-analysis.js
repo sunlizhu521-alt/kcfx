@@ -21,6 +21,7 @@ const SALES_FILTERS = [
   { id: "materialFilter", field: "model", allLabel: "型号", limit: 300 }
 ];
 const SALES_INVENTORY_TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f"];
+const EXCLUDED_SALES_PRODUCT_VALUES = new Set(["其他/配件", "健康办公"].map(normalizeSalesExclusionText));
 
 let salesRows = [];
 let filteredRows = [];
@@ -59,7 +60,7 @@ async function refreshSalesAnalysis() {
     return;
   }
 
-  salesRows = (salesRecord.rows || []).map((row) => {
+  const allSalesRows = (salesRecord.rows || []).map((row) => {
     const materialCode = getSalesMaterialCode(row);
     const customer = getSalesCustomerName(row);
     const product = productMap.get(materialCode) || {};
@@ -73,15 +74,18 @@ async function refreshSalesAnalysis() {
       customer,
       storeShortName: storeInfo?.shortName || customer,
       salesDepartmentKey,
+      sourceRow: row,
       materialCode,
       model,
       materialName: getSalesMaterialName(row) || product.materialName || "",
       productLine: product.productLine || "",
+      productCategory: product.productCategory || "",
       productSeries: product.productSeries || "",
       qty,
       storeMatchStatus: storeInfo ? "已匹配" : "未匹配"
     };
   }).filter((row) => row.customer || row.materialCode || row.model || row.qty);
+  salesRows = allSalesRows.filter((row) => !isExcludedSalesRow(row));
 
   populateFilters(salesRows);
   $("#salesStatus").textContent = buildStatusText(salesRecord, salesRows);
@@ -591,6 +595,7 @@ function mapProducts(rows) {
     map.set(materialCode, {
       model: normalizeText(nthValue(row, 16)),
       materialName: normalizeText(firstText([firstValue(row, ["金蝶名称", "物料名称", "货品名称"]), nthValue(row, 4)])),
+      productCategory: normalizeText(firstText([firstValue(row, ["销售产品分类", "产品分类", "销售产品类别", "产品类别", "品类"])])),
       productLine: normalizeText(firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)])),
       productSeries: normalizeText(firstText([firstValue(row, ["销售系列", "产品系列", "系列"]), nthValue(row, 8)]))
     });
@@ -685,6 +690,44 @@ function getSalesReceivableQty(row) {
     nthValue(row, 9)
   ]);
   return value;
+}
+
+function isExcludedSalesRow(row) {
+  if (hasInternalTransaction(row)) return true;
+  return [row.productLine, row.productCategory, row.productSeries].some((value) => {
+    const text = normalizeSalesExclusionText(value);
+    return EXCLUDED_SALES_PRODUCT_VALUES.has(text);
+  });
+}
+
+function hasInternalTransaction(row) {
+  const sourceValues = Array.isArray(row.sourceRow?.__cells)
+    ? row.sourceRow.__cells
+    : Object.entries(row.sourceRow || {}).filter(([key]) => key !== "__cells").map(([, value]) => value);
+  const fields = [
+    row.customer,
+    row.storeShortName,
+    row.salesOrg,
+    row.salesDepartmentKey,
+    row.materialName,
+    row.productLine,
+    row.productCategory,
+    row.productSeries,
+    row.model,
+    ...sourceValues
+  ];
+  return fields.some(isInternalTransactionText);
+}
+
+function isInternalTransactionText(value) {
+  const text = normalizeText(value);
+  return text === "内部交易" || text.includes("内部交易");
+}
+
+function normalizeSalesExclusionText(value) {
+  return normalizeText(value)
+    .replace(/／/g, "/")
+    .replace(/\s+/g, "");
 }
 
 function formatSalesMonth(value) {
