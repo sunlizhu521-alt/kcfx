@@ -1,16 +1,35 @@
 const $ = (selector) => document.querySelector(selector);
 const COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f", "#5ac8fa", "#5856d6", "#30d158", "#bf5af2", "#ff6b35"];
+const SALES_INVENTORY_TREND_MONTHS = [
+  { id: "fact-3", label: "1月" },
+  { id: "fact-4", label: "2月" },
+  { id: "fact-5", label: "3月" },
+  { id: "fact-6", label: "4月" },
+  { id: "fact-7", label: "5月" }
+];
+const SALES_INVENTORY_TREND_FILTERS = [
+  { id: "salesInventoryWarehouseTypeTrendFilter", field: "warehouseType", allLabel: "库存全链路" },
+  { id: "salesInventoryDepartmentTrendFilter", field: "department", allLabel: "全部事业部" },
+  { id: "salesInventoryProductTrendFilter", field: "productLine", allLabel: "全部产品线" },
+  { id: "salesInventoryWarehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "全部仓库位置" }
+];
+const SALES_INVENTORY_TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f"];
 
 let salesRows = [];
 let filteredRows = [];
+let salesInventoryTrendSummaries = [];
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#clearFiltersBtn")?.addEventListener("click", clearFilters);
   $("#downloadBtn")?.addEventListener("click", downloadCurrentRows);
+  $("#clearSalesInventoryTrendFiltersBtn")?.addEventListener("click", clearSalesInventoryTrendFilters);
   $("#searchInput")?.addEventListener("input", renderSalesAnalysis);
   document.addEventListener("click", closeMultiFilters);
-  ["salesMonthFilter", "salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter", "storeMatchFilter"].forEach((id) => {
+  ["salesMonthFilter", "salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter"].forEach((id) => {
     $(`#${id}`)?.addEventListener("change", renderSalesAnalysis);
+  });
+  SALES_INVENTORY_TREND_FILTERS.forEach((filter) => {
+    $(`#${filter.id}`)?.addEventListener("change", renderSalesInventoryTrend);
   });
   await refreshSalesAnalysis();
 });
@@ -21,8 +40,9 @@ async function refreshSalesAnalysis() {
   const salesRecord = records["sales-data"];
   const productMap = mapProducts(records["dim-product"]?.rows || []);
   const salesDepartmentMap = mapSalesDepartments(records["dim-store-name"]?.rows || []);
-  const storeNames = mapStoreNames(records["dim-customer-material"]);
+  const storeMap = mapStoreInfo(records["dim-customer-material"]);
   renderSourcePanel(salesRecord, records);
+  renderSalesInventoryTrendDashboard(records);
   if (!salesRecord) {
     salesRows = [];
     $("#salesStatus").textContent = "缺少销售数据文件，请先到销售数据文件页面上传并应用。";
@@ -36,19 +56,20 @@ async function refreshSalesAnalysis() {
     const customer = getSalesCustomerName(row);
     const product = productMap.get(materialCode) || {};
     const qty = getSalesReceivableQty(row);
-    const storeMatched = customer ? storeNames.has(normalizeStoreNameForSales(customer)) : false;
+    const storeInfo = storeMap.get(normalizeStoreNameForSales(customer)) || null;
     const salesDepartmentKey = getSalesDepartmentKey(row);
     return {
       salesMonth: getSalesMonth(row),
       salesOrg: salesDepartmentMap.get(salesDepartmentKey) || "",
       customer,
+      storeShortName: storeInfo?.shortName || customer,
       salesDepartmentKey,
       materialCode,
       materialName: getSalesMaterialName(row) || product.materialName || "",
       productLine: product.productLine || "",
       productSeries: product.productSeries || "",
       qty,
-      storeMatchStatus: storeMatched ? "已匹配" : "未匹配"
+      storeMatchStatus: storeInfo ? "已匹配" : "未匹配"
     };
   }).filter((row) => row.customer || row.materialCode || row.qty);
 
@@ -63,7 +84,6 @@ function populateFilters(rows) {
   fillSelect($("#customerFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
   fillSelect($("#productLineFilter"), "全部销售系列", uniqueValues(rows, "productSeries"));
   fillSelect($("#materialFilter"), "型号", uniqueValues(rows, "materialCode").slice(0, 300));
-  fillSelect($("#storeMatchFilter"), "全部匹配状态", ["已匹配", "未匹配"].filter((value) => rows.some((row) => row.storeMatchStatus === value)));
 }
 
 function renderSalesAnalysis() {
@@ -74,29 +94,25 @@ function renderSalesAnalysis() {
     if (!matchesFilter(row.productLine, $("#customerFilter"))) return false;
     if (!matchesFilter(row.productSeries, $("#productLineFilter"))) return false;
     if (!matchesFilter(row.materialCode, $("#materialFilter"))) return false;
-    if (!matchesFilter(row.storeMatchStatus, $("#storeMatchFilter"))) return false;
     if (search) {
-      const haystack = [row.customer, row.materialCode, row.materialName, row.salesOrg].join(" ").toLowerCase();
+      const haystack = [row.customer, row.storeShortName, row.materialCode, row.materialName, row.salesOrg].join(" ").toLowerCase();
       if (!haystack.includes(search)) return false;
     }
     return true;
   });
 
   renderMetrics(filteredRows);
-  renderBars("customerQtyChart", groupSum(filteredRows, "productLine", 10), "customerQtyTotal");
-  renderBars("salesOrgQtyChart", groupSum(filteredRows, "salesOrg", 10), "salesOrgQtyTotal");
-  renderBars("productLineQtyChart", groupSum(filteredRows, "productSeries", 10), "productLineQtyTotal");
-  renderBars("materialQtyChart", groupSum(filteredRows, "materialCode", 10), "materialQtyTotal");
-  renderBars("storeMatchQtyChart", groupSum(filteredRows, "storeMatchStatus", 5), "storeMatchQtyTotal");
+  renderBars("customerQtyChart", groupSum(filteredRows, "salesOrg", 10), "customerQtyTotal");
+  renderBars("salesOrgQtyChart", groupSum(filteredRows, "storeShortName", 10), "salesOrgQtyTotal");
+  renderBars("productLineQtyChart", groupSum(filteredRows, "productLine", 10), "productLineQtyTotal");
+  renderBars("materialQtyChart", groupSum(filteredRows, "productSeries", 10), "materialQtyTotal");
+  renderBars("storeMatchQtyChart", groupSum(filteredRows, "materialCode", 10), "storeMatchQtyTotal");
   renderTable(filteredRows);
 }
 
 function renderMetrics(rows) {
-  $("#salesRowTotal").textContent = formatNumber(rows.length, 0);
   $("#salesQtyTotal").textContent = formatQuantity(sum(rows, "qty"));
   $("#customerTotal").textContent = formatNumber(uniqueValues(rows, "customer").length, 0);
-  $("#materialTotal").textContent = formatNumber(uniqueValues(rows, "materialCode").length, 0);
-  $("#storeMissingTotal").textContent = formatNumber(rows.filter((row) => row.storeMatchStatus === "未匹配").length, 0);
 }
 
 function renderTable(rows) {
@@ -154,8 +170,230 @@ function groupSum(rows, key, limit = 10) {
     .slice(0, limit);
 }
 
+function renderSalesInventoryTrendDashboard(records) {
+  if (!$("#salesInventoryValueTrendChart")) return;
+  const maps = buildSalesInventoryTrendMaps(records);
+  salesInventoryTrendSummaries = SALES_INVENTORY_TREND_MONTHS.map((month) => summarizeSalesInventoryTrendMonth(month, records[month.id], maps));
+  const loaded = salesInventoryTrendSummaries.filter((item) => item.record).length;
+  const usedRows = salesInventoryTrendSummaries.reduce((total, item) => total + item.usedRows, 0);
+  const totalValue = salesInventoryTrendSummaries.reduce((total, item) => total + item.totalValue, 0);
+  setText("#salesInventoryTrendStatus", `已读取 ${loaded}/${SALES_INVENTORY_TREND_MONTHS.length} 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，库存占用合计 ${formatSalesInventoryTrendMoneyWan(totalValue)}。`);
+  populateSalesInventoryTrendFilters(salesInventoryTrendSummaries);
+  renderSalesInventoryTrend();
+}
+
+function buildSalesInventoryTrendMaps(records) {
+  const departmentByKey = new Map();
+  for (const row of records["dim-warehouse-material"]?.rows || []) {
+    const key = normalizeSalesInventoryTrendKey(nthValue(row, 6));
+    const department = normalizeText(nthValue(row, 7));
+    if (key && department && !departmentByKey.has(key)) departmentByKey.set(key, department);
+  }
+
+  const warehouseTypeByName = new Map();
+  const warehouseLocationByName = new Map();
+  for (const row of records["dim-warehouse"]?.rows || []) {
+    const warehouseName = normalizeText(nthValue(row, 2));
+    const warehouseType = normalizeText(nthValue(row, 7));
+    const warehouseLocation = normalizeText(nthValue(row, 8));
+    if (warehouseName && warehouseType && !warehouseTypeByName.has(warehouseName)) warehouseTypeByName.set(warehouseName, warehouseType);
+    if (warehouseName && warehouseLocation && !warehouseLocationByName.has(warehouseName)) warehouseLocationByName.set(warehouseName, warehouseLocation);
+  }
+
+  const productLineByMaterial = new Map();
+  const settlementPriceByMaterial = new Map();
+  for (const row of records["dim-product"]?.rows || []) {
+    const materialCode = normalizeMaterialCode(nthValue(row, 1));
+    const productLine = normalizeText(nthValue(row, 7));
+    const price = firstNumber([
+      firstValue(row, ["结算价（含税）", "结算价(含税)", "结算价含税", "结算价"]),
+      firstValueByHeaderIncludes(row, ["结算价"]),
+      nthValue(row, 10)
+    ]);
+    if (materialCode && productLine && !productLineByMaterial.has(materialCode)) productLineByMaterial.set(materialCode, productLine);
+    if (materialCode && price && !settlementPriceByMaterial.has(materialCode)) settlementPriceByMaterial.set(materialCode, price);
+  }
+
+  const inventoryMonthRows = records["fact-2"]?.rows || [];
+  const monthPriceAccessor = makeSalesInventoryTrendPriceAccessor(inventoryMonthRows[0]);
+  for (const row of inventoryMonthRows) {
+    const materialCode = normalizeMaterialCode(nthValue(row, 1));
+    const price = firstNumber([monthPriceAccessor(row)]);
+    if (materialCode && price) settlementPriceByMaterial.set(materialCode, price);
+  }
+
+  return { departmentByKey, warehouseTypeByName, warehouseLocationByName, productLineByMaterial, settlementPriceByMaterial };
+}
+
+function summarizeSalesInventoryTrendMonth(month, record, maps) {
+  const sourceRows = record?.rows || [];
+  const rows = sourceRows.length ? sourceRows.slice(0, -1) : [];
+  const qtyAccessor = makeSalesInventoryTrendQtyAccessor(sourceRows[0]);
+  const priceAccessor = makeSalesInventoryTrendPriceAccessor(sourceRows[0]);
+  const summary = {
+    ...month,
+    record,
+    usedRows: 0,
+    totalValue: 0,
+    items: []
+  };
+
+  for (const row of rows) {
+    const materialA = normalizeMaterialCode(nthValue(row, 1));
+    const materialCode = normalizeMaterialCode(nthValue(row, 2));
+    const warehouse = normalizeText(nthValue(row, 4));
+    const qty = firstNumber([qtyAccessor(row)]);
+    if (!qty) continue;
+    const directPrice = firstNumber([priceAccessor(row)]);
+    const settlementPrice = directPrice || maps.settlementPriceByMaterial.get(materialCode) || 0;
+    const value = qty * settlementPrice;
+    const department = maps.departmentByKey.get(normalizeSalesInventoryTrendKey(`${materialA}${warehouse}${materialCode}`)) || "未匹配事业部";
+    const warehouseType = maps.warehouseTypeByName.get(warehouse) || "未分类仓库类型";
+    const warehouseLocation = maps.warehouseLocationByName.get(warehouse) || "未分类仓库位置";
+    const productLine = maps.productLineByMaterial.get(materialCode) || "未分类产品线";
+    summary.usedRows += 1;
+    summary.totalValue += value;
+    summary.items.push({ value, warehouseType, department, productLine, warehouseLocation });
+  }
+  return summary;
+}
+
+function populateSalesInventoryTrendFilters(monthSummaries) {
+  SALES_INVENTORY_TREND_FILTERS.forEach((filter) => {
+    const values = uniqueSalesInventoryTrendValues(monthSummaries, filter.field);
+    fillSelect($(`#${filter.id}`), filter.allLabel, values);
+  });
+}
+
+function uniqueSalesInventoryTrendValues(monthSummaries, field) {
+  const totals = new Map();
+  for (const month of monthSummaries) {
+    for (const item of month.items) {
+      const name = normalizeText(item[field]);
+      if (!name) continue;
+      totals.set(name, (totals.get(name) || 0) + (Number(item.value) || 0));
+    }
+  }
+  return [...totals.entries()]
+    .filter(([, value]) => value !== 0)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
+    .slice(0, 300)
+    .map(([name]) => name);
+}
+
+function renderSalesInventoryTrend() {
+  const selections = getSalesInventoryTrendSelections();
+  const values = SALES_INVENTORY_TREND_MONTHS.map((month) => {
+    const summary = salesInventoryTrendSummaries.find((item) => item.label === month.label);
+    if (!summary) return 0;
+    return summary.items.reduce((total, item) => {
+      return salesInventoryTrendItemMatches(item, selections) ? total + (Number(item.value) || 0) : total;
+    }, 0);
+  });
+  const total = values.reduce((sumValue, value) => sumValue + value, 0);
+  setText("#salesInventoryValueTrendTotal", `合计 ${formatSalesInventoryTrendMoneyWan(total)}`);
+  renderSalesInventoryVerticalTrendChart(values, selections);
+}
+
+function renderSalesInventoryVerticalTrendChart(values, selections) {
+  const container = $("#salesInventoryValueTrendChart");
+  if (!container) return;
+  const max = Math.max(...values, 1);
+  const label = getSalesInventoryTrendAggregateLabel(selections);
+  container.innerHTML = `
+    <div class="trend-legend">
+      ${SALES_INVENTORY_TREND_MONTHS.map((month, index) => `<span><i style="background:${SALES_INVENTORY_TREND_COLORS[index]}"></i>${month.label}</span>`).join("")}
+    </div>
+    <div class="trend-bars-vertical trend-one-row single-category" style="--trend-month-count:${SALES_INVENTORY_TREND_MONTHS.length}" aria-label="月份顺序：1月、2月、3月、4月、5月">
+      <div class="trend-category" title="${escapeHtml(label)}">
+        <div class="trend-bar-group">
+          ${values.map((value, index) => `
+            <div class="trend-bar-wrap" title="${SALES_INVENTORY_TREND_MONTHS[index].label} ${escapeHtml(formatSalesInventoryTrendMoneyWan(value))} ${escapeHtml(formatSalesInventoryTrendMoM(value, values[index - 1]))}">
+              <span class="trend-bar-value">${escapeHtml(formatSalesInventoryTrendBarValue(value, values[index - 1]))}</span>
+              <div class="trend-bar" style="height:${Math.max(2, value / max * 100)}%;background:${SALES_INVENTORY_TREND_COLORS[index]}"></div>
+              <span class="trend-month-label">${SALES_INVENTORY_TREND_MONTHS[index].label}</span>
+            </div>
+          `).join("")}
+        </div>
+        <div class="trend-category-label">${escapeHtml(label)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function getSalesInventoryTrendSelections() {
+  return Object.fromEntries(SALES_INVENTORY_TREND_FILTERS.map((filter) => [filter.id, getSelectValues($(`#${filter.id}`))]));
+}
+
+function salesInventoryTrendItemMatches(item, selections) {
+  return SALES_INVENTORY_TREND_FILTERS.every((filter) => {
+    const selected = selections[filter.id] || [];
+    return !selected.length || selected.includes(normalizeText(item[filter.field]));
+  });
+}
+
+function clearSalesInventoryTrendFilters() {
+  SALES_INVENTORY_TREND_FILTERS.forEach((filter) => clearSelect($(`#${filter.id}`)));
+  renderSalesInventoryTrend();
+}
+
+function getSalesInventoryTrendAggregateLabel(selections) {
+  const selected = SALES_INVENTORY_TREND_FILTERS.flatMap((filter) => selections[filter.id] || []);
+  if (!selected.length) return "全部库存占用";
+  if (selected.length === 1) return selected[0];
+  return `已选${selected.length}项合计`;
+}
+
+function makeSalesInventoryTrendQtyAccessor(sampleRow) {
+  const key = findHeaderKey(sampleRow, ["结余库存数量", "库存数量", "结存数量", "数量"]);
+  return key ? (row) => row?.[key] : (row) => nthValue(row, 11);
+}
+
+function makeSalesInventoryTrendPriceAccessor(sampleRow) {
+  const key = findHeaderKey(sampleRow, ["结算价(含税)", "结算价（含税）", "结算价含税", "结算价"]);
+  return key ? (row) => row?.[key] : (row) => nthValue(row, 16);
+}
+
+function findHeaderKey(row, candidates) {
+  const keys = Object.keys(row || {});
+  const normalizedCandidates = candidates.map(normalizeCompactHeader);
+  return keys.find((key) => normalizedCandidates.includes(normalizeCompactHeader(key)))
+    || keys.find((key) => normalizedCandidates.some((candidate) => normalizeCompactHeader(key).includes(candidate)));
+}
+
+function normalizeCompactHeader(value) {
+  return normalizeText(value).replace(/[()\[\]（）【】\s_：:，,、-]/g, "").toLowerCase();
+}
+
+function normalizeSalesInventoryTrendKey(value) {
+  return normalizeMaterialCode(value).replace(/&/g, "").toLowerCase();
+}
+
+function formatSalesInventoryTrendBarValue(value, previousValue) {
+  return `${formatSalesInventoryTrendShortMoneyWan(value)}（${formatSalesInventoryTrendMoM(value, previousValue)}）`;
+}
+
+function formatSalesInventoryTrendMoM(value, previousValue) {
+  const current = Number(value) || 0;
+  const previous = Number(previousValue);
+  if (!Number.isFinite(previous) || previous === 0) return "环比-";
+  return `环比${((current / previous - 1) * 100).toFixed(1)}%`;
+}
+
+function formatSalesInventoryTrendMoneyWan(value) {
+  return `${formatNumber((Number(value) || 0) / 10000, 2)}万元`;
+}
+
+function formatSalesInventoryTrendShortMoneyWan(value) {
+  const wan = (Number(value) || 0) / 10000;
+  const abs = Math.abs(wan);
+  if (abs >= 100) return `${formatNumber(wan, 0)}万`;
+  if (abs >= 10) return `${formatNumber(wan, 1)}万`;
+  return `${formatNumber(wan, 2)}万`;
+}
+
 function clearFilters() {
-  ["salesMonthFilter", "salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter", "storeMatchFilter"].forEach((id) => clearSelect($(`#${id}`)));
+  ["salesMonthFilter", "salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter"].forEach((id) => clearSelect($(`#${id}`)));
   if ($("#searchInput")) $("#searchInput").value = "";
   renderSalesAnalysis();
 }
@@ -276,14 +514,31 @@ function getSalesMonth(row) {
   return formatSalesMonth(rawValue);
 }
 
-function mapStoreNames(record) {
+function mapStoreInfo(record) {
   const rows = record?.rows || [];
-  const set = new Set();
+  const map = new Map();
   for (const row of rows) {
-    const value = normalizeStoreNameForSales(firstText([nthValue(row, 2), firstValue(row, ["金蝶名称", "客户名称", "店铺名称"])]));
-    if (value) set.add(value);
+    const rawName = firstText([
+      nthValue(row, 2),
+      firstValue(row, ["金蝶名称", "客户名称", "店铺名称", "店铺", "公司名称", "全称"])
+    ]);
+    const normalized = normalizeStoreNameForSales(rawName);
+    if (!normalized || map.has(normalized)) continue;
+    const shortName = firstText([
+      firstValue(row, ["日常汇报沟通简称", "日常沟通简称", "汇报简称", "店铺简称", "简称"]),
+      firstValueByHeaderIncludes(row, ["日常", "简称"]),
+      firstValueByHeaderIncludes(row, ["汇报", "简称"]),
+      firstValueByHeaderIncludes(row, ["简称"]),
+      nthValue(row, 4),
+      nthValue(row, 3),
+      rawName
+    ]);
+    map.set(normalized, {
+      rawName,
+      shortName: normalizeText(shortName) || rawName
+    });
   }
-  return set;
+  return map;
 }
 
 function mapSalesDepartments(rows) {
@@ -408,6 +663,11 @@ function formatPercent(value, total) {
 
 function formatNumber(value, digits = 0) {
   return Number(value || 0).toLocaleString("zh-CN", { maximumFractionDigits: digits });
+}
+
+function setText(selector, value) {
+  const el = $(selector);
+  if (el) el.textContent = value;
 }
 
 function buildStatusText(record, rows) {
