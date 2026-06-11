@@ -61,7 +61,7 @@ function buildDimensionMaps(records) {
   const divisionRows = records["dim-warehouse-material"]?.rows || [];
   const warehouseRows = records["dim-warehouse"]?.rows || [];
   const customerMaterialRows = records["dim-store-name"]?.rows || [];
-  const storeRows = records["dim-customer-material"]?.rows || [];
+  const storeRows = resolveStoreSummaryRows(records);
   return {
     productMap,
     divisionMaterialCodes: mapDivisionMaterialCodes(divisionRows),
@@ -71,6 +71,25 @@ function buildDimensionMaps(records) {
     customerMaterialKeys: mapCustomerMaterialKeys(customerMaterialRows),
     storeNames: mapStoreNames(storeRows)
   };
+}
+
+function resolveStoreSummaryRows(records) {
+  const primary = records["dim-customer-material"];
+  const fallback = records["dim-store-name"];
+  const rows = [...(primary?.rows || [])];
+  if (recordLooksLikeStoreSummary(fallback)) {
+    rows.push(...(fallback.rows || []));
+  }
+  return rows;
+}
+
+function recordLooksLikeStoreSummary(record) {
+  const text = normalizeText([
+    record?.title,
+    record?.expectedName,
+    record?.fileName
+  ].filter(Boolean).join(" "));
+  return text.includes("店铺名称汇总") || text.includes("金蝶&领星") || text.includes("领星&简称");
 }
 
 function buildClosedInventoryChecks(records, maps) {
