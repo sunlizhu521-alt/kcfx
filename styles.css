@@ -1884,6 +1884,53 @@ input[type="file"]:disabled {
   white-space: nowrap;
 }
 
+.sales-yoy-trend .trend-bar-group {
+  grid-auto-flow: initial;
+  grid-template-columns: repeat(var(--trend-month-count, 1), minmax(64px, 1fr));
+  gap: clamp(10px, 1.3vw, 18px);
+}
+
+.trend-yoy-month-group {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 18px;
+  align-items: end;
+  height: 100%;
+  min-width: 0;
+}
+
+.trend-yoy-bars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(18px, 1fr));
+  gap: 5px;
+  align-items: end;
+  height: 100%;
+}
+
+.trend-yoy-bar-wrap {
+  min-width: 0;
+}
+
+.trend-year-label {
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  transform: translateX(-50%);
+  color: #52667b;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.trend-yoy-month-label {
+  position: static;
+  transform: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-top: 5px;
+}
+
 .trend-one-row .trend-bar-wrap {
   min-width: 0;
 }

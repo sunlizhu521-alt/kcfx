@@ -1,17 +1,11 @@
 const $ = (selector) => document.querySelector(selector);
 const COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f", "#5ac8fa", "#5856d6", "#30d158", "#bf5af2", "#ff6b35"];
-const SALES_INVENTORY_TREND_MONTHS = [
-  { id: "fact-3", label: "1月" },
-  { id: "fact-4", label: "2月" },
-  { id: "fact-5", label: "3月" },
-  { id: "fact-6", label: "4月" },
-  { id: "fact-7", label: "5月" }
-];
 const SALES_INVENTORY_TREND_FILTERS = [
-  { id: "salesInventoryWarehouseTypeTrendFilter", field: "warehouseType", allLabel: "库存全链路" },
-  { id: "salesInventoryDepartmentTrendFilter", field: "department", allLabel: "全部事业部" },
-  { id: "salesInventoryProductTrendFilter", field: "productLine", allLabel: "全部产品线" },
-  { id: "salesInventoryWarehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "全部仓库位置" }
+  { id: "salesInventoryMonthTrendFilter", field: "salesMonth", allLabel: "全部销售月份", type: "monthPicker", matchMonthNumber: true },
+  { id: "salesInventoryOrgTrendFilter", field: "salesOrg", allLabel: "全部销售部门" },
+  { id: "salesInventoryProductTrendFilter", field: "productLine", allLabel: "全部销售产品线" },
+  { id: "salesInventorySeriesTrendFilter", field: "productSeries", allLabel: "全部销售系列" },
+  { id: "salesInventoryModelTrendFilter", field: "model", allLabel: "型号", limit: 300 }
 ];
 const SALES_FILTERS = [
   { id: "salesMonthFilter", field: "salesMonth", allLabel: "全部销售月份", type: "monthPicker" },
@@ -20,7 +14,8 @@ const SALES_FILTERS = [
   { id: "productLineFilter", field: "productSeries", allLabel: "全部销售系列" },
   { id: "materialFilter", field: "model", allLabel: "型号", limit: 300 }
 ];
-const SALES_INVENTORY_TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f"];
+const SALES_INVENTORY_TREND_YEARS = ["2025", "2026"];
+const SALES_INVENTORY_TREND_YEAR_COLORS = { "2025": "#007aff", "2026": "#34c759" };
 const EXCLUDED_SALES_PRODUCT_VALUES = new Set(["其他/配件", "健康办公"].map(normalizeSalesExclusionText));
 
 let salesRows = [];
@@ -51,11 +46,11 @@ async function refreshSalesAnalysis() {
   const salesDepartmentMap = mapSalesDepartments(records["dim-store-name"]?.rows || []);
   const storeMap = mapStoreInfo(records["dim-customer-material"]);
   renderSourcePanel(salesRecord, records);
-  renderSalesInventoryTrendDashboard(records);
   if (!salesRecord) {
     salesRows = [];
     $("#salesStatus").textContent = "缺少销售数据文件，请先到销售数据文件页面上传并应用。";
     populateFilters([]);
+    renderSalesInventoryTrendDashboard([]);
     renderSalesAnalysis();
     return;
   }
@@ -68,8 +63,11 @@ async function refreshSalesAnalysis() {
     const qty = getSalesReceivableQty(row);
     const storeInfo = storeMap.get(normalizeStoreNameForSales(customer)) || null;
     const salesDepartmentKey = getSalesDepartmentKey(row);
+    const salesMonth = getSalesMonth(row);
     return {
-      salesMonth: getSalesMonth(row),
+      salesMonth,
+      salesYear: salesMonth.slice(0, 4),
+      salesMonthNumber: salesMonth.slice(5, 7),
       salesOrg: salesDepartmentMap.get(salesDepartmentKey) || "",
       customer,
       storeShortName: storeInfo?.shortName || customer,
@@ -89,6 +87,7 @@ async function refreshSalesAnalysis() {
 
   populateFilters(salesRows);
   $("#salesStatus").textContent = buildStatusText(salesRecord, salesRows);
+  renderSalesInventoryTrendDashboard(salesRows);
   renderSalesAnalysis();
 }
 
@@ -195,14 +194,14 @@ function groupSum(rows, key, limit = 10) {
     .slice(0, limit);
 }
 
-function renderSalesInventoryTrendDashboard(records) {
+function renderSalesInventoryTrendDashboard(rows = salesRows) {
   if (!$("#salesInventoryValueTrendChart")) return;
-  const maps = buildSalesInventoryTrendMaps(records);
-  salesInventoryTrendSummaries = SALES_INVENTORY_TREND_MONTHS.map((month) => summarizeSalesInventoryTrendMonth(month, records[month.id], maps));
-  const loaded = salesInventoryTrendSummaries.filter((item) => item.record).length;
-  const usedRows = salesInventoryTrendSummaries.reduce((total, item) => total + item.usedRows, 0);
-  const totalValue = salesInventoryTrendSummaries.reduce((total, item) => total + item.totalValue, 0);
-  setText("#salesInventoryTrendStatus", `已读取 ${loaded}/${SALES_INVENTORY_TREND_MONTHS.length} 个月份文件，参与趋势计算 ${formatNumber(usedRows, 0)} 行，库存占用合计 ${formatSalesInventoryTrendMoneyWan(totalValue)}。`);
+  salesInventoryTrendSummaries = rows
+    .filter((row) => SALES_INVENTORY_TREND_YEARS.includes(row.salesYear) && row.salesMonthNumber)
+    .map((row) => ({ ...row, value: Number(row.qty) || 0 }));
+  const yearText = SALES_INVENTORY_TREND_YEARS.join(" / ");
+  const totalQty = salesInventoryTrendSummaries.reduce((total, row) => total + row.value, 0);
+  setText("#salesInventoryTrendStatus", `已按销售数据日期列读取 ${formatNumber(salesInventoryTrendSummaries.length, 0)} 行，年份：${yearText}，应收数量合计 ${formatQuantity(totalQty)}。`);
   populateSalesInventoryTrendFilters(salesInventoryTrendSummaries);
   renderSalesInventoryTrend();
 }
@@ -293,14 +292,14 @@ function handleSalesInventoryTrendFilterChange() {
   renderSalesInventoryTrend();
 }
 
-function refreshSalesInventoryTrendFilterOptions(monthSummaries = salesInventoryTrendSummaries) {
-  const items = monthSummaries.flatMap((month) => month.items || []);
+function refreshSalesInventoryTrendFilterOptions(rows = salesInventoryTrendSummaries) {
   const selections = getFilterSelections(SALES_INVENTORY_TREND_FILTERS);
   isRefreshingFilters = true;
   SALES_INVENTORY_TREND_FILTERS.forEach((filter) => {
-    const options = linkedFilterOptions(items, SALES_INVENTORY_TREND_FILTERS, filter, selections, 300, "value");
+    const options = linkedFilterOptions(rows, SALES_INVENTORY_TREND_FILTERS, filter, selections, filter.limit, "value");
     const current = (selections[filter.id] || []).filter((value) => options.includes(value));
-    fillSelect($(`#${filter.id}`), filter.allLabel, options, current);
+    if (filter.type === "monthPicker") fillMonthPicker($(`#${filter.id}`), filter.allLabel, options, current);
+    else fillSelect($(`#${filter.id}`), filter.allLabel, options, current);
   });
   isRefreshingFilters = false;
 }
@@ -334,44 +333,45 @@ function rowMatchesSelections(row, filters, selections, excludedFilterId = "") {
     if (filter.id === excludedFilterId) return true;
     const selected = selections[filter.id] || [];
     if (!selected.length) return true;
-    return selected.includes(normalizeText(row[filter.field]));
+    const value = normalizeText(row[filter.field]);
+    if (filter.matchMonthNumber) {
+      const rowMonth = value.slice(5, 7);
+      return selected.some((selectedValue) => normalizeText(selectedValue).slice(5, 7) === rowMonth);
+    }
+    return selected.includes(value);
   });
 }
 
 function renderSalesInventoryTrend() {
   refreshSalesInventoryTrendFilterOptions();
   const selections = getSalesInventoryTrendSelections();
-  const values = SALES_INVENTORY_TREND_MONTHS.map((month) => {
-    const summary = salesInventoryTrendSummaries.find((item) => item.label === month.label);
-    if (!summary) return 0;
-    return summary.items.reduce((total, item) => {
-      return salesInventoryTrendItemMatches(item, selections) ? total + (Number(item.value) || 0) : total;
-    }, 0);
-  });
-  const total = values.reduce((sumValue, value) => sumValue + value, 0);
-  setText("#salesInventoryValueTrendTotal", `合计 ${formatSalesInventoryTrendMoneyWan(total)}`);
-  renderSalesInventoryVerticalTrendChart(values, selections);
+  const filteredRows = salesInventoryTrendSummaries.filter((item) => salesInventoryTrendItemMatches(item, selections));
+  const months = [...new Set(filteredRows.map((row) => row.salesMonthNumber).filter(Boolean))]
+    .sort((a, b) => Number(a) - Number(b));
+  const grouped = new Map();
+  for (const row of filteredRows) {
+    const key = `${row.salesYear}-${row.salesMonthNumber}`;
+    grouped.set(key, (grouped.get(key) || 0) + (Number(row.value) || 0));
+  }
+  const total = filteredRows.reduce((sumValue, row) => sumValue + (Number(row.value) || 0), 0);
+  setText("#salesInventoryValueTrendTotal", `合计 ${formatQuantity(total)}`);
+  renderSalesInventoryVerticalTrendChart(months, grouped, selections);
 }
 
-function renderSalesInventoryVerticalTrendChart(values, selections) {
+function renderSalesInventoryVerticalTrendChart(months, grouped, selections) {
   const container = $("#salesInventoryValueTrendChart");
   if (!container) return;
+  const values = months.flatMap((month) => SALES_INVENTORY_TREND_YEARS.map((year) => grouped.get(`${year}-${month}`) || 0));
   const max = Math.max(...values, 1);
   const label = getSalesInventoryTrendAggregateLabel(selections);
   container.innerHTML = `
     <div class="trend-legend">
-      ${SALES_INVENTORY_TREND_MONTHS.map((month, index) => `<span><i style="background:${SALES_INVENTORY_TREND_COLORS[index]}"></i>${month.label}</span>`).join("")}
+      ${SALES_INVENTORY_TREND_YEARS.map((year) => `<span><i style="background:${SALES_INVENTORY_TREND_YEAR_COLORS[year]}"></i>${year}年</span>`).join("")}
     </div>
-    <div class="trend-bars-vertical trend-one-row single-category" style="--trend-month-count:${SALES_INVENTORY_TREND_MONTHS.length}" aria-label="月份顺序：1月、2月、3月、4月、5月">
+    <div class="trend-bars-vertical trend-one-row single-category sales-yoy-trend" style="--trend-month-count:${Math.max(months.length, 1)}" aria-label="2025年和2026年同月同比趋势">
       <div class="trend-category" title="${escapeHtml(label)}">
         <div class="trend-bar-group">
-          ${values.map((value, index) => `
-            <div class="trend-bar-wrap" title="${SALES_INVENTORY_TREND_MONTHS[index].label} ${escapeHtml(formatSalesInventoryTrendMoneyWan(value))} ${escapeHtml(formatSalesInventoryTrendMoM(value, values[index - 1]))}">
-              <span class="trend-bar-value">${escapeHtml(formatSalesInventoryTrendBarValue(value, values[index - 1]))}</span>
-              <div class="trend-bar" style="height:${Math.max(2, value / max * 100)}%;background:${SALES_INVENTORY_TREND_COLORS[index]}"></div>
-              <span class="trend-month-label">${SALES_INVENTORY_TREND_MONTHS[index].label}</span>
-            </div>
-          `).join("")}
+          ${months.length ? months.map((month) => renderSalesTrendMonthGroup(month, grouped, max)).join("") : `<div class="empty">暂无数据</div>`}
         </div>
         <div class="trend-category-label">${escapeHtml(label)}</div>
       </div>
@@ -379,8 +379,29 @@ function renderSalesInventoryVerticalTrendChart(values, selections) {
   `;
 }
 
+function renderSalesTrendMonthGroup(month, grouped, max) {
+  const monthLabel = `${Number(month)}月`;
+  return `
+    <div class="trend-yoy-month-group" title="${escapeHtml(monthLabel)}">
+      <div class="trend-yoy-bars">
+        ${SALES_INVENTORY_TREND_YEARS.map((year) => {
+          const value = grouped.get(`${year}-${month}`) || 0;
+          return `
+            <div class="trend-bar-wrap trend-yoy-bar-wrap" title="${year}年${monthLabel} ${escapeHtml(formatQuantity(value))}">
+              <span class="trend-bar-value">${escapeHtml(formatQuantity(value))}</span>
+              <div class="trend-bar" style="height:${Math.max(value ? 2 : 0, value / max * 100)}%;background:${SALES_INVENTORY_TREND_YEAR_COLORS[year]}"></div>
+              <span class="trend-year-label">${year.slice(2)}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+      <span class="trend-month-label trend-yoy-month-label">${monthLabel}</span>
+    </div>
+  `;
+}
+
 function getSalesInventoryTrendSelections() {
-  return Object.fromEntries(SALES_INVENTORY_TREND_FILTERS.map((filter) => [filter.id, getSelectValues($(`#${filter.id}`))]));
+  return getFilterSelections(SALES_INVENTORY_TREND_FILTERS);
 }
 
 function salesInventoryTrendItemMatches(item, selections) {
@@ -388,14 +409,14 @@ function salesInventoryTrendItemMatches(item, selections) {
 }
 
 function clearSalesInventoryTrendFilters() {
-  SALES_INVENTORY_TREND_FILTERS.forEach((filter) => clearSelect($(`#${filter.id}`)));
+  SALES_INVENTORY_TREND_FILTERS.forEach((filter) => clearFilter(filter));
   refreshSalesInventoryTrendFilterOptions();
   renderSalesInventoryTrend();
 }
 
 function getSalesInventoryTrendAggregateLabel(selections) {
   const selected = SALES_INVENTORY_TREND_FILTERS.flatMap((filter) => selections[filter.id] || []);
-  if (!selected.length) return "全部库存占用";
+  if (!selected.length) return "全部销售趋势";
   if (selected.length === 1) return selected[0];
   return `已选${selected.length}项合计`;
 }
