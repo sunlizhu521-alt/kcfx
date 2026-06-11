@@ -42,7 +42,7 @@ const DIMENSION_SLOTS = [
     type: "dimension",
     title: "店铺名称汇总（金蝶&领星&简称）",
     expectedName: "店铺名称汇总（金蝶&领星&简称）",
-    sheetHint: "",
+    sheetHint: "Dim-店铺名称汇总（金蝶&领星&简称）",
     description: "预留维度槽位。"
   },
   {
@@ -408,13 +408,19 @@ function makeJoinKey(row) {
   ].join("");
 }
 
-function pickSheetName(workbook) {
-  // 固定规则：只读取第一个 sheet。不要自动匹配或猜测 sheet。
-  return workbook.SheetNames[0];
+function pickSheetName(workbook, slot = {}) {
+  const sheetNames = workbook.SheetNames || [];
+  const hint = normalizeHeaderName(slot.sheetHint || "");
+  if (hint) {
+    const matched = sheetNames.find((name) => normalizeHeaderName(name) === hint)
+      || sheetNames.find((name) => normalizeHeaderName(name).includes(hint) || hint.includes(normalizeHeaderName(name)));
+    if (matched) return matched;
+  }
+  return sheetNames[0];
 }
 
 function parseWorkbookRows(workbook, slot) {
-  const sheetName = pickSheetName(workbook);
+  const sheetName = pickSheetName(workbook, slot);
   const sheet = workbook.Sheets[sheetName];
   const matrix = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
