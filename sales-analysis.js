@@ -13,11 +13,19 @@ const SALES_INVENTORY_TREND_FILTERS = [
   { id: "salesInventoryProductTrendFilter", field: "productLine", allLabel: "全部产品线" },
   { id: "salesInventoryWarehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "全部仓库位置" }
 ];
+const SALES_FILTERS = [
+  { id: "salesMonthFilter", field: "salesMonth", allLabel: "全部销售月份" },
+  { id: "salesOrgFilter", field: "salesOrg", allLabel: "全部销售部门" },
+  { id: "customerFilter", field: "productLine", allLabel: "全部销售产品线" },
+  { id: "productLineFilter", field: "productSeries", allLabel: "全部销售系列" },
+  { id: "materialFilter", field: "materialCode", allLabel: "型号", limit: 300 }
+];
 const SALES_INVENTORY_TREND_COLORS = ["#007aff", "#34c759", "#ff9f0a", "#af52de", "#ff375f"];
 
 let salesRows = [];
 let filteredRows = [];
 let salesInventoryTrendSummaries = [];
+let isRefreshingFilters = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   $("#clearFiltersBtn")?.addEventListener("click", clearFilters);
@@ -25,11 +33,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#clearSalesInventoryTrendFiltersBtn")?.addEventListener("click", clearSalesInventoryTrendFilters);
   $("#searchInput")?.addEventListener("input", renderSalesAnalysis);
   document.addEventListener("click", closeMultiFilters);
-  ["salesMonthFilter", "salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter"].forEach((id) => {
-    $(`#${id}`)?.addEventListener("change", renderSalesAnalysis);
+  SALES_FILTERS.forEach((filter) => {
+    $(`#${filter.id}`)?.addEventListener("change", () => handleSalesFilterChange());
   });
   SALES_INVENTORY_TREND_FILTERS.forEach((filter) => {
-    $(`#${filter.id}`)?.addEventListener("change", renderSalesInventoryTrend);
+    $(`#${filter.id}`)?.addEventListener("change", () => handleSalesInventoryTrendFilterChange());
   });
   await refreshSalesAnalysis();
 });
@@ -79,21 +87,31 @@ async function refreshSalesAnalysis() {
 }
 
 function populateFilters(rows) {
-  fillSelect($("#salesMonthFilter"), "全部销售月份", uniqueValues(rows, "salesMonth"));
-  fillSelect($("#salesOrgFilter"), "全部销售部门", uniqueValues(rows, "salesOrg"));
-  fillSelect($("#customerFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
-  fillSelect($("#productLineFilter"), "全部销售系列", uniqueValues(rows, "productSeries"));
-  fillSelect($("#materialFilter"), "型号", uniqueValues(rows, "materialCode").slice(0, 300));
+  refreshSalesFilterOptions(rows);
+}
+
+function handleSalesFilterChange() {
+  if (isRefreshingFilters) return;
+  refreshSalesFilterOptions(salesRows);
+  renderSalesAnalysis();
+}
+
+function refreshSalesFilterOptions(rows = salesRows) {
+  const selections = getFilterSelections(SALES_FILTERS);
+  isRefreshingFilters = true;
+  SALES_FILTERS.forEach((filter) => {
+    const options = linkedFilterOptions(rows, SALES_FILTERS, filter, selections, filter.limit);
+    const current = (selections[filter.id] || []).filter((value) => options.includes(value));
+    fillSelect($(`#${filter.id}`), filter.allLabel, options, current);
+  });
+  isRefreshingFilters = false;
 }
 
 function renderSalesAnalysis() {
   const search = normalizeText($("#searchInput")?.value || "").toLowerCase();
+  const selections = getFilterSelections(SALES_FILTERS);
   filteredRows = salesRows.filter((row) => {
-    if (!matchesFilter(row.salesMonth, $("#salesMonthFilter"))) return false;
-    if (!matchesFilter(row.salesOrg, $("#salesOrgFilter"))) return false;
-    if (!matchesFilter(row.productLine, $("#customerFilter"))) return false;
-    if (!matchesFilter(row.productSeries, $("#productLineFilter"))) return false;
-    if (!matchesFilter(row.materialCode, $("#materialFilter"))) return false;
+    if (!rowMatchesSelections(row, SALES_FILTERS, selections)) return false;
     if (search) {
       const haystack = [row.customer, row.storeShortName, row.materialCode, row.materialName, row.salesOrg].join(" ").toLowerCase();
       if (!haystack.includes(search)) return false;
@@ -259,29 +277,62 @@ function summarizeSalesInventoryTrendMonth(month, record, maps) {
 }
 
 function populateSalesInventoryTrendFilters(monthSummaries) {
-  SALES_INVENTORY_TREND_FILTERS.forEach((filter) => {
-    const values = uniqueSalesInventoryTrendValues(monthSummaries, filter.field);
-    fillSelect($(`#${filter.id}`), filter.allLabel, values);
-  });
+  refreshSalesInventoryTrendFilterOptions(monthSummaries);
 }
 
-function uniqueSalesInventoryTrendValues(monthSummaries, field) {
+function handleSalesInventoryTrendFilterChange() {
+  if (isRefreshingFilters) return;
+  refreshSalesInventoryTrendFilterOptions();
+  renderSalesInventoryTrend();
+}
+
+function refreshSalesInventoryTrendFilterOptions(monthSummaries = salesInventoryTrendSummaries) {
+  const items = monthSummaries.flatMap((month) => month.items || []);
+  const selections = getFilterSelections(SALES_INVENTORY_TREND_FILTERS);
+  isRefreshingFilters = true;
+  SALES_INVENTORY_TREND_FILTERS.forEach((filter) => {
+    const options = linkedFilterOptions(items, SALES_INVENTORY_TREND_FILTERS, filter, selections, 300, "value");
+    const current = (selections[filter.id] || []).filter((value) => options.includes(value));
+    fillSelect($(`#${filter.id}`), filter.allLabel, options, current);
+  });
+  isRefreshingFilters = false;
+}
+
+function linkedFilterOptions(rows, filters, targetFilter, selections, limit = 300, sortValueField = "") {
   const totals = new Map();
-  for (const month of monthSummaries) {
-    for (const item of month.items) {
-      const name = normalizeText(item[field]);
-      if (!name) continue;
-      totals.set(name, (totals.get(name) || 0) + (Number(item.value) || 0));
-    }
+  for (const row of rows) {
+    if (!rowMatchesSelections(row, filters, selections, targetFilter.id)) continue;
+    const name = normalizeText(row[targetFilter.field]);
+    if (!name) continue;
+    const sortValue = sortValueField ? Number(row[sortValueField]) || 0 : 1;
+    totals.set(name, (totals.get(name) || 0) + sortValue);
   }
   return [...totals.entries()]
     .filter(([, value]) => value !== 0)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN"))
-    .slice(0, 300)
+    .slice(0, limit || 300)
     .map(([name]) => name);
 }
 
+function getFilterSelections(filters) {
+  return Object.fromEntries(filters.map((filter) => [filter.id, getSelectValues($(`#${filter.id}`))]));
+}
+
+function rowMatchesFilters(row, filters, excludedFilterId = "") {
+  return rowMatchesSelections(row, filters, getFilterSelections(filters), excludedFilterId);
+}
+
+function rowMatchesSelections(row, filters, selections, excludedFilterId = "") {
+  return filters.every((filter) => {
+    if (filter.id === excludedFilterId) return true;
+    const selected = selections[filter.id] || [];
+    if (!selected.length) return true;
+    return selected.includes(normalizeText(row[filter.field]));
+  });
+}
+
 function renderSalesInventoryTrend() {
+  refreshSalesInventoryTrendFilterOptions();
   const selections = getSalesInventoryTrendSelections();
   const values = SALES_INVENTORY_TREND_MONTHS.map((month) => {
     const summary = salesInventoryTrendSummaries.find((item) => item.label === month.label);
@@ -326,14 +377,12 @@ function getSalesInventoryTrendSelections() {
 }
 
 function salesInventoryTrendItemMatches(item, selections) {
-  return SALES_INVENTORY_TREND_FILTERS.every((filter) => {
-    const selected = selections[filter.id] || [];
-    return !selected.length || selected.includes(normalizeText(item[filter.field]));
-  });
+  return rowMatchesSelections(item, SALES_INVENTORY_TREND_FILTERS, selections);
 }
 
 function clearSalesInventoryTrendFilters() {
   SALES_INVENTORY_TREND_FILTERS.forEach((filter) => clearSelect($(`#${filter.id}`)));
+  refreshSalesInventoryTrendFilterOptions();
   renderSalesInventoryTrend();
 }
 
@@ -393,15 +442,17 @@ function formatSalesInventoryTrendShortMoneyWan(value) {
 }
 
 function clearFilters() {
-  ["salesMonthFilter", "salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter"].forEach((id) => clearSelect($(`#${id}`)));
+  SALES_FILTERS.forEach((filter) => clearSelect($(`#${filter.id}`)));
   if ($("#searchInput")) $("#searchInput").value = "";
+  refreshSalesFilterOptions();
   renderSalesAnalysis();
 }
 
-function fillSelect(select, allLabel, values) {
+function fillSelect(select, allLabel, values, selectedValuesOverride = null) {
   if (!select) return;
   const current = getSelectValues(select);
-  const selectedValues = values.filter((value) => current.includes(value));
+  const selectedSource = Array.isArray(selectedValuesOverride) ? selectedValuesOverride : current;
+  const selectedValues = values.filter((value) => selectedSource.includes(value));
   select.dataset.allLabel = allLabel;
   select.innerHTML = `
     <button class="multi-filter-button" type="button" aria-haspopup="listbox" aria-expanded="false"><span></span></button>
