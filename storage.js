@@ -133,6 +133,7 @@ const FACT_SLOTS = [
     title: "收发汇总表5月",
     expectedName: "收发汇总表5月",
     sheetHint: "",
+    skipRows: 3,
     description: "预留事实表槽位。"
   },
   {
@@ -141,6 +142,7 @@ const FACT_SLOTS = [
     title: "收发汇总表6月",
     expectedName: "收发汇总表6月",
     sheetHint: "",
+    skipRows: 3,
     description: "预留事实表槽位。"
   }
 ];
@@ -429,25 +431,106 @@ function parseWorkbookRows(workbook, slot) {
     header: 1,
     defval: "",
     raw: false,
-    blankrows: false,
-    range: slot.skipRows || 0
+    blankrows: true,
+    range: 0
   });
   const rawMatrix = xlsx.utils.sheet_to_json(sheet, {
     header: 1,
     defval: "",
     raw: true,
-    blankrows: false,
-    range: slot.skipRows || 0
+    blankrows: true,
+    range: 0
   });
-  const headers = (matrix[0] || []).map((value, index) => normalizeHeaderCell(value, index));
-  const rows = matrix.slice(1)
-    .filter((values) => Array.isArray(values) && values.some((value) => normalizeText(value) !== ""))
-    .map((values, index) => rowFromHeaderValues(headers, values, rawMatrix[index + 1] || []));
+  const candidates = parseHeaderCandidates(matrix, rawMatrix, slot);
+  const selected = chooseHeaderCandidate(candidates, slot);
   return {
     sheetName,
-    headers,
-    rows
+    headerRowNumber: selected.headerRowNumber,
+    parseNote: selected.parseNote,
+    attemptedHeaderRows: candidates.map((candidate) => ({
+      headerRowNumber: candidate.headerRowNumber,
+      rowCount: candidate.rows.length,
+      score: candidate.score,
+      headerFirst6: candidate.headers.slice(0, 6)
+    })),
+    headers: selected.headers,
+    rows: selected.rows
   };
+}
+
+function parseHeaderCandidates(matrix, rawMatrix, slot = {}) {
+  return headerRowCandidates(slot, matrix.length)
+    .map((rowIndex) => parseRowsFromHeaderIndex(matrix, rawMatrix, rowIndex, slot))
+    .filter(Boolean);
+}
+
+function headerRowCandidates(slot = {}, matrixLength = 0) {
+  const configured = Number.isInteger(slot.skipRows) ? slot.skipRows : 0;
+  const maxIndex = Math.max(0, Math.min(matrixLength - 1, 9));
+  const candidates = [configured, 0, 3];
+  for (let index = 0; index <= maxIndex; index += 1) candidates.push(index);
+  return [...new Set(candidates)]
+    .filter((index) => Number.isInteger(index) && index >= 0 && index < Math.max(matrixLength, 1));
+}
+
+function parseRowsFromHeaderIndex(matrix, rawMatrix, headerIndex, slot = {}) {
+  const headerValues = matrix[headerIndex] || [];
+  const headers = headerValues.map((value, index) => normalizeHeaderCell(value, index));
+  const rows = matrix.slice(headerIndex + 1)
+    .filter((values) => Array.isArray(values) && values.some((value) => normalizeText(value) !== ""))
+    .map((values, index) => rowFromHeaderValues(headers, values, rawMatrix[headerIndex + index + 1] || []));
+  const score = scoreHeaderCandidate(headers, rows, headerIndex, slot);
+  return {
+    headerRowIndex: headerIndex,
+    headerRowNumber: headerIndex + 1,
+    parseNote: `${headerIndex + 1} 行作为表头`,
+    headers,
+    rows,
+    score
+  };
+}
+
+function chooseHeaderCandidate(candidates, slot = {}) {
+  if (!candidates.length) {
+    return {
+      headerRowIndex: 0,
+      headerRowNumber: 1,
+      parseNote: "未找到可解析表头",
+      headers: [],
+      rows: [],
+      score: 0
+    };
+  }
+  return [...candidates].sort((a, b) => b.score - a.score || a.headerRowIndex - b.headerRowIndex)[0];
+}
+
+function scoreHeaderCandidate(headers, rows, headerIndex, slot = {}) {
+  const normalizedHeaders = headers.map(normalizeHeaderName);
+  const nonEmptyHeaders = normalizedHeaders.filter((header) => header && !header.startsWith("__empty_"));
+  const headerText = normalizedHeaders.join("|");
+  const keywordScore = headerKeywordsForSlot(slot)
+    .reduce((score, keyword) => score + (headerText.includes(normalizeHeaderName(keyword)) ? 1 : 0), 0);
+  const configured = Number.isInteger(slot.skipRows) ? slot.skipRows : 0;
+  const configuredBonus = headerIndex === configured ? 6 : 0;
+  const firstRowBonus = headerIndex === 0 ? 2 : 0;
+  const rowsScore = Math.min(rows.length, 20) / 2;
+  const emptyHeaderPenalty = Math.max(0, headers.length - nonEmptyHeaders.length) / 2;
+  const numericHeaderPenalty = nonEmptyHeaders.filter((header) => /^-?\d+(\.\d+)?$/.test(header)).length * 3;
+  return keywordScore * 20 + nonEmptyHeaders.length * 2 + rowsScore + configuredBonus + firstRowBonus - emptyHeaderPenalty - numericHeaderPenalty;
+}
+
+function headerKeywordsForSlot(slot = {}) {
+  const common = ["物料", "编码", "数量", "库存", "仓库", "组织", "结存", "结余"];
+  if (slot.id === "fact-inventory") {
+    return [...common, "结存数量", "真实成本", "真实成本单价", "货品"];
+  }
+  if (slot.id === "fact-2") {
+    return [...common, "0430", "结余库存数量", "结算价", "库龄", "销售产品线", "销售系列"];
+  }
+  if (/^fact-[3-8]$/.test(slot.id || "")) {
+    return [...common, "结算价", "含税", "库存数量", "期末", "收发"];
+  }
+  return common;
 }
 
 function nthValue(row, oneBasedIndex) {
@@ -487,6 +570,9 @@ function buildParseDiagnostics(parsed) {
   const headers = parsed.headers || Object.keys(rows[0] || {});
   return {
     sheetName: parsed.sheetName || "",
+    headerRowNumber: parsed.headerRowNumber || 1,
+    parseNote: parsed.parseNote || "",
+    attemptedHeaderRows: parsed.attemptedHeaderRows || [],
     headerFirst12: headers.slice(0, 12),
     gHeader: headers[6] || "",
     hHeader: headers[7] || "",
