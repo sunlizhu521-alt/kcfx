@@ -460,7 +460,9 @@ function fillMonthPicker(picker, allLabel, values, selectedValuesOverride = null
   const validMonths = uniqueMonths(values);
   const selectedSource = Array.isArray(selectedValuesOverride) ? selectedValuesOverride : getMonthPickerValues(picker);
   const selectedValues = selectedSource.filter((value) => validMonths.includes(value));
-  if (!selectedValues.length && validMonths.length) selectedValues.push(validMonths[validMonths.length - 1]);
+  if (!selectedValues.length && validMonths.length && picker.dataset.monthCleared !== "true") {
+    selectedValues.push(validMonths[validMonths.length - 1]);
+  }
   const years = uniqueYears(validMonths);
   const latestMonth = selectedValues[selectedValues.length - 1] || validMonths[validMonths.length - 1] || "";
   const latestYear = latestMonth ? latestMonth.slice(0, 4) : String(new Date().getFullYear());
@@ -476,7 +478,8 @@ function fillMonthPicker(picker, allLabel, values, selectedValuesOverride = null
       <div class="month-picker-header">
         <strong>${escapeHtml(year)}年</strong>
         <div class="month-picker-actions">
-          <button class="month-today" type="button" data-year-today>今天</button>
+          <button class="month-current" type="button" data-month-current>本月</button>
+          <button class="month-clear" type="button" data-month-clear>清除选择</button>
           <button class="month-nav" type="button" data-year-offset="-1" ${hasAdjacentYear(years, year, -1) ? "" : "disabled"} aria-label="上一年">&lsaquo;</button>
           <button class="month-nav" type="button" data-year-offset="1" ${hasAdjacentYear(years, year, 1) ? "" : "disabled"} aria-label="下一年">&rsaquo;</button>
         </div>
@@ -511,13 +514,25 @@ function fillMonthPicker(picker, allLabel, values, selectedValuesOverride = null
       picker.querySelector(".month-picker-button")?.setAttribute("aria-expanded", "true");
     });
   });
-  picker.querySelector("[data-year-today]")?.addEventListener("click", () => {
-    const todayYear = String(new Date().getFullYear());
-    const targetYear = years.includes(todayYear) ? todayYear : latestYear;
-    picker.dataset.year = targetYear;
-    fillMonthPicker(picker, allLabel, validMonths, getMonthPickerValues(picker));
+  picker.querySelector("[data-month-current]")?.addEventListener("click", () => {
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const targetMonth = validMonths.includes(currentMonth) ? currentMonth : (validMonths[validMonths.length - 1] || "");
+    picker.dataset.year = targetMonth ? targetMonth.slice(0, 4) : latestYear;
+    picker.dataset.values = targetMonth;
+    picker.dataset.monthCleared = "false";
+    fillMonthPicker(picker, allLabel, validMonths, targetMonth ? [targetMonth] : []);
     picker.classList.add("open");
     picker.querySelector(".month-picker-button")?.setAttribute("aria-expanded", "true");
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  picker.querySelector("[data-month-clear]")?.addEventListener("click", () => {
+    picker.dataset.values = "";
+    picker.dataset.monthCleared = "true";
+    picker.querySelectorAll(".month-picker-option input").forEach((input) => { input.checked = false; });
+    picker.querySelectorAll(".month-picker-option.selected").forEach((option) => option.classList.remove("selected"));
+    updateMonthPickerLabel(picker, allLabel);
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
   });
   picker.querySelectorAll(".month-picker-option input").forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
@@ -554,6 +569,7 @@ function clearMonthPicker(picker) {
   const latest = validMonths[validMonths.length - 1] || "";
   picker.dataset.values = latest;
   picker.dataset.year = latest ? latest.slice(0, 4) : "";
+  picker.dataset.monthCleared = "false";
   picker.querySelectorAll(".month-picker-option input").forEach((input) => {
     input.checked = input.value === latest;
   });
