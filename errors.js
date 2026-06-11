@@ -735,7 +735,13 @@ function normalizeCustomerMaterialKey(value) {
 }
 
 function normalizeStoreName(value) {
-  return normalizeKey(value).replace(/&/g, "").toLowerCase();
+  return normalizeKey(value)
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[&＆]/g, "")
+    .replace(/[()（）【】\[\]{}<>《》]/g, "")
+    .replace(/[，,。.、；;：:\-_\s]/g, "")
+    .toLowerCase();
 }
 
 function firstText(candidates) {
