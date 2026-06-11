@@ -474,9 +474,12 @@ function fillMonthPicker(picker, allLabel, values, selectedValuesOverride = null
     <button class="month-picker-button" type="button" aria-haspopup="listbox" aria-expanded="false"><span>${escapeHtml(monthPickerLabel(selectedValues, allLabel))}</span></button>
     <div class="month-picker-menu" role="listbox">
       <div class="month-picker-header">
-        <button class="month-nav" type="button" data-year-offset="-1" ${hasAdjacentYear(years, year, -1) ? "" : "disabled"}>‹</button>
         <strong>${escapeHtml(year)}年</strong>
-        <button class="month-nav" type="button" data-year-offset="1" ${hasAdjacentYear(years, year, 1) ? "" : "disabled"}>›</button>
+        <div class="month-picker-actions">
+          <button class="month-today" type="button" data-year-today>今天</button>
+          <button class="month-nav" type="button" data-year-offset="-1" ${hasAdjacentYear(years, year, -1) ? "" : "disabled"} aria-label="上一年">&lsaquo;</button>
+          <button class="month-nav" type="button" data-year-offset="1" ${hasAdjacentYear(years, year, 1) ? "" : "disabled"} aria-label="下一年">&rsaquo;</button>
+        </div>
       </div>
       <div class="month-picker-grid">
         ${Array.from({ length: 12 }, (_, index) => {
@@ -484,9 +487,9 @@ function fillMonthPicker(picker, allLabel, values, selectedValuesOverride = null
           const enabled = validMonths.includes(month);
           const checked = selectedValues.includes(month);
           return `
-            <label class="month-picker-option ${enabled ? "" : "disabled"}">
+            <label class="month-picker-option ${checked ? "selected" : ""} ${enabled ? "" : "disabled"}">
               <input type="checkbox" value="${month}" ${checked ? "checked" : ""} ${enabled ? "" : "disabled"}>
-              <span>${index + 1}月</span>
+              <span class="month-card-title">${index + 1}月</span>
             </label>
           `;
         }).join("")}
@@ -508,12 +511,21 @@ function fillMonthPicker(picker, allLabel, values, selectedValuesOverride = null
       picker.querySelector(".month-picker-button")?.setAttribute("aria-expanded", "true");
     });
   });
+  picker.querySelector("[data-year-today]")?.addEventListener("click", () => {
+    const todayYear = String(new Date().getFullYear());
+    const targetYear = years.includes(todayYear) ? todayYear : latestYear;
+    picker.dataset.year = targetYear;
+    fillMonthPicker(picker, allLabel, validMonths, getMonthPickerValues(picker));
+    picker.classList.add("open");
+    picker.querySelector(".month-picker-button")?.setAttribute("aria-expanded", "true");
+  });
   picker.querySelectorAll(".month-picker-option input").forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
       const selected = getMonthPickerValues(picker);
       if (!selected.length) checkbox.checked = true;
       const finalSelected = getMonthPickerValues(picker);
       picker.dataset.values = finalSelected.join("|");
+      checkbox.closest(".month-picker-option")?.classList.toggle("selected", checkbox.checked);
       updateMonthPickerLabel(picker, allLabel);
       picker.dispatchEvent(new Event("change", { bubbles: true }));
     });
