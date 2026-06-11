@@ -61,7 +61,8 @@ function buildDimensionMaps(records) {
   const divisionRows = records["dim-warehouse-material"]?.rows || [];
   const warehouseRows = records["dim-warehouse"]?.rows || [];
   const customerMaterialRows = records["dim-store-name"]?.rows || [];
-  const storeRows = records["dim-customer-material"]?.rows || [];
+  const storeRecord = records["dim-customer-material"];
+  const storeRows = storeRecord?.rows || [];
   const storeNameMap = mapStoreNames(storeRows);
   return {
     productMap,
@@ -71,8 +72,18 @@ function buildDimensionMaps(records) {
     warehouseNames: mapWarehouseNames(warehouseRows),
     customerMaterialKeys: mapCustomerMaterialKeys(customerMaterialRows),
     storeNames: new Set(storeNameMap.keys()),
-    storeNameSamples: [...storeNameMap.values()].slice(0, 8)
+    storeNameSamples: [...storeNameMap.values()].slice(0, 8),
+    storeSummaryValid: isStoreSummaryRecordValid(storeRecord),
+    storeSummaryRecord: storeRecord
   };
+}
+
+function isStoreSummaryRecordValid(record) {
+  if (!record) return false;
+  const sheetName = normalizeHeaderName(record.sheetName || record.parseDiagnostics?.sheetName || "");
+  const headerB = normalizeHeaderName(record.headers?.[1] || record.parseDiagnostics?.headerFirst12?.[1] || "");
+  return sheetName.includes(normalizeHeaderName("店铺名称汇总"))
+    && headerB === normalizeHeaderName("金蝶名称");
 }
 
 function buildClosedInventoryChecks(records, maps) {
@@ -138,7 +149,7 @@ function buildSalesDataChecks(records, maps) {
   const stockMaterials = summarizeSalesMaterials(rows);
   const productMissing = stockMaterials.filter((item) => !maps.productMap.has(item.materialCode));
   const customerMaterialMissing = summarizeSalesCustomerMaterialMissing(rows, maps.customerMaterialKeys, maps.productMap);
-  const storeMissing = summarizeSalesStoreMissing(rows, maps.storeNames);
+  const storeMissing = maps.storeSummaryValid ? summarizeSalesStoreMissing(rows, maps.storeNames) : [];
 
   return {
     ...emptySalesErrorResult(),
@@ -147,7 +158,7 @@ function buildSalesDataChecks(records, maps) {
     productMissing: productMissing.map((item) => enrichMissingRow(item, maps.productMap)),
     customerMaterialMissing,
     storeMissing,
-    storeDiagnostic: buildSalesStoreDiagnostic(salesStoreValues, maps.storeNames, maps.storeNameSamples)
+    storeDiagnostic: buildSalesStoreDiagnostic(salesStoreValues, maps.storeNames, maps.storeNameSamples, maps.storeSummaryValid, maps.storeSummaryRecord)
   };
 }
 
@@ -163,7 +174,7 @@ function collectSalesStoreValues(rows) {
   return [...map.values()].sort((a, b) => b.qty - a.qty || a.raw.localeCompare(b.raw, "zh-CN"));
 }
 
-function buildSalesStoreDiagnostic(salesStoreValues, storeNames, storeNameSamples = []) {
+function buildSalesStoreDiagnostic(salesStoreValues, storeNames, storeNameSamples = [], storeSummaryValid = true, storeSummaryRecord = null) {
   const hitCount = salesStoreValues.filter((item) => storeNames.has(item.normalized)).length;
   const missingCount = salesStoreValues.length - hitCount;
   return {
@@ -172,7 +183,10 @@ function buildSalesStoreDiagnostic(salesStoreValues, storeNames, storeNameSample
     hitCount,
     missingCount,
     salesSamples: salesStoreValues.slice(0, 8).map((item) => item.raw),
-    dimSamples: storeNameSamples
+    dimSamples: storeNameSamples,
+    storeSummaryValid,
+    storeSheetName: storeSummaryRecord?.sheetName || storeSummaryRecord?.parseDiagnostics?.sheetName || "",
+    storeHeaderB: storeSummaryRecord?.headers?.[1] || storeSummaryRecord?.parseDiagnostics?.headerFirst12?.[1] || ""
   };
 }
 
@@ -538,6 +552,9 @@ function renderSalesStoreRows(selector, rows) {
 function renderSalesStoreDiagnostic(diagnostic = {}) {
   const panel = $("#salesStoreDiagnostic");
   if (!panel) return;
+  const invalidNotice = diagnostic.storeSummaryValid === false
+    ? `<span class="error-text">当前店铺名称汇总文件引用的 sheet 是「${escapeHtml(diagnostic.storeSheetName || "-")}」，B列表头是「${escapeHtml(diagnostic.storeHeaderB || "-")}」。正确口径应为 sheet「Dim-店铺名称汇总（金蝶&领星&简称）」、B列「金蝶名称」。请在维度表文件库重新上传或重新应用店铺名称汇总文件后再检查。</span>`
+    : "";
   panel.innerHTML = `
     <span>客户名称来源：销售数据文件 B列（客户名称）</span>
     <span>数量来源：销售数据文件 I列（应收数量）</span>
@@ -545,6 +562,7 @@ function renderSalesStoreDiagnostic(diagnostic = {}) {
     <span>比对列：Dim-店铺名称汇总（金蝶&领星&简称） B列（金蝶名称）</span>
     <span>缺失提示：销售数据文件 B列客户名称有、维表 B列金蝶名称没有的信息会列在下方</span>
     <span>需要维护：月度维度表文件库的店铺名称汇总（金蝶&领星&简称）</span>
+    ${invalidNotice}
   `;
 }
 
