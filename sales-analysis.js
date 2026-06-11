@@ -20,6 +20,7 @@ async function refreshSalesAnalysis() {
   const records = Object.fromEntries((await getActiveRecords()).map((record) => [record.id, record]));
   const salesRecord = records["sales-data"];
   const productMap = mapProducts(records["dim-product"]?.rows || []);
+  const salesDepartmentMap = mapSalesDepartments(records["dim-store-name"]?.rows || []);
   const storeNames = mapStoreNames(records["dim-customer-material"]);
   renderSourcePanel(salesRecord, records);
   if (!salesRecord) {
@@ -36,10 +37,12 @@ async function refreshSalesAnalysis() {
     const product = productMap.get(materialCode) || {};
     const qty = getSalesReceivableQty(row);
     const storeMatched = customer ? storeNames.has(normalizeStoreNameForSales(customer)) : false;
+    const salesDepartmentKey = getSalesDepartmentKey(row);
     return {
       salesMonth: getSalesMonth(row),
-      salesOrg: getSalesOrg(row),
+      salesOrg: salesDepartmentMap.get(salesDepartmentKey) || "",
       customer,
+      salesDepartmentKey,
       materialCode,
       materialName: getSalesMaterialName(row) || product.materialName || "",
       productLine: product.productLine || "",
@@ -283,8 +286,27 @@ function mapStoreNames(record) {
   return set;
 }
 
-function getSalesOrg(row) {
-  return normalizeText(firstText([firstValue(row, ["销售组织"]), nthValue(row, 1)]));
+function mapSalesDepartments(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const key = normalizeSalesDepartmentKey(firstText([
+      firstValue(row, ["匹配键", "客户物料匹配键", "客户物料编码", "客户物料", "型号"]),
+      nthValue(row, 4)
+    ]));
+    const department = normalizeText(firstText([
+      firstValue(row, ["销售部门", "部门", "事业部", "销售组织"]),
+      nthValue(row, 5)
+    ]));
+    if (key && department && !map.has(key)) map.set(key, department);
+  }
+  return map;
+}
+
+function getSalesDepartmentKey(row) {
+  return normalizeSalesDepartmentKey(firstText([
+    firstValue(row, ["客户物料编码", "客户物料", "型号", "销售部门匹配键"]),
+    nthValue(row, 12)
+  ]));
 }
 
 function getSalesCustomerName(row) {
@@ -357,6 +379,13 @@ function normalizeStoreNameForSales(value) {
     .toLowerCase();
 }
 
+function normalizeSalesDepartmentKey(value) {
+  return normalizeText(value)
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\s+/g, "");
+}
+
 function uniqueValues(rows, key) {
   return [...new Set(rows.map((row) => normalizeText(row[key])).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "zh-CN"));
@@ -391,10 +420,12 @@ function renderSourcePanel(record, records) {
   if (!panel) return;
   const salesRef = record ? `${record.fileName || "-"}；当前引用：${formatRecordTime(record.appliedAt || record.savedAt)}` : "未引用";
   const productRef = records["dim-product"] ? `${records["dim-product"].fileName || "-"}；${formatRecordTime(records["dim-product"].appliedAt || records["dim-product"].savedAt)}` : "未引用";
+  const customerMaterialRef = records["dim-store-name"] ? `${records["dim-store-name"].fileName || "-"}；${formatRecordTime(records["dim-store-name"].appliedAt || records["dim-store-name"].savedAt)}` : "未引用";
   const storeRef = records["dim-customer-material"] ? `${records["dim-customer-material"].fileName || "-"}；${formatRecordTime(records["dim-customer-material"].appliedAt || records["dim-customer-material"].savedAt)}` : "未引用";
   panel.innerHTML = `
     <div><strong>销售数据文件</strong>：${escapeHtml(salesRef)}</div>
     <div><strong>商品分类维表</strong>：${escapeHtml(productRef)}</div>
+    <div><strong>客户与物料对照表</strong>：${escapeHtml(customerMaterialRef)}；销售数据文件 L列匹配维表 D列，取维表 E列作为销售部门</div>
     <div><strong>店铺名称汇总（金蝶&领星&简称）</strong>：${escapeHtml(storeRef)}</div>
   `;
 }
