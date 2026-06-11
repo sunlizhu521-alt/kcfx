@@ -284,7 +284,7 @@ function summarizeSalesStoreMissing(rows, storeNames) {
     if (storeNames.has(normalizeStoreName(store))) continue;
     const key = normalizeStoreName(store);
     if (!map.has(key)) map.set(key, { store, qty: 0 });
-    map.get(key).qty += getSalesQty(row);
+    map.get(key).qty += getSalesReceivableQty(row);
   }
   return [...map.values()].sort((a, b) => b.qty - a.qty || a.store.localeCompare(b.store, "zh-CN"));
 }
@@ -719,6 +719,10 @@ function getSalesStoreName(row) {
 
 function getSalesStoreNameForStoreSummary(row) {
   return normalizeText(nthValue(row, 1));
+}
+
+function getSalesReceivableQty(row) {
+  return toNumber(nthValue(row, 9));
 }
 
 function getSalesQty(row) {
