@@ -316,12 +316,12 @@ select {
 }
 
 .month-nav {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
+  border: 1px solid #bfdbfe;
   border-radius: 7px;
   background: #e8f2ff;
   color: #2563eb;
