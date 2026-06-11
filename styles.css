@@ -300,15 +300,19 @@ select {
 
 .month-current,
 .month-clear {
-  border: 0;
-  background: transparent;
-  color: #2563eb;
+  min-height: 28px;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  padding: 0 10px;
+  background: #dbeafe;
+  color: #172033;
   font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .month-clear {
-  color: #64748b;
+  color: #172033;
 }
 
 .month-nav {
@@ -329,6 +333,8 @@ select {
 .month-nav:hover,
 .month-current:hover,
 .month-clear:hover {
+  border-color: #60a5fa;
+  background: #cfe4ff;
   color: #0f172a;
 }
 
