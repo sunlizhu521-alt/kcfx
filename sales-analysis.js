@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#downloadBtn")?.addEventListener("click", downloadCurrentRows);
   $("#searchInput")?.addEventListener("input", renderSalesAnalysis);
   document.addEventListener("click", closeMultiFilters);
-  ["salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter", "storeMatchFilter"].forEach((id) => {
+  ["salesMonthFilter", "salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter", "storeMatchFilter"].forEach((id) => {
     $(`#${id}`)?.addEventListener("change", renderSalesAnalysis);
   });
   await refreshSalesAnalysis();
@@ -37,11 +37,13 @@ async function refreshSalesAnalysis() {
     const qty = getSalesReceivableQty(row);
     const storeMatched = customer ? storeNames.has(normalizeStoreNameForSales(customer)) : false;
     return {
+      salesMonth: getSalesMonth(row),
       salesOrg: getSalesOrg(row),
       customer,
       materialCode,
       materialName: getSalesMaterialName(row) || product.materialName || "",
       productLine: product.productLine || "",
+      productSeries: product.productSeries || "",
       qty,
       storeMatchStatus: storeMatched ? "已匹配" : "未匹配"
     };
@@ -53,19 +55,21 @@ async function refreshSalesAnalysis() {
 }
 
 function populateFilters(rows) {
-  fillSelect($("#salesOrgFilter"), "全部销售组织", uniqueValues(rows, "salesOrg"));
-  fillSelect($("#customerFilter"), "全部客户名称", uniqueValues(rows, "customer").slice(0, 300));
-  fillSelect($("#productLineFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
-  fillSelect($("#materialFilter"), "全部物料编码", uniqueValues(rows, "materialCode").slice(0, 300));
+  fillSelect($("#salesMonthFilter"), "全部销售月份", uniqueValues(rows, "salesMonth"));
+  fillSelect($("#salesOrgFilter"), "全部销售部门", uniqueValues(rows, "salesOrg"));
+  fillSelect($("#customerFilter"), "全部销售产品线", uniqueValues(rows, "productLine"));
+  fillSelect($("#productLineFilter"), "全部销售系列", uniqueValues(rows, "productSeries"));
+  fillSelect($("#materialFilter"), "型号", uniqueValues(rows, "materialCode").slice(0, 300));
   fillSelect($("#storeMatchFilter"), "全部匹配状态", ["已匹配", "未匹配"].filter((value) => rows.some((row) => row.storeMatchStatus === value)));
 }
 
 function renderSalesAnalysis() {
   const search = normalizeText($("#searchInput")?.value || "").toLowerCase();
   filteredRows = salesRows.filter((row) => {
+    if (!matchesFilter(row.salesMonth, $("#salesMonthFilter"))) return false;
     if (!matchesFilter(row.salesOrg, $("#salesOrgFilter"))) return false;
-    if (!matchesFilter(row.customer, $("#customerFilter"))) return false;
-    if (!matchesFilter(row.productLine, $("#productLineFilter"))) return false;
+    if (!matchesFilter(row.productLine, $("#customerFilter"))) return false;
+    if (!matchesFilter(row.productSeries, $("#productLineFilter"))) return false;
     if (!matchesFilter(row.materialCode, $("#materialFilter"))) return false;
     if (!matchesFilter(row.storeMatchStatus, $("#storeMatchFilter"))) return false;
     if (search) {
@@ -76,9 +80,9 @@ function renderSalesAnalysis() {
   });
 
   renderMetrics(filteredRows);
-  renderBars("customerQtyChart", groupSum(filteredRows, "customer", 10), "customerQtyTotal");
+  renderBars("customerQtyChart", groupSum(filteredRows, "productLine", 10), "customerQtyTotal");
   renderBars("salesOrgQtyChart", groupSum(filteredRows, "salesOrg", 10), "salesOrgQtyTotal");
-  renderBars("productLineQtyChart", groupSum(filteredRows, "productLine", 10), "productLineQtyTotal");
+  renderBars("productLineQtyChart", groupSum(filteredRows, "productSeries", 10), "productLineQtyTotal");
   renderBars("materialQtyChart", groupSum(filteredRows, "materialCode", 10), "materialQtyTotal");
   renderBars("storeMatchQtyChart", groupSum(filteredRows, "storeMatchStatus", 5), "storeMatchQtyTotal");
   renderTable(filteredRows);
@@ -98,15 +102,17 @@ function renderTable(rows) {
   const visible = rows.slice(0, 300);
   tbody.innerHTML = visible.length ? visible.map((row) => `
     <tr>
+      <td>${escapeHtml(row.salesMonth)}</td>
       <td>${escapeHtml(row.salesOrg)}</td>
       <td>${escapeHtml(row.customer)}</td>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.materialName)}</td>
       <td>${escapeHtml(row.productLine)}</td>
+      <td>${escapeHtml(row.productSeries)}</td>
       <td class="num">${formatQuantity(row.qty)}</td>
       <td>${escapeHtml(row.storeMatchStatus)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="9" class="empty">暂无数据</td></tr>`;
 }
 
 function renderBars(id, rows, totalId = "") {
@@ -146,7 +152,7 @@ function groupSum(rows, key, limit = 10) {
 }
 
 function clearFilters() {
-  ["salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter", "storeMatchFilter"].forEach((id) => clearSelect($(`#${id}`)));
+  ["salesMonthFilter", "salesOrgFilter", "customerFilter", "productLineFilter", "materialFilter", "storeMatchFilter"].forEach((id) => clearSelect($(`#${id}`)));
   if ($("#searchInput")) $("#searchInput").value = "";
   renderSalesAnalysis();
 }
@@ -251,10 +257,20 @@ function mapProducts(rows) {
     if (!materialCode || map.has(materialCode)) continue;
     map.set(materialCode, {
       materialName: normalizeText(firstText([firstValue(row, ["金蝶名称", "物料名称", "货品名称"]), nthValue(row, 4)])),
-      productLine: normalizeText(firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)]))
+      productLine: normalizeText(firstText([firstValue(row, ["销售产品线", "产品线"]), nthValue(row, 7)])),
+      productSeries: normalizeText(firstText([firstValue(row, ["销售系列", "产品系列", "系列"]), nthValue(row, 8)]))
     });
   }
   return map;
+}
+
+function getSalesMonth(row) {
+  const rawValue = firstText([
+    firstValue(row, ["销售月份", "月份", "销售月", "出库月份"]),
+    firstValue(row, ["销售日期", "出库日期", "单据日期", "审核日期", "日期"]),
+    firstValueByHeaderIncludes(row, ["月份"])
+  ]);
+  return formatSalesMonth(rawValue);
 }
 
 function mapStoreNames(record) {
@@ -299,6 +315,19 @@ function getSalesReceivableQty(row) {
     nthValue(row, 9)
   ]);
   return value;
+}
+
+function formatSalesMonth(value) {
+  const text = normalizeText(value);
+  if (!text) return "";
+  const excelSerial = Number(text);
+  if (Number.isFinite(excelSerial) && excelSerial > 20000 && excelSerial < 80000) {
+    const date = new Date(Math.round((excelSerial - 25569) * 86400 * 1000));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  }
+  const matched = text.match(/(20\d{2})\D{0,3}(1[0-2]|0?[1-9])/);
+  if (matched) return `${matched[1]}-${String(Number(matched[2])).padStart(2, "0")}`;
+  return text;
 }
 
 function firstText(candidates) {
@@ -375,13 +404,15 @@ function formatRecordTime(value) {
 }
 
 function downloadCurrentRows() {
-  const header = ["销售组织", "客户名称", "物料编码", "物料名称", "销售产品线", "应收数量", "店铺名称汇总匹配"];
+  const header = ["销售月份", "销售部门", "客户名称", "型号", "物料名称", "销售产品线", "销售系列", "应收数量", "店铺名称汇总匹配"];
   const lines = [header, ...filteredRows.map((row) => [
+    row.salesMonth,
     row.salesOrg,
     row.customer,
     row.materialCode,
     row.materialName,
     row.productLine,
+    row.productSeries,
     row.qty,
     row.storeMatchStatus
   ])].map((line) => line.map(csvCell).join(","));

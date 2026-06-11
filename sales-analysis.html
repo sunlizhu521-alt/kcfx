@@ -35,12 +35,13 @@
       <section class="analysis-section analysis-section-main">
         <div class="analysis-section-title">销售数据分析</div>
         <section class="toolbar primary-filter-toolbar">
+          <div id="salesMonthFilter" class="multi-filter"></div>
           <div id="salesOrgFilter" class="multi-filter"></div>
           <div id="customerFilter" class="multi-filter"></div>
           <div id="productLineFilter" class="multi-filter"></div>
           <div id="materialFilter" class="multi-filter"></div>
           <div id="storeMatchFilter" class="multi-filter"></div>
-          <input id="searchInput" placeholder="客户名称 / 物料编码 / 物料名称">
+          <input id="searchInput" placeholder="客户名称 / 型号 / 物料名称">
           <button id="clearFiltersBtn" type="button">清除所有筛选</button>
         </section>
 
@@ -54,19 +55,19 @@
 
         <section class="dashboard-grid receipt-chart-grid">
           <div class="panel">
-            <h2>客户应收数量排行 <span id="customerQtyTotal" class="chart-total"></span></h2>
+            <h2>销售产品线应收数量排行 <span id="customerQtyTotal" class="chart-total"></span></h2>
             <div id="customerQtyChart" class="chart-bars"></div>
           </div>
           <div class="panel">
-            <h2>销售组织应收数量 <span id="salesOrgQtyTotal" class="chart-total"></span></h2>
+            <h2>销售部门应收数量 <span id="salesOrgQtyTotal" class="chart-total"></span></h2>
             <div id="salesOrgQtyChart" class="chart-bars"></div>
           </div>
           <div class="panel">
-            <h2>产品线应收数量 <span id="productLineQtyTotal" class="chart-total"></span></h2>
+            <h2>销售系列应收数量 <span id="productLineQtyTotal" class="chart-total"></span></h2>
             <div id="productLineQtyChart" class="chart-bars"></div>
           </div>
           <div class="panel">
-            <h2>物料应收数量 Top 10 <span id="materialQtyTotal" class="chart-total"></span></h2>
+            <h2>型号应收数量 Top 10 <span id="materialQtyTotal" class="chart-total"></span></h2>
             <div id="materialQtyChart" class="chart-bars"></div>
           </div>
           <div class="panel">
@@ -86,11 +87,13 @@
           <table>
             <thead>
               <tr>
-                <th>销售组织</th>
+                <th>销售月份</th>
+                <th>销售部门</th>
                 <th>客户名称</th>
-                <th>物料编码</th>
+                <th>型号</th>
                 <th>物料名称</th>
                 <th>销售产品线</th>
+                <th>销售系列</th>
                 <th>应收数量</th>
                 <th>店铺名称汇总匹配</th>
               </tr>
@@ -106,6 +109,6 @@
 
   <script src="storage.js?v=20260611g"></script>
   <script src="shared-library.js?v=20260611a"></script>
-  <script src="sales-analysis.js?v=20260611a"></script>
+  <script src="sales-analysis.js?v=20260611b"></script>
 </body>
 </html>
