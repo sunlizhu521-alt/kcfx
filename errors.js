@@ -61,7 +61,7 @@ function buildDimensionMaps(records) {
   const divisionRows = records["dim-warehouse-material"]?.rows || [];
   const warehouseRows = records["dim-warehouse"]?.rows || [];
   const customerMaterialRows = records["dim-store-name"]?.rows || [];
-  const storeRows = resolveStoreSummaryRows(records);
+  const storeRows = records["dim-customer-material"]?.rows || [];
   const storeNameMap = mapStoreNames(storeRows);
   return {
     productMap,
@@ -73,25 +73,6 @@ function buildDimensionMaps(records) {
     storeNames: new Set(storeNameMap.keys()),
     storeNameSamples: [...storeNameMap.values()].slice(0, 8)
   };
-}
-
-function resolveStoreSummaryRows(records) {
-  const primary = records["dim-customer-material"];
-  const fallback = records["dim-store-name"];
-  const rows = [...(primary?.rows || [])];
-  if (recordLooksLikeStoreSummary(fallback)) {
-    rows.push(...(fallback.rows || []));
-  }
-  return rows;
-}
-
-function recordLooksLikeStoreSummary(record) {
-  const text = normalizeText([
-    record?.title,
-    record?.expectedName,
-    record?.fileName
-  ].filter(Boolean).join(" "));
-  return text.includes("店铺名称汇总") || text.includes("金蝶&领星") || text.includes("领星&简称");
 }
 
 function buildClosedInventoryChecks(records, maps) {
@@ -554,9 +535,10 @@ function renderSalesStoreDiagnostic(diagnostic = {}) {
   panel.innerHTML = `
     <span>店铺名称来源：销售数据文件 B列</span>
     <span>数量来源：销售数据文件 I列（应收数量）</span>
-    <span>比对维表：维度表文件库 - 店铺名称汇总（金蝶&领星&简称）</span>
+    <span>比对维表：月度维度表文件库 - 店铺名称汇总（金蝶&领星&简称）</span>
     <span>比对列：店铺名称汇总（金蝶&领星&简称） B列</span>
-    <span>需要维护：维度表文件库的店铺名称汇总（金蝶&领星&简称）</span>
+    <span>缺失提示：销售数据文件 B列有、店铺名称汇总（金蝶&领星&简称）B列没有的店铺名称会列在下方</span>
+    <span>需要维护：月度维度表文件库的店铺名称汇总（金蝶&领星&简称）</span>
   `;
 }
 
