@@ -318,13 +318,14 @@ async function clearSlot(slotId) {
 }
 
 async function clearAllLibraryCache() {
-  if (!window.confirm("确认清除当前浏览器里的全部文件库缓存？清除后需要重新上传库存数据文件、销售数据文件和维度表文件。")) return;
-  setLibraryStatus("正在清除浏览器文件库缓存...");
-  for (const slot of ALL_SLOTS) {
+  const slots = pageSlots();
+  if (!window.confirm("确认清除当前页面的文件缓存？清除后需要重新上传本页面文件。")) return;
+  setLibraryStatus("正在清除当前页面文件缓存...");
+  for (const slot of slots) {
     await deleteRecord(slot.id);
   }
   await renderLibrary();
-  setLibraryStatus("缓存已清除，请重新上传文件并应用刷新。");
+  setLibraryStatus("当前页面缓存已清除，请重新上传本页面文件并应用刷新。");
 }
 
 function recordReferencePath(record) {
