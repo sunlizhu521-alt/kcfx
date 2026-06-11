@@ -539,11 +539,11 @@ function renderSalesStoreDiagnostic(diagnostic = {}) {
   const panel = $("#salesStoreDiagnostic");
   if (!panel) return;
   panel.innerHTML = `
-    <span>店铺名称来源：销售数据文件 B列</span>
+    <span>客户名称来源：销售数据文件 B列（客户名称）</span>
     <span>数量来源：销售数据文件 I列（应收数量）</span>
     <span>比对维表：月度维度表文件库 - 店铺名称汇总（金蝶&领星&简称）</span>
-    <span>比对列：店铺名称汇总（金蝶&领星&简称） B列</span>
-    <span>缺失提示：销售数据文件 B列有、店铺名称汇总（金蝶&领星&简称）B列没有的店铺名称会列在下方</span>
+    <span>比对列：Dim-店铺名称汇总（金蝶&领星&简称） B列（金蝶名称）</span>
+    <span>缺失提示：销售数据文件 B列客户名称有、维表 B列金蝶名称没有的信息会列在下方</span>
     <span>需要维护：月度维度表文件库的店铺名称汇总（金蝶&领星&简称）</span>
   `;
 }
@@ -613,8 +613,8 @@ const ERROR_DOWNLOAD_CONFIG = {
     sources: ["sales"],
     name: "店铺名称汇总缺失表",
     columns: [
-      ["store", "店铺名称"],
-      ["normalized", "规范化店铺名称"],
+      ["store", "客户名称"],
+      ["normalized", "规范化客户名称"],
       ["qty", "数量"]
     ]
   }
