@@ -747,6 +747,17 @@ select {
   white-space: nowrap;
 }
 
+.trend-condition {
+  display: inline-block;
+  margin-left: 8px;
+  color: #5f7288;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .chart-note {
   margin: -4px 0 12px;
   color: var(--muted);

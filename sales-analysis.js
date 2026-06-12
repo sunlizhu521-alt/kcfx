@@ -347,6 +347,7 @@ function rowMatchesSelections(row, filters, selections, excludedFilterId = "") {
 function renderSalesInventoryTrend() {
   refreshSalesInventoryTrendFilterOptions();
   const selections = getSalesInventoryTrendSelections();
+  setText("#salesInventoryTrendCondition", buildSalesTrendConditionLabel(selections));
   const filteredRows = salesInventoryTrendSummaries.filter((item) => salesInventoryTrendItemMatches(item, selections));
   const months = [...new Set(filteredRows.map((row) => row.salesMonthNumber).filter(Boolean))]
     .sort((a, b) => Number(a) - Number(b));
@@ -422,6 +423,24 @@ function getSalesInventoryTrendAggregateLabel(selections) {
   if (!selected.length) return "全部销售趋势";
   if (selected.length === 1) return selected[0];
   return `已选${selected.length}项合计`;
+}
+
+function buildSalesTrendConditionLabel(selections) {
+  const parts = [
+    trendConditionPart(selections, "salesInventoryOrgTrendFilter", "全部销售部门"),
+    trendConditionPart(selections, "salesInventoryStoreShortNameTrendFilter", "全部客户"),
+    trendConditionPart(selections, "salesInventoryProductTrendFilter", "全部销售产品线"),
+    trendConditionPart(selections, "salesInventorySeriesTrendFilter", "全部销售系列"),
+    trendConditionPart(selections, "salesInventoryModelTrendFilter", "全部型号")
+  ];
+  return parts.filter(Boolean).join("-");
+}
+
+function trendConditionPart(selections, id, fallback) {
+  const values = selections[id] || [];
+  if (!values.length) return fallback;
+  if (values.length <= 2) return values.join("、");
+  return `已选${values.length}项`;
 }
 
 function makeSalesInventoryTrendQtyAccessor(sampleRow) {
