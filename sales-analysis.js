@@ -393,7 +393,7 @@ function renderSalesTrendMonthGroup(month, grouped, max) {
               <div class="trend-bar" style="height:${Math.max(value ? 2 : 0, value / max * 100)}%;background:${SALES_INVENTORY_TREND_YEAR_COLORS[year]}">
                 <span class="trend-bar-value">${escapeHtml(formatQuantity(value))}</span>
               </div>
-              <span class="trend-year-label">${year.slice(2)}</span>
+              <span class="trend-year-label">${year.slice(2)}年</span>
             </div>
           `;
         }).join("")}
