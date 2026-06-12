@@ -300,7 +300,10 @@ select {
 
 .month-current,
 .month-clear {
-  min-height: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #bfdbfe;
   border-radius: 7px;
   padding: 0 10px;
@@ -308,6 +311,8 @@ select {
   color: #172033;
   font-size: 12px;
   font-weight: 700;
+  line-height: 1;
+  box-sizing: border-box;
   cursor: pointer;
 }
 
@@ -327,6 +332,7 @@ select {
   color: #2563eb;
   font-size: 18px;
   line-height: 1;
+  box-sizing: border-box;
   cursor: pointer;
 }
 
