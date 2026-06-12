@@ -18,7 +18,7 @@ const SALES_FILTERS = [
 ];
 const SALES_INVENTORY_TREND_YEARS = ["2025", "2026"];
 const SALES_INVENTORY_TREND_YEAR_COLORS = { "2025": "#007aff", "2026": "#34c759" };
-const EXCLUDED_SALES_PRODUCT_VALUES = new Set(["其他/配件", "健康办公"].map(normalizeSalesExclusionText));
+const EXCLUDED_SALES_PRODUCT_VALUES = new Set(["其他/配件", "健康办公", "护理床附件"].map(normalizeSalesExclusionText));
 
 let salesRows = [];
 let filteredRows = [];
