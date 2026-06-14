@@ -1316,7 +1316,7 @@ function escapeHtml(value) {
 function scheduleDeferredTrendLoad() {
   if (window.__kcfxTrendScriptScheduled || !document.querySelector("#inventoryValueTrendChart")) return;
   window.__kcfxTrendScriptScheduled = true;
-  const load = () => loadScriptOnce("inventory-trend.js?v=20260614a");
+  const load = () => loadScriptOnce("inventory-trend.js?v=20260614b");
   if ("requestIdleCallback" in window) {
     window.requestIdleCallback(load, { timeout: 2500 });
   } else {
