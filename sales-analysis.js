@@ -150,14 +150,13 @@ function renderTable(rows) {
       <td>${escapeHtml(row.salesMonth)}</td>
       <td>${escapeHtml(row.salesOrg)}</td>
       <td>${escapeHtml(row.customer)}</td>
-      <td>${escapeHtml(row.model)}</td>
       <td>${escapeHtml(row.materialName)}</td>
       <td>${escapeHtml(row.productLine)}</td>
       <td>${escapeHtml(row.productSeries)}</td>
+      <td>${escapeHtml(row.model)}</td>
       <td class="num">${formatQuantity(row.qty)}</td>
-      <td>${escapeHtml(row.storeMatchStatus)}</td>
     </tr>
-  `).join("") : `<tr><td colspan="9" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="8" class="empty">暂无数据</td></tr>`;
 }
 
 function renderBars(id, rows, totalId = "") {
@@ -1024,17 +1023,16 @@ function formatRecordTime(value) {
 }
 
 function downloadCurrentRows() {
-  const header = ["销售月份", "销售部门", "客户名称", "型号", "物料名称", "销售产品线", "销售系列", "应收数量", "店铺名称汇总匹配"];
+  const header = ["销售月份", "销售部门", "客户名称", "物料名称", "销售产品线", "销售系列", "型号", "应收数量"];
   const lines = [header, ...filteredRows.map((row) => [
     row.salesMonth,
     row.salesOrg,
     row.customer,
-    row.model,
     row.materialName,
     row.productLine,
     row.productSeries,
-    row.qty,
-    row.storeMatchStatus
+    row.model,
+    row.qty
   ])].map((line) => line.map(csvCell).join(","));
   downloadCsv(`销售数据分析_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "")}.csv`, lines);
 }

@@ -12,6 +12,7 @@ const TREND_FILTERS = [
   { id: "warehouseTypeTrendFilter", field: "warehouseType", allLabel: "库存全链路", sortByName: true },
   { id: "departmentTrendFilter", field: "department", allLabel: "全部事业部" },
   { id: "productTrendFilter", field: "productLine", allLabel: "全部产品线" },
+  { id: "seriesTrendFilter", field: "productSeries", allLabel: "全部销售系列" },
   { id: "warehouseLocationTrendFilter", field: "warehouseLocation", allLabel: "全部仓库位置" }
 ];
 let trendUnclassifiedRows = [];
@@ -95,6 +96,7 @@ function summarizeTrendMonth(month, record, maps) {
 
     const department = maps.departmentByKey.get(makeTrendDepartmentKey(materialA, warehouse, materialB)) || "";
     const productLine = maps.productLineByMaterial.get(materialB) || "";
+    const productSeries = maps.productSeriesByMaterial.get(materialB) || "";
     const warehouseType = maps.warehouseTypeByName.get(normalizeText(warehouse)) || "";
     const warehouseLocation = maps.warehouseLocationByName.get(normalizeText(warehouse)) || "";
     const missingReasons = [
@@ -114,6 +116,7 @@ function summarizeTrendMonth(month, record, maps) {
       warehouseType: warehouseType || "未分类仓库类型",
       department: department || "未匹配事业部",
       productLine: productLine || "未分类产品线",
+      productSeries: productSeries || "未分类销售系列",
       warehouseLocation: warehouseLocation || "未分类仓库位置"
     });
     if (missingReasons.length) {
@@ -178,12 +181,17 @@ function buildTrendDimensionMaps(records) {
   }
 
   const productLineByMaterial = new Map();
+  const productSeriesByMaterial = new Map();
   const settlementPriceByMaterial = new Map();
   for (const row of records["dim-product"]?.rows || []) {
     const materialCode = normalizeMaterialCode(nthValue(row, 1));
     const productLine = normalizeText(nthValue(row, 7));
+    const productSeries = normalizeText(nthValue(row, 8));
     if (materialCode && productLine && !productLineByMaterial.has(materialCode)) {
       productLineByMaterial.set(materialCode, productLine);
+    }
+    if (materialCode && productSeries && !productSeriesByMaterial.has(materialCode)) {
+      productSeriesByMaterial.set(materialCode, productSeries);
     }
     const price = trendToNumber(nthValue(row, 10));
     if (materialCode && price && !settlementPriceByMaterial.has(materialCode)) {
@@ -199,7 +207,7 @@ function buildTrendDimensionMaps(records) {
     if (materialCode && price) settlementPriceByMaterial.set(materialCode, price);
   }
 
-  return { departmentByKey, warehouseTypeByName, warehouseLocationByName, productLineByMaterial, settlementPriceByMaterial };
+  return { departmentByKey, warehouseTypeByName, warehouseLocationByName, productLineByMaterial, productSeriesByMaterial, settlementPriceByMaterial };
 }
 
 function populateTrendFilters(monthSummaries) {
@@ -479,7 +487,7 @@ function renderTrendSourcePanel(monthSummaries, records) {
     <strong>趋势图口径</strong>
     <div>事实表取收发汇总表1月-5月，第4行为表头；数量取K列求和；库存占用优先按本表K列数量×P列结算价(含税)计算，本表没有P列时按物料编码使用库存分析月份表的结算价(含税)补价；每张表最后一行汇总数据不参与计算。</div>
     <div>事业部：事实表A列+D列+B列匹配仓库物料事业部对照表F列，取G列。</div>
-    <div>产品：事实表B列匹配商品分类维表A列，取G列销售产品线。</div>
+    <div>产品：事实表B列匹配商品分类维表A列，取G列销售产品线、H列销售系列。</div>
     <div>仓库位置：事实表D列匹配仓库维表B列，取H列仓库位置。</div>
     <strong>当前引用</strong>
     ${monthLines.join("")}
