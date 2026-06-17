@@ -5,6 +5,7 @@ const SALES_INVENTORY_TREND_FILTERS = [
   { id: "salesInventoryOrgTrendFilter", field: "salesOrg", allLabel: "全部销售部门" },
   { id: "salesInventoryStoreShortNameTrendFilter", field: "storeShortName", allLabel: "客户名称" },
   { id: "salesInventoryProductTrendFilter", field: "productLine", allLabel: "全部销售产品线" },
+  { id: "salesInventoryProductCategoryTrendFilter", field: "productCategory", allLabel: "全部销售产品分类" },
   { id: "salesInventorySeriesTrendFilter", field: "productSeries", allLabel: "全部销售系列" },
   { id: "salesInventoryModelTrendFilter", field: "model", allLabel: "型号", limit: 300 }
 ];
@@ -430,6 +431,7 @@ function buildSalesTrendConditionLabel(selections) {
     trendConditionPart(selections, "salesInventoryOrgTrendFilter", "全部销售部门"),
     trendConditionPart(selections, "salesInventoryStoreShortNameTrendFilter", "全部客户"),
     trendConditionPart(selections, "salesInventoryProductTrendFilter", "全部销售产品线"),
+    trendConditionPart(selections, "salesInventoryProductCategoryTrendFilter", "全部销售产品分类"),
     trendConditionPart(selections, "salesInventorySeriesTrendFilter", "全部销售系列"),
     trendConditionPart(selections, "salesInventoryModelTrendFilter", "全部型号")
   ];
