@@ -13,6 +13,7 @@ const SALES_FILTERS = [
   { id: "salesOrgFilter", field: "salesOrg", allLabel: "全部销售部门" },
   { id: "salesStoreShortNameFilter", field: "storeShortName", allLabel: "客户名称" },
   { id: "customerFilter", field: "productLine", allLabel: "全部销售产品线" },
+  { id: "salesProductCategoryFilter", field: "productCategory", allLabel: "全部销售产品分类" },
   { id: "productLineFilter", field: "productSeries", allLabel: "全部销售系列" },
   { id: "materialFilter", field: "model", allLabel: "型号", limit: 300 }
 ];
