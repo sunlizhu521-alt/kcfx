@@ -342,7 +342,6 @@ function renderSummary() {
   const summaryBody = $("#summaryRows");
   if (summaryBody) summaryBody.innerHTML = shown.length ? shown.map((row) => `
     <tr>
-      <td>${escapeHtml(formatOptionalNumber(row.inventoryDays, 0))}</td>
       <td>${escapeHtml(row.materialCode)}</td>
       <td>${escapeHtml(row.sku)}</td>
       <td>${escapeHtml(row.materialName)}</td>
@@ -351,7 +350,7 @@ function renderSummary() {
       <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
       <td class="num">${formatMoney(visibleAmount(row, selectedAgeLabels))}</td>
     </tr>
-  `).join("") : `<tr><td colspan="8" class="empty">暂无数据</td></tr>`;
+  `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
 }
 
 function renderDetailTableHeaderFilters(rows) {
@@ -478,7 +477,6 @@ function detailTableFilterValue(row, key) {
   const empty = "(空白)";
   const valueMap = {
     materialCode: row.materialCode,
-    inventoryDays: formatOptionalNumber(row.inventoryDays, 0),
     sku: row.sku,
     materialName: row.materialName,
     warehouse: row.warehouse,
@@ -705,11 +703,10 @@ function updateChartTotal(id, total, formatter) {
 }
 
 function downloadCurrentRows() {
-  const headers = ["库龄", "物料编码", "SKU", "物料名称", "仓库", "关账结存库存", "结算价(含税)", "结算价金额"];
+  const headers = ["物料编码", "SKU", "物料名称", "仓库", "关账结存库存", "结算价(含税)", "结算价金额"];
   const lines = [headers.join(",")];
   detailTableRows.forEach((row) => {
     lines.push([
-      formatOptionalNumber(row.inventoryDays, 0),
       row.materialCode,
       row.sku,
       row.materialName,
