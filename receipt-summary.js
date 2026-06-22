@@ -47,6 +47,7 @@ let summaryRows = [];
 let filteredRows = [];
 let detailTableRows = [];
 let detailTableBaseRows = [];
+let detailTableAgeLabels = [];
 const detailTableFilters = {};
 let departmentMatchDiagnostics = { matched: 0, unmatched: 0, sample: "" };
 let closedInventoryValue = 0;
@@ -325,9 +326,10 @@ function renderSummary() {
   renderQuantityCharts(filteredRows, selectedAgeLabels);
   renderUnclassifiedRows(filteredRows, selectedAgeLabels);
   detailTableBaseRows = filteredRows;
+  detailTableAgeLabels = selectedAgeLabels;
   renderDetailTableHeaderFilters(filteredRows);
   detailTableRows = applyDetailTableFilters(filteredRows);
-  const shown = detailTableRows.slice(0, 1000);
+  const shown = detailTableRows;
   const summaryBody = $("#summaryRows");
   if (summaryBody) summaryBody.innerHTML = shown.length ? shown.map((row) => `
     <tr>
@@ -335,9 +337,9 @@ function renderSummary() {
       <td>${escapeHtml(row.sku)}</td>
       <td>${escapeHtml(row.materialName)}</td>
       <td>${escapeHtml(row.warehouse)}</td>
-      <td class="num">${formatNumber(row.endingQty, 3)}</td>
+      <td class="num">${formatNumber(visibleQuantity(row, selectedAgeLabels), 3)}</td>
       <td class="num">${formatNumber(row.settlementPrice, 6)}</td>
-      <td class="num">${formatMoney(row.settlementAmount)}</td>
+      <td class="num">${formatMoney(visibleAmount(row, selectedAgeLabels))}</td>
     </tr>
   `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
 }
@@ -469,9 +471,9 @@ function detailTableFilterValue(row, key) {
     sku: row.sku,
     materialName: row.materialName,
     warehouse: row.warehouse,
-    endingQty: formatNumber(row.endingQty, 3),
+    endingQty: formatNumber(visibleQuantity(row, detailTableAgeLabels), 3),
     settlementPrice: formatNumber(row.settlementPrice, 6),
-    settlementAmount: formatMoney(row.settlementAmount)
+    settlementAmount: formatMoney(visibleAmount(row, detailTableAgeLabels))
   };
   const label = normalizeText(valueMap[key]) || empty;
   return { value: label, label };
@@ -700,9 +702,9 @@ function downloadCurrentRows() {
       row.sku,
       row.materialName,
       row.warehouse,
-      row.endingQty,
+      visibleQuantity(row, detailTableAgeLabels),
       row.settlementPrice,
-      row.settlementAmount
+      visibleAmount(row, detailTableAgeLabels)
     ].map(csvCell).join(","));
   });
   const blob = new Blob([`\uFEFF${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
