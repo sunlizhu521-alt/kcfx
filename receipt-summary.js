@@ -338,6 +338,7 @@ function renderSummary() {
   detailTableAgeLabels = selectedAgeLabels;
   renderDetailTableHeaderFilters(filteredRows);
   detailTableRows = applyDetailTableFilters(filteredRows);
+  updateDetailTableTotals(detailTableRows, selectedAgeLabels);
   const shown = detailTableRows.slice(0, 1000);
   const summaryBody = $("#summaryRows");
   if (summaryBody) summaryBody.innerHTML = shown.length ? shown.map((row) => `
@@ -351,6 +352,14 @@ function renderSummary() {
       <td class="num">${formatMoney(visibleAmount(row, selectedAgeLabels))}</td>
     </tr>
   `).join("") : `<tr><td colspan="7" class="empty">暂无数据</td></tr>`;
+}
+
+function updateDetailTableTotals(rows, selectedAgeLabels = []) {
+  const el = $("#detailTableTotals");
+  if (!el) return;
+  const qty = sumVisibleQuantity(rows, selectedAgeLabels);
+  const amount = sumVisibleAmount(rows, selectedAgeLabels);
+  el.textContent = `库存数量合计：${formatSupplyChainQtyWithYi(qty)}｜库存金额合计：${formatMoneyWithYi(amount)}`;
 }
 
 function renderDetailTableHeaderFilters(rows) {
