@@ -329,7 +329,7 @@ function renderSummary() {
   detailTableAgeLabels = selectedAgeLabels;
   renderDetailTableHeaderFilters(filteredRows);
   detailTableRows = applyDetailTableFilters(filteredRows);
-  const shown = detailTableRows;
+  const shown = detailTableRows.slice(0, 1000);
   const summaryBody = $("#summaryRows");
   if (summaryBody) summaryBody.innerHTML = shown.length ? shown.map((row) => `
     <tr>
