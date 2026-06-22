@@ -63,17 +63,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("click", closeMultiFilters);
   document.addEventListener("click", handleDetailTableFilterClick);
   document.addEventListener("input", handleDetailTableFilterSearch);
-  bindIfExists("#searchInput", "input", scheduleRenderSummary);
+  bindIfExists("#searchInput", "input", scheduleRenderSummaryFromMainFilters);
   LINKED_PRODUCT_FILTERS.forEach(({ id }) => {
     bindIfExists(`#${id}`, "change", () => {
-      populateLinkedProductFilters(summaryRows, id);
-      renderSummary();
+      renderFromMainFilters(id);
     });
   });
   ["warehouseTypeFilter", "departmentFilter", "ageFilter"].forEach((id) => {
     bindIfExists(`#${id}`, "change", () => {
-      populateLinkedProductFilters(summaryRows);
-      renderSummary();
+      renderFromMainFilters();
     });
   });
   await refreshSummary();
@@ -299,6 +297,17 @@ function getSummaryFilterSelections() {
 function scheduleRenderSummary() {
   window.clearTimeout(summarySearchTimer);
   summarySearchTimer = window.setTimeout(renderSummary, 120);
+}
+
+function scheduleRenderSummaryFromMainFilters() {
+  clearDetailTableFilters();
+  scheduleRenderSummary();
+}
+
+function renderFromMainFilters(changedFilterId = "") {
+  clearDetailTableFilters();
+  populateLinkedProductFilters(summaryRows, changedFilterId);
+  renderSummary();
 }
 
 function renderSummary() {
