@@ -317,10 +317,10 @@ function renderSummary() {
       && matchSelect(row.series, selections.linked.seriesFilter)
       && matchSelect(row.warehouseLocation, selections.linked.warehouseLocationFilter);
   });
-  const visibleAmount = sumVisibleAmount(filteredRows, selectedAgeLabels);
+  const totalVisibleAmount = sumVisibleAmount(filteredRows, selectedAgeLabels);
   $("#qtyTotal").textContent = formatSupplyChainQtyWithYi(sumVisibleQuantity(filteredRows, selectedAgeLabels));
-  $("#amountTotal").textContent = formatMoneyWithYi(visibleAmount);
-  $("#valueGapTotal").textContent = formatMoneyWithYi(visibleAmount - closedInventoryValue);
+  $("#amountTotal").textContent = formatMoneyWithYi(totalVisibleAmount);
+  $("#valueGapTotal").textContent = formatMoneyWithYi(totalVisibleAmount - closedInventoryValue);
   renderSummaryTables(filteredRows, selectedAgeLabels);
   renderAmountCharts(filteredRows, selectedAgeLabels);
   renderQuantityCharts(filteredRows, selectedAgeLabels);

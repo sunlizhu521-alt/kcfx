@@ -84,6 +84,7 @@ async function clearStaleSharedRecords(activeSharedIds) {
     if (!record?.id || !SLOT_BY_ID[record.id]) continue;
     if (activeSharedIds.has(record.id)) continue;
     if (isDeletedRecord(record) || hasPendingRecord(record) || isLocalBrowserRecord(record)) continue;
+    if (isUserAppliedAfterSharedImport(record)) continue;
     if (!isSharedLibraryRecord(record)) continue;
     const deletedAt = new Date().toISOString();
     await saveRecord({
@@ -99,6 +100,20 @@ async function clearStaleSharedRecords(activeSharedIds) {
     cleared += 1;
   }
   return cleared;
+}
+
+function isUserAppliedAfterSharedImport(record) {
+  if (!isSharedLibraryRecord(record)) return false;
+  const localTime = Math.max(
+    Date.parse(record.appliedAt || 0) || 0,
+    Date.parse(record.savedAt || 0) || 0,
+    Number(record.lastModified || 0) || 0
+  );
+  const sharedTime = Math.max(
+    Date.parse(record.sharedSavedAt || 0) || 0,
+    Date.parse(record.importedAt || 0) || 0
+  );
+  return localTime > sharedTime && Array.isArray(record.rows) && record.rows.length > 0;
 }
 
 function buildSharedLibraryStatus(imported, cleared, sharedCount) {
